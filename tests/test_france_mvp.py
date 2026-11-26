@@ -171,6 +171,7 @@ def test_hazard_commune_resolver_stops_at_current_communes():
         {"DATE_EFF": "2014-01-01", "MOD": "21", "TYPECOM_AP": "COM", "COM_AV": "76108", "COM_AP": "76095"},
         {"DATE_EFF": "2014-01-01", "MOD": "21", "TYPECOM_AP": "COM", "COM_AV": "76108", "COM_AP": "76108"},
         {"DATE_EFF": "2016-01-01", "MOD": "32", "TYPECOM_AP": "COM", "COM_AV": "12114", "COM_AP": "12076"},
+        {"DATE_EFF": "2016-01-01", "MOD": "32", "TYPECOM_AP": "COM", "COM_AV": "12218", "COM_AP": "12076"},
         {"DATE_EFF": "2024-03-04", "MOD": "50", "TYPECOM_AP": "COM", "COM_AV": "12076", "COM_AP": "12218"},
     ]
     resolve = commune_resolver(current, movements)
