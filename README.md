@@ -45,8 +45,8 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
 uv run python -m pipeline build world france_core resources catalog
 ```
 

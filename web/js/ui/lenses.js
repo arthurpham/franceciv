@@ -19,6 +19,7 @@ export function formatLensValue(lens, v) {
     case "usd": return "$" + compact(v);
     case "eur": return "€" + compact(v);
     case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0) + "%";
+    case "signed": return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(1) + "%";
     case "int": return intish(v) + (lens.unit?.startsWith("people") ? " /km²" : lens.unit ? " " + lens.unit : "");
     case "minutes": return v.toFixed(0) + " min";
     case "years": return v.toFixed(1) + " yrs";
