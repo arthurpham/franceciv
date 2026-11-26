@@ -1,0 +1,141 @@
+"""Real French power-generation and storage resources for the strategy-map tiles."""
+
+from __future__ import annotations
+
+import json
+import math
+from collections import defaultdict
+
+from ..core.hexgrid import HexGrid
+from ..core.paths import WEB_DATA
+from ..core.store import load_interim, write_web
+
+REQUIRES = ["_world", "fr_boundaries", "fr_energy", "cities.json"]
+PRODUCES = ["resources.json"]
+
+TYPES = [
+    {"id": "nuclear", "name": "Nuclear plant", "category": "energy", "emoji": "☢️", "icon": "r-nuclear", "color": "#e8d44d", "unit": "MW", "source": "fr_energy", "description": "Nuclear installations in service, grouped by commune; value is installed capacity."},
+    {"id": "hydro", "name": "Hydroelectric plant", "category": "energy", "emoji": "💧", "icon": "r-hydro", "color": "#3fa7d6", "unit": "MW", "source": "fr_energy", "description": "Hydroelectric installations in service, grouped by commune, at least 100 MW."},
+    {"id": "pumped_storage", "name": "Pumped storage", "category": "energy", "emoji": "🔋", "icon": "r-pumped-storage", "color": "#2f7fb8", "unit": "MW", "source": "fr_energy", "description": "Pumped-storage installations in service, grouped by commune, at least 100 MW."},
+    {"id": "gas_plant", "name": "Gas plant", "category": "energy", "emoji": "🔥", "icon": "r-gas-plant", "color": "#f08a24", "unit": "MW", "source": "fr_energy", "description": "Gas-fired thermal capacity in service, grouped by commune, at least 300 MW."},
+    {"id": "coal_plant", "name": "Coal plant", "category": "energy", "emoji": "🏭", "icon": "r-coal-plant", "color": "#5a5a5a", "unit": "MW", "source": "fr_energy", "description": "Coal-fired thermal capacity in service, grouped by commune, at least 100 MW."},
+    {"id": "wind", "name": "Wind power", "category": "energy", "emoji": "🌬️", "icon": "r-wind", "color": "#9fd8cb", "unit": "MW", "source": "fr_energy", "description": "Wind capacity in service grouped by commune, at least 50 MW."},
+    {"id": "solar", "name": "Solar power", "category": "energy", "emoji": "☀️", "icon": "r-solar", "color": "#ffc93c", "unit": "MW", "source": "fr_energy", "description": "Ground-mounted solar capacity in service grouped by commune, at least 50 MW."},
+    {"id": "battery", "name": "Batteries", "category": "energy", "emoji": "🔋", "icon": "r-battery", "color": "#7bc96f", "unit": "MW", "source": "fr_energy", "description": "Battery discharge capacity in service grouped by commune, at least 30 MW."},
+]
+MIN_MW = {"nuclear": 100, "hydro": 100, "pumped_storage": 100, "gas_plant": 300, "coal_plant": 100, "wind": 50, "solar": 50, "battery": 30}
+
+
+def kind(row):
+    filiere = (row.get("filiere") or "").lower()
+    tech = (row.get("technologie") or "").lower()
+    fuel = (row.get("combustible") or "").lower()
+    stock = (row.get("typestockage") or "").lower()
+    if "nucl" in filiere:
+        return "nuclear"
+    if "hydraulique" in filiere or "hydro" in filiere:
+        return "pumped_storage" if "pompage" in tech or "step" in tech or "pompage" in stock else "hydro"
+    if "éolien" in filiere or "eolien" in filiere:
+        return "wind"
+    if "solaire" in filiere or "photovolta" in tech:
+        return "solar"
+    if "stockage" in filiere or "batterie" in tech or "batterie" in stock:
+        return "battery"
+    if "thermique" in filiere:
+        if "charbon" in fuel:
+            return "coal_plant"
+        if "gaz" in fuel or "gaz" in tech or "cycle combin" in tech:
+            return "gas_plant"
+    return None
+
+
+def nearest_land(world, grid, x, y):
+    exact = grid.cell_at(x, y)
+    if exact >= 0 and world["owner"][exact] >= 0:
+        return exact
+    def d2(i):
+        cx, cy = grid.center(*grid.col_row(i))
+        return (cx - x) ** 2 + (cy - y) ** 2
+    return min((i for i, o in enumerate(world["owner"]) if o >= 0), key=d2)
+
+
+def build():
+    world = load_interim("_world")
+    bounds = load_interim("fr_boundaries")
+    energy = load_interim("fr_energy")
+    cities = json.loads((WEB_DATA / "cities.json").read_text())
+    grid = HexGrid(**world["grid"])
+    communes = {c["code"]: c for c in bounds["communes"]}
+    state_abbr = {s["fips"]: s["abbr"] for s in bounds["states"]}
+
+    groups = {}
+    for r in energy["rows"]:
+        if r.get("regime") != "En service":
+            continue
+        k = kind(r)
+        if not k:
+            continue
+        code = r.get("codeinseecommuneimplantation") or r.get("codeinseecommune")
+        if code not in communes:
+            continue
+        mw = ((r.get("puismaxinstallee") or 0) if k != "battery" else (r.get("puismaxinstalleedischarge") or r.get("puismaxinstallee") or 0)) / 1000
+        key = (k, code)
+        g = groups.setdefault(key, {"mw": 0, "units": 0, "names": []})
+        g["mw"] += mw
+        g["units"] += 1
+        name = r.get("nominstallation")
+        if name and name.lower() != "confidentiel":
+            g["names"].append(name)
+
+    items = []
+    for (k, code), g in sorted(groups.items()):
+        if g["mw"] < MIN_MW[k]:
+            continue
+        c = communes[code]
+        if c.get("lon") is None or c.get("lat") is None:
+            continue
+        # The commune centroid is a reasonable installation proxy because the registry does not publish coordinates.
+        from ..core.geo import MapProjection
+        proj = MapProjection(**world["projection"])
+        x, y = proj(c["lon"], c["lat"])
+        cell = nearest_land(world, grid, x, y)
+        dep = c.get("department")
+        state = state_abbr.get(c.get("region"))
+        county = dep
+        cbsa = None
+        for city in cities:
+            if county in (city.get("counties") or []):
+                cbsa = city["id"]
+                break
+        raw_name = max(set(g["names"]), key=g["names"].count) if g["names"] else c["name"]
+        plant_name = raw_name
+        upper = raw_name.upper()
+        if "CENTRALE NUCLEAIRE DE " in upper:
+            plant_name = raw_name[upper.index("CENTRALE NUCLEAIRE DE ") + len("CENTRALE NUCLEAIRE DE "):].title()
+            plant_name = "Nuclear power plant of " + plant_name.replace("(Le)", "Le").replace("(La)", "La")
+        detail = f"{g['units']} installation{'s' if g['units'] != 1 else ''} registered in {c['name']}; source name: {raw_name}"
+        items.append({"type": k, "name": plant_name, "x": round(x, 1), "y": round(y, 1), "cell": cell,
+                      "value": round(g["mw"]), "detail": detail, "state": state, "cbsa": cbsa})
+
+    order = {t["id"]: n for n, t in enumerate(TYPES)}
+    items.sort(key=lambda i: (order[i["type"]], -(i["value"] or 0), i["name"]))
+    national = {}
+    states = defaultdict(dict)
+    for t in TYPES:
+        subset = [i for i in items if i["type"] == t["id"]]
+        national[t["id"]] = {"count": len(subset), "value": round(sum(i["value"] or 0 for i in subset)), "unit": t["unit"]}
+        by_state = defaultdict(list)
+        for i in subset:
+            by_state[i.get("state")].append(i)
+        for st, arr in by_state.items():
+            states[st][t["id"]] = {"count": len(arr), "value": round(sum(i["value"] or 0 for i in arr)), "unit": t["unit"]}
+
+    write_web("resources.json", {
+        "types": TYPES,
+        "items": items,
+        "summary": {
+            "note": "Totals cover only mapped installations meeting each type's capacity threshold; they are not complete national capacity totals.",
+            "national": national,
+            "states": dict(states),
+        },
+    })

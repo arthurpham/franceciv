@@ -333,16 +333,16 @@ def build():
       ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. Unlike the original US map, this is not household income."),
       ("employment_rate","people","Employment density","💼","workers / km²","int","log",dep_lens(lambda e: e["employed"]/e["area"] if e["employed"] and e["area"] else None,1),"Employment by workplace per km² of department land."),
       ("industry","prosperity","Industry","⚙️","share of employment","pct","linear",dep_lens(lambda e: (e["jobs"].get("manufacturing",0)+e["jobs"].get("construction",0)+e["jobs"].get("mining",0))/e["employed"] if e["employed"] else None,4),"Industry and construction employment as a share of all employment."),
-      ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by ESA WorldCover."),
-      ("farmland","land","Farmland","🌾","share of land","pct","linear",landvals("crop"),"Share of each hex classified as cropland by ESA WorldCover."),
-      ("developed","land","Built-up","🏙️","share of land","pct","linear",landvals("developed"),"Share of each hex classified as built-up by ESA WorldCover."),
+      ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by CORINE Land Cover."),
+      ("farmland","land","Farmland","🌾","share of land","pct","linear",landvals("crop"),"Share of each hex classified as cropland by CORINE Land Cover."),
+      ("developed","land","Built-up","🏙️","share of land","pct","linear",landvals("developed"),"Share of each hex classified as built-up by CORINE Land Cover."),
     ]
     lenses=[]
     ramps={"people":["#1b1035","#4b2377","#9a3b8a","#e0645e","#f9b24a","#fff3a8"],"prosperity":["#152238","#274b73","#3d8395","#72ba8c","#d6ec91"],"land":["#27351f","#476c35","#7f9d4b","#c5bd69","#eee4a1"]}
     for lid,group,name,emoji,unit,fmt,scale,vals,desc in defs:
       lo,hi=percentile(vals,2),percentile(vals,98)
-      lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else "fr_worldcover","description":desc,"values":vals})
-    lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / ESA WorldCover 2021","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land"}],"lenses":lenses}
+      lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else "fr_corine","description":desc,"values":vals})
+    lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land"}],"lenses":lenses}
 
     write_web("cities.json", cities)
     write_web("states.json", states)
