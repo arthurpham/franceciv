@@ -30,6 +30,11 @@ DATASETS = {
         "title": "Workplace employment by economic activity (census 2023)",
         "used": ["City Food/Production/Science/Culture yields", "Employment-weighted GDP allocation"],
     },
+    "workforce": {
+        "ds": "DS_RP_EMPLOI_LR_COMP",
+        "title": "Resident labour force by socio-professional category (census 2023)",
+        "used": ["City View citizen workforce mix"],
+    },
     "activity": {
         "ds": "DS_RP_EMPLOI_LR_PRINC",
         "title": "Labour force and unemployment (census 2023)",
@@ -175,7 +180,7 @@ class FrenchInseeStats(Source):
         description="Recensement de la population 2023 tables from the Melodi catalogue, plus the comparateur de "
         "territoires population, income, poverty and housing series. Geographic levels include communes, EPCI, AAV, "
         "departments, regions and France depending on the table.",
-        used_for=["City employment yields", "Unemployment", "Education", "Age", "Commuting", "Immigration",
+        used_for=["City employment yields", "Citizen workforce mix", "Unemployment", "Education", "Age", "Commuting", "Immigration",
                   "Population growth", "Income, poverty and housing lenses"],
     )
 

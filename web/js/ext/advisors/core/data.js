@@ -421,30 +421,29 @@ function extendDistricts(data, d) {
   }
 }
 
-// Citizens: a few telling shares of each ACS row (the City View draws the whole mix as person icons).
+// Citizens: a few telling shares of each INSEE row (the City View draws the whole mix as person icons).
 const CZ = [
-  ["workforce", "executive", "Executives & managers"], ["workforce", "engineer", "Engineers & scientists"], ["workforce", "healer", "Health workers"],
-  ["workforce", "service", "Service workers"], ["workforce", "farmer", "Farmers & foresters"], ["workforce", "builder", "Builders & repairers"],
-  ["workforce", "maker", "Factory & transport workers"],
-  ["age", "child", "Children"], ["age", "young", "Young adults"], ["age", "elder", "Elders 65+"],
-  ["commute", "drove_alone", "Drive alone"], ["commute", "transit", "Public transit"], ["commute", "walk", "Walk to work"], ["commute", "home", "Work from home"],
-  ["education", "graduate", "Graduate degrees"],
-  ["nativity", "born_in_state", "Born in the state"], ["nativity", "foreign_born", "Born abroad (1-yr)"],
+  ["workforce", "farmer", "Farmers"], ["workforce", "executive", "Artisans & owners"], ["workforce", "scholar", "Managers & professions"],
+  ["workforce", "clerk", "Intermediate professions"], ["workforce", "service", "Employees"], ["workforce", "maker", "Workers"],
+  ["age", "child", "Children under 15"], ["age", "young", "Residents 15–24"], ["age", "elder", "Elders 65+"],
+  ["commute", "drove_alone", "Car to work"], ["commute", "transit", "Public transit"], ["commute", "walk", "Walk to work"], ["commute", "home", "No transport"],
+  ["education", "graduate", "Bac+5 or higher"],
+  ["nativity", "born_in_state", "Not immigrants"], ["nativity", "foreign_born", "Immigrants"],
 ];
 function extendCitizens(data, cz) {
   const { metros } = data.levels;
-  const vint = cz.vintage || "ACS 1-year";
+  const vint = cz.vintage || "INSEE census";
   const label = new Map(Object.entries(cz.groups || {}).flatMap(([row, list]) => list.map((g) => [`${row}.${g.key}`, g.label])));
   const rowDesc = cz.rows || {};
   const grp = { workforce: "Citizens: work", age: "Citizens: age", commute: "Citizens: commute", education: "Citizens: education", nativity: "Citizens: origin" };
   metros.addFields([
     ...CZ.map(([row, key, lbl]) => F4(`cz_${key}`, lbl, "pct", {
-      unit: `share of ${(rowDesc[row] || row).toLowerCase()}`, source: "acs_1yr", group: grp[row],
-      description: `${label.get(`${row}.${key}`) || lbl}: share of ${(rowDesc[row] || row).toLowerCase()} (${vint}). Blank where Census left the area out of that table.${row === "commute" ? " Shares of workers, not of all residents." : ""}`,
+      unit: `share of ${(rowDesc[row] || row).toLowerCase()}`, source: "fr_insee_stats", group: grp[row],
+      description: `${label.get(`${row}.${key}`) || lbl}: share of ${(rowDesc[row] || row).toLowerCase()} (${vint}). Blank where INSEE left the area out of that table.${row === "commute" ? " Shares of workers, not of all residents." : ""}`,
     })),
-    F4("cz_median_age", "Median age (1-yr)", "years", { unit: "years", source: "acs_1yr", group: grp.age, description: `Median age of residents, ACS B01002 (${vint}): the area's own median, unlike the county roll-up.` }),
-    F4("cz_degree", "Bachelor's or more (1-yr)", "pct", { unit: "of adults 25+", source: "acs_1yr", group: grp.education, description: `Adults 25+ with a bachelor's degree or higher (${vint}, C15003).` }),
-    F4("cz_specialist", "Most over-represented citizen", "text", { source: "acs_1yr", group: "Citizens", description: `The category most over-represented against the national share (at least 1.5×). ${cz.rule?.text || ""}` }),
+    F4("cz_median_age", "Median age", "years", { unit: "years", source: "fr_insee_stats", group: grp.age, description: `Median age of residents (${vint}), when published in the citizen contract.` }),
+    F4("cz_degree", "Bac+3 or higher", "pct", { unit: "of non-enrolled residents 15+", source: "fr_insee_stats", group: grp.education, description: `Non-enrolled residents aged 15+ whose highest diploma is bac+3 or above (${vint}).` }),
+    F4("cz_specialist", "Most over-represented citizen", "text", { source: "fr_insee_stats", group: "Citizens", description: `The category most over-represented against the national share (at least 1.5×). ${cz.rule?.text || ""}` }),
   ]);
   for (const r of metros.rows) {
     const c = cz.cities?.[r.key];

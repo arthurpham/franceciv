@@ -334,56 +334,37 @@ a `check(web_dir)` (see Pipeline conventions). Shared rules:
 
 ### citizens.json (lazy)
 
-Per metro, the citizen mix for the City View's person icons, from ACS 1-year (`acs_1yr`), built by
-`pipeline/build/citizens.py`. Figures are computed in the pipeline with **largest-remainder rounding** (each row's
-figures sum exactly to its `figures` count), so the frontend only draws icons. About 950 kB: load on demand.
+Per metro (AAV), the citizen mix for the City View's person icons, from INSEE 2023 census Melodi tables
+(`fr_insee_stats`), built by `pipeline/build/citizens.py`. Figures are computed in the pipeline with
+**largest-remainder rounding** so each row's figures sum exactly to its figure count. About 200 kB: load on demand.
 
 ```jsonc
 {
-  "version": 1, "vintage": "ACS 2025 1-year", "year": 2025, "sources": ["acs_1yr"],
-  "figures": {"workforce": 20, "age": 10, "commute": 10},   // icons per row (education/nativity have no figures)
-  "rows": {"workforce": "Employed civilians 16+ by occupation", "age": "…", "commute": "…", "education": "…", "nativity": "…"},
-  "groups": {   // the categories of each row, in display order
-    "workforce": [{"key": "executive", "label": "Executives & managers", "icon": "c-executive",
-                   "lines": "C24010 004 (male lines; female = male + 36)"},
-                  {"key": "engineer"}, {"key": "scholar"}, {"key": "healer"}, {"key": "service"}, {"key": "clerk"},
-                  {"key": "farmer"}, {"key": "builder"}, {"key": "maker"}],
-    "age": [{"key": "child"}, {"key": "young"}, {"key": "midlife"}, {"key": "elder"}],
-    "commute": [{"key": "drove_alone"}, {"key": "carpool"}, {"key": "transit"}, {"key": "walk"}, {"key": "other"}, {"key": "home"}],
-    "education": [{"key": "less_than_hs"}, {"key": "high_school"}, {"key": "some_college"}, {"key": "bachelors"}, {"key": "graduate"}],
-    "nativity": [{"key": "born_in_state"}, {"key": "other_state"}, {"key": "native_abroad"}, {"key": "foreign_born"}]
-  },   // every entry has "label", "lines" and a suggested "icon" id (c-*; not yet in icons.js: fall back to a person)
+  "version": 1, "vintage": "INSEE census 2023", "year": 2023, "sources": ["fr_insee_stats"],
+  "figures": {"workforce": 20, "age": 10, "commute": 10, "education": 10, "nativity": 10},
+  "rows": {"workforce": "Employed residents by broad socio-professional category", "age": "…"},
+  "groups": {"workforce": [{"key": "executive", "label": "Business owners and senior managers"}, …], "age": […]},
   "rule": {"specialist_high": 1.5, "specialist_low": 0.67, "min_share": 0.01, "max_high": 4, "max_low": 2, "text": "…"},
-  "national": { /* a row for the US (geos 0100000US); "specialists": [] and no "reliable" */ },
-  "cities": {"41940": { /* a row */ }}   // every cities.json id; a city absent from all five tables → null
-}
-// a row:
-{
-  "workforce": {"total": 1056000, "counts": {"executive": 211000, …}, "shares": {"executive": 0.2, …},
-                "figures": {"executive": 4, …}} | null,      // null when Census left the CBSA out of C24010
-  "age": {"total": …, "counts": {…}, "shares": {…}, "figures": {…}, "median": 38.4 /* B01002_001, or null */} | null,
-  "commute": {"total": …, "counts": {…}, "shares": {…}, "figures": {…}} | null,   // workers 16+ (C08301_001)
-  "education": {"total": …, "counts": {…}, "shares": {…}, "bachelors_plus": 0.57} | null,  // adults 25+
-  "nativity": {"total": …, "counts": {…}, "shares": {…}, "foreign_born": 0.42, "born_in_state": 0.31} | null,
-  "specialists": [{"row": "workforce", "key": "engineer", "share": 0.26, "national": 0.074, "ratio": 3.5}],
-  "reliable": true   // false for micropolitan areas (1-year margins of error are large there; the UI greys them)
+  "national": { /* a row for metropolitan France (INSEE geo FM) */ },
+  "cities": {"001": { /* a row for the Paris AAV */ }}
 }
 ```
 
-* `counts` are whole people (rounded estimates); `shares` = count ÷ `total`, 3 decimals; every category of a row is
-  present (a category can be 0). A row is null when Census left the CBSA out of that table (2025: 15 cities have no
-  C24010 row, 10 no C08301 row) — never zeros.
-* `specialists`: categories of any row whose share is ≥ 1.5× (up to 4, strongest first) or ≤ 0.67× (up to 2,
-  strongest first) the national share; categories under 1% both in the city and nationally are skipped as noise.
-  Ratios are computed from unrounded shares. Use them for the up/down chevrons and the "great person" call-out.
+A city row has `workforce`, `age`, `commute`, `education` and `nativity` objects with `total`, integer `counts`,
+fractional `shares` and integer `figures`; it also has `specialists` and `reliable`. Workforce uses the six broad INSEE PCS categories with stable frontend keys
+`farmer`, `executive`, `scholar`, `clerk`, `service` and `maker`. These are socio-professional categories of
+employed residents, not North-American Census occupations or workplace-industry groups.
 
-Category → lines (C24010 male line, female = +36): executive 004; engineer 007; scholar 011; healer 016 + 020; service
-019 − 020; clerk 027; farmer 031; builder 030 − 031; maker 034 (they sum to `C24010_001`). Age (B01001 male, female = +24):
-child 003-006, young 007-012, midlife 013-019, elder 020-025. Commute (C08301): drove_alone 003, carpool 004, transit 008,
-walk 009, other 010, home 011 (shares of workers, not of all people). Education (C15003): less_than_hs 002-009,
-high_school 010-011, some_college 012-014, bachelors 015, graduate 016-018. Nativity (B05002): born_in_state 003,
-other_state 004, native_abroad 002 − 003 − 004, foreign_born 013. All five sums were verified to equal each table's
-total line on the national row. Labels are plain words (original names; no game's unit names).
+French category meanings differ deliberately from the original US contract:
+
+* age: under 15, 15–24, 25–64, 65+;
+* commute: no transport/working at home, walking, bicycle or motorized two-wheeler, car/truck/van, public transport;
+* education: below baccalauréat, baccalauréat, bac+2, bac+3/4, bac+5 or more, for non-enrolled residents aged 15+;
+* nativity: INSEE immigrant status (`born_in_state` is the stable frontend key for non-immigrants; `foreign_born`
+  is the key for immigrants). France does not publish a direct equivalent of the US state-of-birth breakdown here.
+
+`specialists` compares each city's unrounded share with metropolitan France using the same 1.5× / 0.67× rule as the
+original visualization. `bachelors_plus` means bac+3/4 or higher among non-enrolled residents aged 15+, not short bac+2 higher education.
 
 ### districts.json (lazy)
 

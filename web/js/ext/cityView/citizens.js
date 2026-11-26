@@ -1,74 +1,68 @@
-// City View "Citizens" rows: the metro's people as rows of small figures (citizens.json, ACS 1-year).
+// City View "Citizens" rows: the metro's people as rows of small figures (citizens.json, INSEE census).
 //
 //   citizensHtml(m, data) → HTML      the rows (placeholders for the figure canvases)
 //   mountCitizens(host, m, data)       paints the figures and wires the hover / focus read-out
 //
 // Each row: N figures (workforce 20, ages 10, commute 10 from the file; education and origins 10, rounded here with
 // the same largest-remainder method), a caption ("each figure ≈ 72K workers"), a read-out line that a hovered or
-// focused figure fills ("1 in 7 workers in San Jose is an engineer, coder or scientist (US: 1 in 14)"), and a thin
-// U.S. bar for comparison. A row Census left out is said so, never drawn as zeros.
+// focused figure fills ("1 in 7 workers in Paris is a manager or intellectual professional (France: 1 in 14)"), and a thin
+// national bar for comparison. A row Census left out is said so, never drawn as zeros.
 import { esc, int, pct } from "../../format.js";
 import { compact } from "./fmt.js";
 import { CATEGORY_COLOR, figureCanvas, loadPainter } from "./figures.js";
 
 const ROWS = [
-  { id: "workforce", title: "Workforce", sub: "by occupation", noun: ["worker", "workers"], n: null },
-  { id: "age", title: "Generations", sub: "by age", noun: ["resident", "residents"], n: null },
+  { id: "workforce", title: "Workforce", sub: "by broad socio-professional category", noun: ["worker", "workers"], n: null },
+  { id: "age", title: "Generations", sub: "by broad age band", noun: ["resident", "residents"], n: null },
   { id: "commute", title: "Commute", sub: "how workers get to work", noun: ["worker", "workers"], n: null },
-  { id: "education", title: "Education", sub: "adults 25 and over", noun: ["adult", "adults 25+"], n: 10 },
-  { id: "nativity", title: "Origins", sub: "where residents were born", noun: ["resident", "residents"], n: 10 },
+  { id: "education", title: "Education", sub: "highest diploma, non-enrolled residents 15+", noun: ["resident", "non-enrolled residents 15+"], n: 10 },
+  { id: "nativity", title: "Origins", sub: "by immigrant status", noun: ["resident", "residents"], n: 10 },
 ];
 
 // [singular verb phrase, plural verb phrase] per category, for "1 in 7 workers in X is …" / "7 in 10 … are …".
 const PHRASE = {
   workforce: {
-    executive: ["is an executive or manager", "are executives or managers"],
-    engineer: ["is an engineer, coder or scientist", "are engineers, coders or scientists"],
-    scholar: ["is a teacher, lawyer, artist or media worker", "are teachers, lawyers, artists or media workers"],
-    healer: ["works in health care", "work in health care"],
-    service: ["works in food, cleaning, care or protective service", "work in food, cleaning, care or protective service"],
-    clerk: ["works in sales or an office", "work in sales or offices"],
-    farmer: ["farms, fishes or works in forestry", "farm, fish or work in forestry"],
-    builder: ["builds, installs or repairs", "build, install or repair"],
-    maker: ["works in a factory, transport or a warehouse", "work in factories, transport or warehouses"],
+    farmer: ["is a farmer", "are farmers"],
+    executive: ["is an artisan, merchant or business owner", "are artisans, merchants or business owners"],
+    scholar: ["is a manager or intellectual professional", "are managers or intellectual professionals"],
+    clerk: ["is an intermediate professional", "are intermediate professionals"],
+    service: ["is an employee", "are employees"],
+    maker: ["is a manual, industrial or transport worker", "are manual, industrial or transport workers"],
   },
   age: {
-    child: ["is a child (under 18)", "are children (under 18)"],
-    young: ["is a young adult (18–34)", "are young adults (18–34)"],
-    midlife: ["is middle-aged (35–64)", "are middle-aged (35–64)"],
+    child: ["is under 15", "are under 15"],
+    young: ["is 15–24", "are 15–24"],
+    midlife: ["is 25–64", "are 25–64"],
     elder: ["is 65 or older", "are 65 or older"],
   },
   commute: {
-    drove_alone: ["drives to work alone", "drive to work alone"],
+    drove_alone: ["uses a car, truck or van to work", "use a car, truck or van to work"],
     carpool: ["carpools to work", "carpool to work"],
     transit: ["takes public transit to work", "take public transit to work"],
     walk: ["walks to work", "walk to work"],
-    other: ["bikes or takes a taxi, motorcycle or other way to work", "bike or take a taxi, motorcycle or other way to work"],
-    home: ["works from home", "work from home"],
+    other: ["cycles or uses a motorized two-wheeler", "cycle or use motorized two-wheelers"],
+    home: ["does not use transport to work", "do not use transport to work"],
   },
   education: {
-    less_than_hs: ["has no high-school diploma", "have no high-school diploma"],
-    high_school: ["finished high school (or a GED) but no college", "finished high school (or a GED) but no college"],
-    some_college: ["has some college or an associate's degree", "have some college or an associate's degree"],
-    bachelors: ["has a bachelor's degree (and no higher)", "have a bachelor's degree (and no higher)"],
-    graduate: ["has a master's, professional degree or doctorate", "have a master's, professional degree or doctorate"],
+    less_than_hs: ["is below baccalauréat level", "are below baccalauréat level"],
+    high_school: ["has a baccalauréat", "have a baccalauréat"],
+    some_college: ["has a short higher-education degree", "have short higher-education degrees"],
+    bachelors: ["has a bachelor-level degree", "have bachelor-level degrees"],
+    graduate: ["has a bac+5 or higher degree", "have bac+5 or higher degrees"],
   },
   nativity: {
-    born_in_state: ["was born in the state they live in", "were born in the state they live in"],
-    other_state: ["was born in another U.S. state", "were born in another U.S. state"],
-    native_abroad: ["was born a U.S. citizen abroad or in a U.S. territory", "were born U.S. citizens abroad or in U.S. territories"],
-    foreign_born: ["was born in another country", "were born in another country"],
+    born_in_state: ["is not an immigrant", "are not immigrants"],
+    foreign_born: ["is an immigrant", "are immigrants"],
   },
 };
 
 // Short legend labels (the file's labels are long).
 const SHORT = {
-  workforce: { executive: "Executives", engineer: "Engineers", scholar: "Teachers & arts", healer: "Health", service: "Service",
-    clerk: "Sales & office", farmer: "Farm", builder: "Builders", maker: "Makers & movers" },
-  age: { child: "Under 18", young: "18–34", midlife: "35–64", elder: "65+" },
-  commute: { drove_alone: "Drive alone", carpool: "Carpool", transit: "Transit", walk: "Walk", other: "Bike & other", home: "From home" },
-  education: { less_than_hs: "No diploma", high_school: "High school", some_college: "Some college", bachelors: "Bachelor's", graduate: "Graduate" },
-  nativity: { born_in_state: "This state", other_state: "Other state", native_abroad: "U.S. citizen abroad", foreign_born: "Other country" },
+  workforce: { farmer: "Farmers", executive: "Artisans & owners", scholar: "Managers & professions", clerk: "Intermediate", service: "Employees", maker: "Workers" },
+  age: { child: "Under 15", young: "15–24", midlife: "25–64", elder: "65+" },
+  commute: { drove_alone: "Car/van", carpool: "Carpool", transit: "Transit", walk: "Walk", other: "Bike & 2-wheel", home: "No transport" },
+  education: { less_than_hs: "Below bac", high_school: "Bac", some_college: "Bac+2", bachelors: "Bac+3/4", graduate: "Bac+5+" },
+  nativity: { born_in_state: "Not immigrant", foreign_born: "Immigrant" },
 };
 
 /** Largest-remainder rounding of counts into n figures (the pipeline's method, for rows without figures). */
@@ -102,7 +96,7 @@ function sentence(rowId, key, share, natShare, cityName, noun) {
   const ph = PHRASE[rowId]?.[key] || ["is in this group", "are in this group"];
   const us = oneIn(natShare);
   const lead = a.text.charAt(0).toUpperCase() + a.text.slice(1);
-  return `${lead} ${noun[1]} in ${cityName} ${a.plural ? ph[1] : ph[0]}${us ? ` (US: ${us.text})` : ""}`;
+  return `${lead} ${noun[1]} in ${cityName} ${a.plural ? ph[1] : ph[0]}${us ? ` (France: ${us.text})` : ""}`;
 }
 
 function rowModel(rowDef, row, nat, groups, figuresN) {
@@ -127,7 +121,7 @@ export function citizensHtml(m, data) {
   if (!data || !data.cities) return `<p class="muted cv-note">The citizen mix is not available.</p>`;
   const row0 = data.cities[c.id];
   if (!row0) {
-    return `<p class="muted cv-note">Census published none of the citizen tables for ${esc(c.name)} in the ${esc(data.vintage || "ACS 1-year")} release (it leaves out small areas), so there are no citizen figures here.</p>`;
+    return `<p class="muted cv-note">INSEE published none of the citizen tables for ${esc(c.name)} in the ${esc(data.vintage || "census")} release, so there are no citizen figures here.</p>`;
   }
   const nat = data.national || {};
   const groups = data.groups || {};
@@ -139,20 +133,20 @@ export function citizensHtml(m, data) {
   const ba = row0.education?.bachelors_plus, usBa = nat.education?.bachelors_plus;
   const fb = row0.nativity?.foreign_born ?? row0.nativity?.shares?.foreign_born;
   const usFb = nat.nativity?.foreign_born ?? nat.nativity?.shares?.foreign_born;
-  const chip = (v, us, fmt, lbl, tip) => (v == null ? "" : `<div class="cv-cz-chip" title="${esc(tip)}"><b>${fmt(v)}</b><span>${esc(lbl)}</span>${us != null ? `<small>US ${fmt(us)}</small>` : ""}</div>`);
+  const chip = (v, us, fmt, lbl, tip) => (v == null ? "" : `<div class="cv-cz-chip" title="${esc(tip)}"><b>${fmt(v)}</b><span>${esc(lbl)}</span>${us != null ? `<small>France ${fmt(us)}</small>` : ""}</div>`);
   const top = (row0.specialists || []).find((s) => s.ratio >= (data.rule?.specialist_high ?? 1.5));
   const topRow = ROWS.find((r) => r.id === top?.row);
   const great = top && topRow ? `<div class="cv-great" style="--fc:${esc(CATEGORY_COLOR[top.row]?.[top.key] || "#c9a45c")}">
       <span class="cv-great-fig" data-great="${esc(top.row)}|${esc(top.key)}" aria-hidden="true"></span>
       <div><small>Standout citizens</small><b>${esc(label[top.row]?.[top.key] || top.key)}</b>
-      <span>${pct(top.share, 1)} of ${esc(topRow.noun[1])} here, ${pct(top.national, 1)} nationally: ${top.ratio.toFixed(1)}× the U.S. share.</span></div></div>` : "";
+      <span>${pct(top.share, 1)} of ${esc(topRow.noun[1])} here, ${pct(top.national, 1)} nationally: ${top.ratio.toFixed(1)}× the national share.</span></div></div>` : "";
 
   const rows = ROWS.map((rd) => {
     const row = row0[rd.id];
     const head = `<div class="cv-cz-h"><b>${esc(rd.title)}</b><span>${esc(rd.sub)}</span></div>`;
     if (!row) {
       return `<div class="cv-cz-row missing" data-row="${rd.id}">${head}
-        <p class="muted cv-note">Census did not publish this table for ${esc(c.name)} in the ${esc(data.vintage || "ACS 1-year")} release, so this row is left out.</p></div>`;
+        <p class="muted cv-note">INSEE did not publish this table for ${esc(c.name)} in the ${esc(data.vintage || "census")} release, so this row is left out.</p></div>`;
     }
     const { keys, n, figs, natFigs } = rowModel(rd, row, nat[rd.id], groups, data.figures || {});
     if (!figs) return `<div class="cv-cz-row missing" data-row="${rd.id}">${head}<p class="muted cv-note">No counts for this row.</p></div>`;
@@ -166,21 +160,21 @@ export function citizensHtml(m, data) {
         cells.push(`<span class="cv-fig${mark ? ` ${mark}` : ""}" tabindex="${j ? -1 : 0}" role="img" data-k="${esc(k)}" aria-label="${esc(label[rd.id]?.[k] || k)}"></span>`);
       }
     }
-    // Legend: every category, with its share, the U.S. share and a chevron for specialists. Categories that
+    // Legend: every category, with its share, the national share and a chevron for specialists. Categories that
     // round to no figure are still listed (greyed), so nothing silently disappears.
     const legend = keys.map((k) => {
       const sh = row.shares?.[k], us = nat[rd.id]?.shares?.[k];
       const sp = specs.get(`${rd.id}|${k}`);
-      const chev = sp ? `<em class="${sp.ratio >= 1 ? "up" : "down"}" title="${sp.ratio.toFixed(1)}× the U.S. share">${sp.ratio >= 1 ? "▲" : "▼"}</em>` : "";
-      return `<span class="cv-cz-k${figs[k] ? "" : " zero"}" data-k="${esc(k)}" title="${esc(label[rd.id]?.[k] || k)}: ${sh != null ? pct(sh, 1) : "–"}${us != null ? ` (US ${pct(us, 1)})` : ""}${figs[k] ? "" : ". Rounds to no figure."}"><i style="background:${esc(CATEGORY_COLOR[rd.id]?.[k] || "#888")}"></i>${esc(SHORT[rd.id]?.[k] || k)} <small>${sh != null ? pct(sh, 0) : "–"}</small>${chev}</span>`;
+      const chev = sp ? `<em class="${sp.ratio >= 1 ? "up" : "down"}" title="${sp.ratio.toFixed(1)}× the national share">${sp.ratio >= 1 ? "▲" : "▼"}</em>` : "";
+      return `<span class="cv-cz-k${figs[k] ? "" : " zero"}" data-k="${esc(k)}" title="${esc(label[rd.id]?.[k] || k)}: ${sh != null ? pct(sh, 1) : "–"}${us != null ? ` (France ${pct(us, 1)})` : ""}${figs[k] ? "" : ". Rounds to no figure."}"><i style="background:${esc(CATEGORY_COLOR[rd.id]?.[k] || "#888")}"></i>${esc(SHORT[rd.id]?.[k] || k)} <small>${sh != null ? pct(sh, 0) : "–"}</small>${chev}</span>`;
     }).join("");
-    // U.S. comparison bar (shares), aligned with the figures' order.
-    const usBar = nat[rd.id]?.shares ? `<div class="cv-cz-us" title="U.S. mix, same order"><span>US</span><div>${keys.map((k) => {
+    // National comparison bar (shares), aligned with the figures' order.
+    const usBar = nat[rd.id]?.shares ? `<div class="cv-cz-us" title="National mix, same order"><span>France</span><div>${keys.map((k) => {
       const s = nat[rd.id].shares[k] || 0;
-      return s > 0 ? `<i style="flex:${s};background:${esc(CATEGORY_COLOR[rd.id]?.[k] || "#888")}" title="${esc(SHORT[rd.id]?.[k] || k)}: ${pct(s, 1)} in the U.S."></i>` : "";
+      return s > 0 ? `<i style="flex:${s};background:${esc(CATEGORY_COLOR[rd.id]?.[k] || "#888")}" title="${esc(SHORT[rd.id]?.[k] || k)}: ${pct(s, 1)} in France"></i>` : "";
     }).join("")}</div></div>` : "";
     const cap = `Each figure ≈ ${compact(per)} ${rd.noun[1]} · ${compact(row.total)} in all${rd.n && !row.figures ? " · rounded here" : ""}`;
-    const extra = rd.id === "age" && med != null ? ` · median age ${med.toFixed(1)}${usMed != null ? ` (US ${usMed.toFixed(1)})` : ""}` : "";
+    const extra = rd.id === "age" && med != null ? ` · median age ${med.toFixed(1)}${usMed != null ? ` (France ${usMed.toFixed(1)})` : ""}` : "";
     return `<div class="cv-cz-row" data-row="${rd.id}" style="--n:${n}">${head}
       <div class="cv-figs" role="group" aria-label="${esc(rd.title)}: ${keys.filter((k) => figs[k]).map((k) => `${figs[k]} of ${n} ${SHORT[rd.id]?.[k] || k}`).join(", ")}">${cells.join("")}</div>
       ${usBar}
@@ -190,17 +184,17 @@ export function citizensHtml(m, data) {
   }).join("");
 
   const unreliable = row0.reliable === false
-    ? `<p class="cv-warn">Micropolitan area: the 1-year survey's margins of error are large here, so read these figures as rough.</p>` : "";
+    ? `<p class="cv-warn">Small area: census margins of error are large here, so read these figures as rough.</p>` : "";
   return `
     <div class="cv-cz-top">
-      ${chip(med, usMed, (v) => v.toFixed(1), "median age", "Median age (ACS B01002)")}
-      ${chip(ba, usBa, (v) => pct(v, 0), "have a degree", "Adults 25+ with a bachelor's degree or higher (ACS C15003)")}
-      ${chip(fb, usFb, (v) => pct(v, 0), "born abroad", "Residents born in another country (ACS B05002)")}
+      ${chip(med, usMed, (v) => v.toFixed(1), "median age", "Median age")}
+      ${chip(ba, usBa, (v) => pct(v, 0), "bac+3 or higher", "Non-enrolled residents aged 15+ whose highest diploma is bac+3 or above (INSEE census)")}
+      ${chip(fb, usFb, (v) => pct(v, 0), "immigrants", "Residents counted as immigrants by INSEE")}
     </div>
     ${great}
     ${unreliable}
     <div class="cv-cz${row0.reliable === false ? " unreliable" : ""}">${rows}</div>
-    <p class="cv-note">${esc(data.vintage || "ACS 1-year")}, tables C24010, B01001, C08301, C15003 and B05002. Figures are rounded (largest remainder) so each row adds up; hover or tap a figure for its share. ▲▼ = at least 1.5× or at most 0.67× the U.S. share. Commute counts workers, not all residents.</p>`;
+    <p class="cv-note">${esc(data.vintage || "INSEE census")}, Melodi census labour-force, population, commuting, diploma and immigration tables. Education counts non-enrolled residents aged 15+. Figures are rounded (largest remainder) so each row adds up; hover or tap a figure for its share. ▲▼ = at least 1.5× or at most 0.67× the national share. Commute counts workers, not all residents.</p>`;
 }
 
 /** Paint the figure canvases and wire the read-outs. */
@@ -251,7 +245,7 @@ export function mountCitizens(host, m, data) {
         return;
       }
       const sh = row.shares?.[k], us = nat[rid]?.shares?.[k];
-      out.innerHTML = `${esc(sentence(rid, k, sh, us, m.city.name, rd.noun))}<small>${sh != null ? pct(sh, 1) : "–"} here${us != null ? ` · ${pct(us, 1)} in the U.S.` : ""}${row.counts?.[k] != null ? ` · ≈${compact(row.counts[k])} people` : ""}</small>`;
+      out.innerHTML = `${esc(sentence(rid, k, sh, us, m.city.name, rd.noun))}<small>${sh != null ? pct(sh, 1) : "–"} here${us != null ? ` · ${pct(us, 1)} in France` : ""}${row.counts?.[k] != null ? ` · ≈${compact(row.counts[k])} people` : ""}</small>`;
       out.classList.add("on");
     };
     let pinned = null;

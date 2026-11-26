@@ -61,7 +61,7 @@ const badge = (symbol, fill = "gold") => [
 
 /** kind → {label, row, cloth, accent, shapes(variant)} */
 export const CITIZEN_KINDS = {
-  // workforce (C24010)
+  // workforce (INSEE broad PCS groups; clothing icons, not exact occupations)
   executive: {
     label: "Executive", row: "workforce", cloth: "#2c3e66", accent: "#c0392b",
     shapes: () => person({
@@ -464,7 +464,7 @@ export function citizenSVG(kind, { size = 24, variant = 0, dim = false, disk = n
 
 /** Kinds of one citizens.json row, in display order (for galleries and legends). */
 export const CITIZEN_ROWS = {
-  workforce: ["executive", "engineer", "scholar", "healer", "service", "clerk", "farmer", "builder", "maker"],
+  workforce: ["farmer", "executive", "scholar", "clerk", "service", "maker"],
   age: ["child", "young", "midlife", "elder"],
   commute: ["drove_alone", "carpool", "transit", "walk", "other", "home"],
   education: ["less_than_hs", "high_school", "some_college", "bachelors", "graduate"],
