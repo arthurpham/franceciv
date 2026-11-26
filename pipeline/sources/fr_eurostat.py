@@ -6,7 +6,7 @@ import json
 
 from ..core.source import Source, SourceInfo
 
-YEAR = 2023
+YEAR = 2024
 API = "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data"
 DATASETS = {
     "gdp": "nama_10r_3gdp",

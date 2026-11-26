@@ -1,4 +1,4 @@
-// Energy & Resources advisor: the mapped power sites, mines and oil & gas plays.
+// Energy & Resources advisor: mapped French power-generation and storage sites.
 import { esc, fin } from "../core/util.js";
 import { fmtValue, mw, int, count3 } from "../core/fmt.js";
 import { barList, shareBar, stackedBars, sizeLegend } from "../core/charts.js";
@@ -9,10 +9,8 @@ import { glyph } from "../../../ui/icon.js";
 
 const GROUPS = [
   { id: "thermal", label: "Power plants", types: ["nuclear", "coal_plant", "gas_plant", "geothermal"] },
-  { id: "water", label: "Hydro", types: ["hydro", "pumped_storage"] },
+  { id: "water", label: "Hydro & marine", types: ["hydro", "pumped_storage", "tidal"] },
   { id: "renew", label: "Wind, solar & batteries", types: ["wind", "solar", "battery"] },
-  { id: "mines", label: "Mines", types: ["coal_mine", "gold", "copper", "iron", "silver", "platinum", "molybdenum", "lead_zinc", "rare_earths", "uranium"] },
-  { id: "plays", label: "Oil & gas plays", types: ["oil", "gas"] },
 ];
 
 export function mount(ctx) {
@@ -45,8 +43,8 @@ export function mount(ctx) {
   const top = el.appendChild(document.createElement("div"));
   top.innerHTML = tiles([
     { label: "Mapped power", value: mw(totalMW), sub: `${int(sites)} sites` },
-    { label: "Mines", value: int(groups.find((g) => g.id === "mines")?.types.reduce((a, t) => a + (nat[t]?.count || 0), 0) || 0), sub: "above size thresholds" },
-    { label: "Shale plays", value: int((nat.oil?.count || 0) + (nat.gas?.count || 0)), sub: "oil & gas hexes" },
+    { label: "Wind & solar", value: mw((nat.wind?.value || 0) + (nat.solar?.value || 0)), sub: `${int((nat.wind?.count || 0) + (nat.solar?.count || 0))} mapped hexes` },
+    { label: "Storage", value: mw((nat.pumped_storage?.value || 0) + (nat.battery?.value || 0)), sub: `${int((nat.pumped_storage?.count || 0) + (nat.battery?.count || 0))} mapped sites` },
   ]) + `<p class="adv-callout">${esc(res.summary?.note || "Totals of the mapped sites only.")}</p>`;
 
   // --- national mix ---------------------------------------------------------------------------------------------
@@ -94,14 +92,12 @@ export function mount(ctx) {
   });
   const slider = document.createElement("div");
   slider.className = "adv-slider";
-  slider.innerHTML = `<label><span>Minimum size</span><input type="range" min="0" max="3000" step="100" value="0" aria-label="Minimum power-site capacity in MW"><b>Any size</b></label>
-    <p class="adv-note adv-min-note" hidden>Mines and oil &amp; gas plays are hidden while a minimum is set: they are not measured in MW.</p>`;
+  slider.innerHTML = `<label><span>Minimum size</span><input type="range" min="0" max="3000" step="100" value="0" aria-label="Minimum power-site capacity in MW"><b>Any size</b></label>`;
   fBody.appendChild(slider);
   const range = slider.querySelector("input");
   range.addEventListener("input", () => {
     st.min = +range.value;
     slider.querySelector("b").textContent = st.min ? `≥ ${int(st.min)} MW` : "Any size";
-    slider.querySelector(".adv-min-note").hidden = !st.min;
     apply();
   });
   const stateChip = document.createElement("div");
@@ -180,7 +176,7 @@ export function mount(ctx) {
   }).join("")}`).join("");
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_energy"], [
-    "Only sites above each type's threshold are mapped (e.g. gas plants of 1,500 MW or more, wind clustered per hex at 500 MW or more), so totals are <b>not</b> state or national capacity.",
+    "Only sites above each type's threshold are mapped (for example gas plants grouped by commune at 300 MW or more, and wind or solar grouped by map hex at 50 MW or more), so totals are <b>not</b> state or national capacity.",
     "Capacity is registry rated capacity (MW), not how much electricity a site produces: a 1,000 MW solar farm generates far less in a year than a 1,000 MW nuclear plant.",
     "Different resource types use different public units and thresholds; they cannot be added to MW.",
     "Power sites are grouped by the region containing their mapped point; a few border sites can sit close to a neighbouring region's hexes.",

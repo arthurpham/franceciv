@@ -40,6 +40,8 @@ def test_committed_france_core_contract():
     assert paris["population"] > 10_000_000
     assert paris["gdp"] > 500e9
     assert nation["nation"]["gdp"] > 2e12
+    assert nation["nation"]["gdp_year"] == 2024
+    assert "workplace employment" in next(y for y in nation["yields"] if y["key"] == "gold")["description"]
     assert all(c["homeownership"] is not None and c["second_homes"] is not None and c["vacancy"] is not None for c in cities)
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
     assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
@@ -80,6 +82,12 @@ def test_resource_postprocessor_cache_invariants():
     states = web("states.json")
     assert states and all(s.get("energy") is not None for s in states)
     assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 12
+    resources = web("resources.json")
+    national = resources["summary"]["national"]
+    assert national["tidal"]["count"] == 1 and national["tidal"]["value"] == 240
+    assert national["battery"]["count"] >= 8 and national["battery"]["value"] >= 900
+    assert national["wind"]["count"] >= 140
+    assert any(i["type"] == "tidal" and i["state"] == "BRE" for i in resources["items"])
 
 
 def test_freight_trade_contract_uses_french_units():
