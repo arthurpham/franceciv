@@ -18,7 +18,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming and rainfall.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
-- Detailed named watercourses from IGN BD CARTO, schematic road and rail links, real airports and ports, busy SNCF passenger stations, a commune-derived fiber eligibility lens, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, and INPN Natura 2000 protected-nature lenses.
+- Detailed named watercourses from IGN BD CARTO, schematic road and rail links, real airports and ports, busy SNCF passenger stations, a commune-derived fiber eligibility lens, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INPN Natura 2000 protected-nature lenses, and a physical river-flood exposure lens.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
 - The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for all metropolitan communes, including EPCI/intercommunality names and populations.
@@ -32,7 +32,7 @@ Other known limitations:
 - AAV GDP remains allocated from department GDP using workplace-employment shares; it is an estimate, not a true AAV account.
 - Road and rail geometry is schematic Natural Earth cartography, not an exhaustive network inventory.
 - Election and hazard lenses are currently aggregated from communes to departments because the browser contract does not yet carry a commune hex index.
-- Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
+- Catastrophe-naturelle counts are administrative recognition frequency. The separate flood-exposure lens is a raster-sampled rare/millennial river-overflow estimate, not parcel-level risk or damage.
 - UNESCO serial properties are represented by one French component point rather than full site boundaries. Museum attendance sums distinct physical sites sharing one Muséofile institution; universities are mapped at administrative headquarters communes rather than campus footprints.
 - Overseas France is excluded; Corsica is included. Enedis does not serve Corsica and some local-distribution areas, so the electricity-use lens reflects network coverage as well as demand.
 - Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells. Military markers use a sparse 2012 Ministry personnel table: they are historical base-seat aggregates, not current units, boundaries, ranges or a full order of battle.
@@ -50,9 +50,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline build world france_core climate hydrography connectivity quality_life agriculture tourism electricity public_services nature citizens districts military resources infrastructure wonders trade communes catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline build world france_core climate hydrography connectivity quality_life agriculture tourism electricity public_services nature flood citizens districts military resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
@@ -75,6 +75,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - Ministry of the Interior departmental recorded-crime statistics.
 - Ministry of National Education school directory.
 - INPN Natura 2000 geometries through the IGN API Carto Nature module.
+- TRI/Géorisques 2020 rare-or-millennial river-overflow flood surfaces, rasterized through the official WMS.
 - NOAA ETOPO1 elevation and bathymetry.
 - Natural Earth 1:50m neighbouring countries, lakes and rivers; 1:10m roads, railroads and ports.
 - OurAirports and Eurostat `avia_paoa` / `mar_go_aa` transport traffic.
