@@ -298,10 +298,14 @@ def test_agriculture_tourism_electricity_contracts():
 
     electricity = web("electricity.json")
     assert electricity["sources"] == ["fr_electricity"]
+    assert {l["id"] for l in electricity["lenses"]} == {"electricity_use", "residential_electricity", "tertiary_electricity", "industrial_electricity", "agricultural_electricity"}
     use = electricity["lenses"][0]
     vals = [v for v in use["values"] if v is not None]
     assert use["id"] == "electricity_use" and len(vals) > 2500
     assert 2 < sum(vals) / len(vals) < 10 and max(vals) < 15
+    for extra in electricity["lenses"][1:]:
+        sector_vals = [v for v in extra["values"] if v is not None]
+        assert len(sector_vals) > 2500 and max(sector_vals) > 0
     assert any(s["id"] == "fr_tourism" for s in web("sources.json"))
     assert any(s["id"] == "fr_electricity" for s in web("sources.json"))
 
