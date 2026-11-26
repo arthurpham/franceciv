@@ -1,8 +1,8 @@
-// Top-bar search over cities and states: prefix matches first, then word-prefix, then substring; ties by population.
+// Top-bar search over cities, communes and regions: prefix matches first, then word-prefix, then substring; ties by population.
 import { esc, int, popShort } from "../format.js";
 import { icon } from "../ui/icon.js";
 
-const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const norm = (s) => String(s || "").toLowerCase().replace(/œ/g, "oe").replace(/æ/g, "ae").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const MAX = 8;
 
 /**
@@ -155,7 +155,12 @@ export function initSearch(opts) {
       for (const c of rows || []) {
         const commune = { code: c[0], name: c[1], department: c[2], population: c[3], x: c[4], y: c[5], state_fips: c[6] };
         entries.push({ kind: "commune", commune, name: commune.name, n: norm(commune.name), full: norm(`${commune.name} ${commune.department}`),
-          pop: commune.population || 0, popText: commune.population ? int(commune.population) : "", sub: `${commune.department} · commune`, label: commune.name });
+          pop: commune.population || 0, popText: int(commune.population || 0), sub: `${commune.department} · commune`, label: commune.name });
+      }
+      if (input.value.trim()) {
+        results = query(input.value);
+        sel = results.length ? 0 : -1;
+        render();
       }
     },
     focus() {
