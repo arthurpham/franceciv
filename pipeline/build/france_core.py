@@ -82,6 +82,12 @@ def comp_series(row, prefix):
                 pass
     return [[y, round(v, 2) if isinstance(v, float) else v] for y, v in sorted(years)]
 
+def unemployment_rate(row):
+    emp = (row or {}).get("EMPSTA_ENQ=1|AGE=Y15T64")
+    unemp = (row or {}).get("EMPSTA_ENQ=2|AGE=Y15T64")
+    return unemp / (emp + unemp) if emp is not None and unemp is not None and emp + unemp else None
+
+
 # NACE aggregate -> original industry keys. Some high-level Eurostat slices are necessarily broader than ACS industries.
 NACE_JOBS = {
     "A": {"agriculture": 1}, "B-E": {"manufacturing": 0.9, "utilities": 0.07, "mining": 0.03},
@@ -139,10 +145,15 @@ def build():
     region_name = {s["fips"]: s["name"] for s in bounds["states"]}
     employment_stats = stats["datasets"].get("employment", {})
     comp_stats = stats.get("comparateur", {})
+    activity_stats = stats["datasets"].get("activity", {})
     aav_employment = employment_stats.get("AAV2020", {})
     dep_employment = employment_stats.get("DEP", {})
     reg_employment = employment_stats.get("REG", {})
     fr_employment = employment_stats.get("FRANCE", {})
+    aav_activity = activity_stats.get("AAV2020", {})
+    dep_activity = activity_stats.get("DEP", {})
+    reg_activity = activity_stats.get("REG", {})
+    fr_activity = activity_stats.get("FRANCE", {})
     aav_comp = comp_stats.get("AAV2020", {})
     dep_comp = comp_stats.get("DEP", {})
     reg_comp = comp_stats.get("REG", {})
@@ -208,6 +219,7 @@ def build():
             "jobs": jobs, "employed": employed,
             "gdp": gdp * 1e6 if gdp is not None else None,
             "median_income": comp.get("MED_SL_2023"), "poverty": (comp.get("PR_MD60_2023") or 0) / 100 if comp.get("PR_MD60_2023") is not None else None,
+            "unemployment": unemployment_rate(dep_activity.get(dep)),
             "growth": pct_change(comp.get("POP_2023"), comp.get("POP_2017")), "growth_years": [2017, 2023],
             "pop_series": {str(y): v for y, v in comp_series(comp, "POP")},
         }
@@ -235,7 +247,7 @@ def build():
         states.append({
             "fips": s["fips"], "abbr": s["abbr"], "name": s["name"], "population": agg["population"] or None,
             "employed": agg["employed"] or None, "yields": yields, "jobs": jobs, "median_income": None, "median_rent": None,
-            "home_value": None, "unemployment": None, "rent_burden": None, "gdp": agg["gdp"] if have_gdp else None,
+            "home_value": None, "unemployment": unemployment_rate(reg_activity.get(s["fips"])), "rent_burden": None, "gdp": agg["gdp"] if have_gdp else None,
             "gdp_year": 2023,
             "median_income": rcomp.get("MED_SL_2023"),
             "poverty": (rcomp.get("PR_MD60_2023") or 0) / 100 if rcomp.get("PR_MD60_2023") is not None else None,
@@ -341,7 +353,8 @@ def build():
             "id": code, "name": area["name"].split(" (partie")[0], "full": f"{area['name']} (aire d'attraction)",
             "states": regions, "metro": pop >= 200000, "capital": code == "001", "x": round(x, 1), "y": round(y, 1), "cell": cell,
             "population": pop, "employed": employed, "yields": yields, "jobs": {k: round(jobs.get(k, 0)) for k in INDUSTRIES},
-            "median_income": comp_row.get("MED_SL_2023"), "median_rent": None, "home_value": None, "unemployment": None, "rent_burden": None,
+            "median_income": comp_row.get("MED_SL_2023"), "median_rent": None, "home_value": None,
+            "unemployment": unemployment_rate(aav_activity.get(code)), "rent_burden": None,
             "gdp": round(gdp), "gdp_year": 2023, "gdp_by_industry": {}, "gdp_estimated": list(INDUSTRIES), "gdp_undisclosed": None,
             "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(comp_row.get("POP_2023"), comp_row.get("POP_2017"))),
             "growth_years": [2017, 2023] if comp_row.get("POP_2023") and comp_row.get("POP_2017") else None,
@@ -382,7 +395,8 @@ def build():
     nation_obj = {
         "population": nat_pop, "employed": nat_emp, "jobs": nj,
         "yields": {"food": nj.get("agriculture"), "production": round(nj.get("manufacturing", 0)+nj.get("construction",0)+nj.get("mining",0)), "gold": nat_gdp, "science": round(nj.get("professional",0)+nj.get("information",0)), "culture": nj.get("arts")},
-        "median_income": fr_c.get("MED_SL_2023"), "median_rent": None, "home_value": None, "unemployment": None, "rent_burden": None,
+        "median_income": fr_c.get("MED_SL_2023"), "median_rent": None, "home_value": None,
+        "unemployment": unemployment_rate(fr_activity.get("FM") or fr_activity.get("F")), "rent_burden": None,
         "poverty": (fr_c.get("PR_MD60_2023") or 0) / 100 if fr_c.get("PR_MD60_2023") is not None else None,
         "gdp": nat_gdp, "gdp_year": 2023,
         "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(fr_c.get("POP_2023"), fr_c.get("POP_2017"))),
@@ -460,6 +474,7 @@ def build():
       ("developed","land","Built-up","🏙️","share of land","pct","linear",landvals("developed"),"Share of each hex classified as built-up by CORINE Land Cover."),
       ("income","prosperity","Median standard of living","💶","euros / year","eur","linear",dep_lens(lambda e: e.get("median_income"),0),"Median standard of living by department (INSEE comparateur de territoires 2023)."),
       ("poverty","prosperity","Poverty","📉","share of residents","pct","linear",dep_lens(lambda e: e.get("poverty"),4),"Share of residents below 60% of median standard of living."),
+      ("unemployment","prosperity","Unemployment","🧭","share of labour force","pct","linear",dep_lens(lambda e: e.get("unemployment"),4),"Unemployed census residents aged 15–64 ÷ the active population aged 15–64."),
       ("growth","people","Population growth","📈","population change","signed","linear",dep_lens(lambda e: e.get("growth"),4),"Population change 2017–2023."),
       ("homeownership","prosperity","Homeownership","🏠","share of main homes","pct","linear",dep_comp_lens(lambda c: c.get("RP_PROP_2023",0)/c.get("RP_2023",1) if c.get("RP_2023") else None,4),"Owner-occupied share of main residences."),
       ("second_homes","land","Second homes","🏡","share of dwellings","pct","linear",dep_comp_lens(lambda c: c.get("RSEC_2023",0)/c.get("LOG_2023",1) if c.get("LOG_2023") else None,4),"Second homes and occasional dwellings as a share of all dwellings."),
