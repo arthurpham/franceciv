@@ -39,8 +39,18 @@ def test_committed_france_core_contract():
     assert paris["gdp"] > 500e9
     assert nation["nation"]["gdp"] > 2e12
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
-    assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed"}
+    assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     assert len(lenses["lenses"][0]["values"]) == len(web("world.json")["owner"])
+    by_id = {x["id"]: x for x in lenses["lenses"]}
+    assert "out-of-school" in by_id["higher_education"]["unit"]
+    # Known Paris (department 75) census ratios, rounded to the four decimals written by the builder.
+    expected = {"higher_education": 0.6593, "seniors": 0.1768, "immigration": 0.2122, "public_transit": 0.6108, "car_commuting": 0.0898}
+    world = web("world.json")
+    paris_county = next(i for i, c in enumerate(world["counties"]) if c["geoid"] == "75")
+    paris_cells = [i for i, c in enumerate(world["county"]) if c == paris_county and world["owner"][i] >= 0]
+    assert paris_cells
+    for lid, want in expected.items():
+        assert all(abs(by_id[lid]["values"][i] - want) < 0.00005 for i in paris_cells), lid
 
 
 def test_hex_grid_index_round_trip():
@@ -63,3 +73,20 @@ def test_resource_postprocessor_cache_invariants():
     states = web("states.json")
     assert states and all(s.get("energy") is not None for s in states)
     assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 12
+
+
+def test_freight_trade_contract_uses_french_units():
+    trade = web("trade.json")
+    assert trade["sources"] == ["fr_freight"]
+    assert trade["year"] == 2019
+    assert len(trade["routes"]) == 40
+    assert len(trade["zones"]) == 13
+    assert all("value_musd" not in r for r in trade["routes"])
+    assert all(r["volume_mtkm"] > 0 and len(r["path"]) >= 2 for r in trade["routes"])
+    assert trade["routes"] == sorted(trade["routes"], key=lambda r: r["rank"])
+    assert trade["national_mtkm"]["domestic"] >= sum(r["volume_mtkm"] for r in trade["routes"])
+    assert {m["id"] for m in trade["modes"]} == {"truck", "rail", "water"}
+    assert any(s["id"] == "fr_freight" for s in web("sources.json"))
+    assert sum("001" in z["cities"] for z in trade["zones"]) == 1  # Paris belongs to the banner region only
+    assert min(sum(r["modes"].values()) for r in trade["routes"]) > 0.999
+    assert any(r.get("rail_suppressed") for r in trade["routes"])

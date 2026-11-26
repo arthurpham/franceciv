@@ -534,8 +534,9 @@ export function routeArc(grid, ca, cb, bow = 0.16) {
 export function prepareRoutes(w, trade) {
   const { grid } = w;
   const zones = new Map((trade?.zones || []).map((z) => [z.id, z]));
-  const list = [...(trade?.routes || [])].sort((p, q) => (q.value_musd || 0) - (p.value_musd || 0));
-  const vmax = Math.max(1, ...list.map((r) => r.value_musd || 0));
+  const volume = (r) => r.volume_mtkm ?? r.value_musd ?? 0;
+  const list = [...(trade?.routes || [])].sort((p, q) => volume(q) - volume(p));
+  const vmax = Math.max(1, ...list.map(volume));
   const seen = new Map(); // anchor cell → routes so far
   const routes = [];
   for (const r of list) {
@@ -551,7 +552,7 @@ export function prepareRoutes(w, trade) {
     const arc = routeArc(grid, ca, cb, bow);
     routes.push({
       route: r, a: za || null, b: zb || null, ...arc, bow,
-      weight: Math.sqrt((r.value_musd || 0) / vmax), top: routes.length < TOP_ROUTES,
+      weight: Math.sqrt(volume(r) / vmax), top: routes.length < TOP_ROUTES,
       style: MODE_STYLE[r.top_mode] || MODE_STYLE.other,
     });
   }

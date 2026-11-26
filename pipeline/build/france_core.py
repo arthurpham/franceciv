@@ -88,6 +88,26 @@ def unemployment_rate(row):
     return unemp / (emp + unemp) if emp is not None and unemp is not None and emp + unemp else None
 
 
+def ratio(num, den, digits=4):
+    return round(num / den, digits) if num is not None and den else None
+
+
+def higher_education_rate(row):
+    return ratio((row or {}).get("AGE=Y_GE15|EDUC=500T702_RP"), (row or {}).get("AGE=Y_GE15")) if row else None
+
+
+def senior_share(row):
+    return ratio((row or {}).get("AGE=Y_GE65"), (row or {}).get("_T")) if row else None
+
+
+def commuting_share(row, transport):
+    return ratio((row or {}).get(f"TRANS={transport}|AGE=Y_GE15|EMPSTA_ENQ=1"), (row or {}).get("AGE=Y_GE15|EMPSTA_ENQ=1")) if row else None
+
+
+def immigration_share(row):
+    return ratio((row or {}).get("IMMI=1"), (row or {}).get("_T")) if row else None
+
+
 # NACE aggregate -> original industry keys. Some high-level Eurostat slices are necessarily broader than ACS industries.
 NACE_JOBS = {
     "A": {"agriculture": 1}, "B-E": {"manufacturing": 0.9, "utilities": 0.07, "mining": 0.03},
@@ -148,6 +168,10 @@ def build():
     employment_stats = stats["datasets"].get("employment", {})
     comp_stats = stats.get("comparateur", {})
     activity_stats = stats["datasets"].get("activity", {})
+    education_stats = stats["datasets"].get("education", {})
+    population_age_stats = stats["datasets"].get("population_age", {})
+    commuting_stats = stats["datasets"].get("commuting", {})
+    immigration_stats = stats["datasets"].get("immigration", {})
     aav_employment = employment_stats.get("AAV2020", {})
     commune_employment = employment_stats.get("COM", {})
     dep_employment = employment_stats.get("DEP", {})
@@ -157,6 +181,10 @@ def build():
     dep_activity = activity_stats.get("DEP", {})
     reg_activity = activity_stats.get("REG", {})
     fr_activity = activity_stats.get("FRANCE", {})
+    dep_education = education_stats.get("DEP", {})
+    dep_population_age = population_age_stats.get("DEP", {})
+    dep_commuting = commuting_stats.get("DEP", {})
+    dep_immigration = immigration_stats.get("DEP", {})
     aav_comp = comp_stats.get("AAV2020", {})
     dep_comp = comp_stats.get("DEP", {})
     reg_comp = comp_stats.get("REG", {})
@@ -261,6 +289,11 @@ def build():
             "gdp": gdp * 1e6 if gdp is not None else None,
             "median_income": comp.get("MED_SL_2023"), "poverty": (comp.get("PR_MD60_2023") or 0) / 100 if comp.get("PR_MD60_2023") is not None else None,
             "unemployment": unemployment_rate(dep_activity.get(dep)),
+            "higher_education": higher_education_rate(dep_education.get(dep)),
+            "seniors": senior_share(dep_population_age.get(dep)),
+            "public_transit": commuting_share(dep_commuting.get(dep), 6),
+            "car_commuting": commuting_share(dep_commuting.get(dep), 5),
+            "immigration": immigration_share(dep_immigration.get(dep)),
             "growth": pct_change(comp.get("POP_2023"), comp.get("POP_2017")), "growth_years": [2017, 2023],
             "pop_series": {str(y): v for y, v in comp_series(comp, "POP")},
         }
@@ -521,6 +554,11 @@ def build():
       ("income","prosperity","Median standard of living","💶","euros / year","eur","linear",dep_lens(lambda e: e.get("median_income"),0),"Median standard of living by department (INSEE comparateur de territoires 2023)."),
       ("poverty","prosperity","Poverty","📉","share of residents","pct","linear",dep_lens(lambda e: e.get("poverty"),4),"Share of residents below 60% of median standard of living."),
       ("unemployment","prosperity","Unemployment","🧭","share of labour force","pct","linear",dep_lens(lambda e: e.get("unemployment"),4),"Unemployed census residents aged 15–64 ÷ the active population aged 15–64."),
+      ("higher_education","people","Higher education","🎓","share of out-of-school residents 15+","pct","linear",dep_lens(lambda e: e.get("higher_education"),4),"Residents aged 15 or older who are no longer in initial education and whose highest diploma is in higher education, census 2023."),
+      ("seniors","people","Residents 65+","👵","share of residents","pct","linear",dep_lens(lambda e: e.get("seniors"),4),"Residents aged 65 or older as a share of all residents, census 2023."),
+      ("immigration","people","Immigration","🌍","share of residents","pct","linear",dep_lens(lambda e: e.get("immigration"),4),"Immigrants as a share of all residents, census 2023. INSEE defines an immigrant as a person born abroad who was not born a French national."),
+      ("public_transit","people","Public transport commuting","🚊","share of employed residents","pct","linear",dep_lens(lambda e: e.get("public_transit"),4),"Employed residents aged 15 or older whose main home-to-work mode is public transport, census 2023."),
+      ("car_commuting","people","Car commuting","🚗","share of employed residents","pct","linear",dep_lens(lambda e: e.get("car_commuting"),4),"Employed residents aged 15 or older whose main home-to-work mode is a car, van or truck, census 2023."),
       ("growth","people","Population growth","📈","population change","signed","linear",dep_lens(lambda e: e.get("growth"),4),"Population change 2017–2023."),
       ("homeownership","prosperity","Homeownership","🏠","share of main homes","pct","linear",dep_comp_lens(lambda c: c.get("RP_PROP_2023",0)/c.get("RP_2023",1) if c.get("RP_2023") else None,4),"Owner-occupied share of main residences."),
       ("second_homes","land","Second homes","🏡","share of dwellings","pct","linear",dep_comp_lens(lambda c: c.get("RSEC_2023",0)/c.get("LOG_2023",1) if c.get("LOG_2023") else None,4),"Second homes and occasional dwellings as a share of all dwellings."),
