@@ -317,3 +317,14 @@ def test_public_services_contract():
     assert 0.1 < sum(v for v in burglary if v is not None) / sum(v is not None for v in burglary) < 2
     assert any(s["id"] == "fr_crime" for s in web("sources.json"))
     assert any(s["id"] == "fr_schools" for s in web("sources.json"))
+
+
+def test_nature_contract():
+    data = web("nature.json")
+    assert data["sources"] == ["fr_nature"]
+    assert {l["id"] for l in data["lenses"]} == {"natura2000", "natura_habitat", "natura_birds"}
+    vals = [v for v in data["lenses"][0]["values"] if v is not None]
+    nonzero = [v for v in vals if v]
+    assert len(vals) > 2500 and len(nonzero) > 1000
+    assert 0.05 < sum(vals) / len(vals) < 0.3 and max(vals) == 1
+    assert any(s["id"] == "fr_nature" for s in web("sources.json"))
