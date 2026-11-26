@@ -70,7 +70,7 @@ export async function install(app) {
     if (!sec || sec.querySelector(".cv-plink")) return;
     const p = document.createElement("p");
     p.className = "cv-plink";
-    p.innerHTML = `These are residents' industries (residents). The metro's specialised districts, from jobs counted at employers (INSEE census), are in the City View. <button type="button">Districts ›</button>`;
+    p.innerHTML = `These are workplace-industry jobs in the metro area (INSEE census). The metro's specialised districts, from jobs counted at employers (INSEE census), are in the City View. <button type="button">Districts ›</button>`;
     p.querySelector("button").onclick = () => openCityView(city, { section: "districts" });
     sec.appendChild(p);
   }
