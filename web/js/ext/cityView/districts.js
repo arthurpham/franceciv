@@ -1,4 +1,4 @@
-// City View "Districts": the metro's real industry specialisation (districts.json, BLS QCEW) as strategy-game
+// City View "Districts": the metro's real industry specialisation (districts.json, INSEE workplace employment) as strategy-game
 // districts, plus the Encampment tier from military.json (installations + armed-forces residents).
 //
 //   cityDistricts(ddata, mil, id) → [district]   the metro's districts, strongest first, each with what the dock and
@@ -93,7 +93,7 @@ export function badgeOf(ddata, id) {
 export function badgeHtml(m, ddata) {
   const b = badgeOf(ddata, m.city.id);
   if (!b) return "";
-  return `<span class="cv-type${b.district ? "" : " plain"}" style="--tc:${esc(b.color)}" title="City type: ${esc(b.text || b.label)} (BLS QCEW ${esc(String(ddata.year || ""))})">
+  return `<span class="cv-type${b.district ? "" : " plain"}" style="--tc:${esc(b.color)}" title="City type: ${esc(b.text || b.label)} (INSEE census ${esc(String(ddata.year || ""))})">
     <span class="cv-type-ic">${icon(b.icon, b.emoji || "◆", { size: 13 })}</span>${esc(b.label)}</span>`;
 }
 
@@ -157,11 +157,11 @@ function topTable(row, ddata) {
   const max = Math.max(...top.map((t) => t.lq || 0), 1);
   return `<h4 class="cv-h4">Most specialised industries <span class="muted">by location quotient</span></h4>
   <div class="cv-top" role="table" aria-label="Most specialised industries">
-    <div class="cv-top-r cv-top-hd" role="row"><span role="columnheader">Industry</span><span role="columnheader">Jobs</span><span role="columnheader">×US</span><span role="columnheader">Pay</span><span role="columnheader">1 yr</span></div>
+    <div class="cv-top-r cv-top-hd" role="row"><span role="columnheader">Industry</span><span role="columnheader">Jobs</span><span role="columnheader">×France</span><span role="columnheader">Pay</span><span role="columnheader">1 yr</span></div>
     ${top.map((t) => {
-      const title = ddata.industries?.[t.naics]?.title || `NAICS ${t.naics}`;
+      const title = ddata.industries?.[t.naics]?.title || `NACE ${t.naics}`;
       const lb = !!t.lower_bound;
-      return `<div class="cv-top-r" role="row" title="${esc(title)} (NAICS ${esc(t.naics)})${lb ? `. Lower bound: BLS withheld it in ${t.suppressed} member count${t.suppressed === 1 ? "y" : "ies"}.` : ""}">
+      return `<div class="cv-top-r" role="row" title="${esc(title)} (NACE ${esc(t.naics)})${lb ? `. Lower bound: BLS withheld it in ${t.suppressed} member count${t.suppressed === 1 ? "y" : "ies"}.` : ""}">
         <span role="cell" class="cv-top-n">${esc(title)}<i style="width:${((Math.log(1 + (t.lq || 0)) / Math.log(1 + max)) * 100).toFixed(1)}%"></i></span>
         <span role="cell">${ge(lb)}${compact(t.emp)}</span>
         <span role="cell"><b>${t.lq != null ? `${ge(lb)}${t.lq.toFixed(1)}` : "–"}</b></span>
@@ -181,11 +181,11 @@ export function districtsHtml(m, ddata, mil) {
   const b = badgeOf(ddata, id);
   let lead;
   if (!row) {
-    lead = `<p class="cv-lead">BLS publishes no county employment for ${esc(m.city.name)}'s member counties, so it has no industry districts.</p>`;
+    lead = `<p class="cv-lead">INSEE publishes no workplace employment for ${esc(m.city.name)}'s member counties, so it has no industry districts.</p>`;
   } else {
     const cnt = row.counties ? ` from ${row.counties[0]} of ${row.counties[1]} member count${row.counties[1] === 1 ? "y" : "ies"}` : "";
     lead = `<p class="cv-lead">${b?.district ? `<b class="cv-type-l" style="--tc:${esc(b.color)}">${esc(b.label)}</b> · ${esc(b.text || "")}. ` : ""}${
-      int(row.emp)} jobs counted${esc(cnt)}, average pay ${money(row.avg_pay)} (U.S. ${money(ddata.national?.avg_pay)}).</p>`;
+      int(row.emp)} jobs counted${esc(cnt)}.</p>`;
   }
   const cards = list.length
     ? `<div class="cv-dcs">${list.map((d) => districtCard(d, row, ddata, mil)).join("")}</div>`
@@ -199,8 +199,8 @@ export function districtsHtml(m, ddata, mil) {
     </div>
     <details class="cv-more cv-rule"><summary>How districts are chosen</summary>
       <p>${esc(ddata.rule?.text || "")}</p>${milRule}
-      <p>QCEW counts jobs where the employer is, not where workers live; it leaves out the self-employed, most farm workers, railroads and uniformed military.</p>
+      <p>INSEE counts these jobs where the employer is, not where workers live. Industry groups are broad NACE sections/divisions published in the census.</p>
     </details>
-    <p class="cv-note">${esc(ddata.vintage || "BLS QCEW")}, all ownerships (federal and state only for the Government plaza and Encampment). ×N = location quotient; ≥ = a lower bound (BLS withheld a county's figure).${
+    <p class="cv-note">${esc(ddata.vintage || "INSEE census")}. ×N = location quotient against metropolitan France.${
       mil && list.some((d) => d.military) ? ` Encampment tier: ${esc(typeof mil.vintage === "object" ? [mil.vintage.installations, mil.vintage.acs].filter(Boolean).join("; ") : mil.vintage || "")}.` : ""}</p>`;
 }
