@@ -672,12 +672,10 @@ async function main() {
     states: w.raw.states.map((s, i) => ({ name: states?.[i]?.name || s.name, abbr: s.abbr, population: states?.[i]?.population })),
     onPick(r) {
       if (r.kind === "city") selectCity(r.city, { fly: true });
-      else if (r.kind === "commune") app.flyTo(r.commune.x, r.commune.y, 4.2);
+      else if (r.kind === "commune") { clearSelection(); app.flyTo(r.commune.x, r.commune.y, 4.2); }
       else selectState(r.index, { fly: true });
     },
   });
-  // The commune index is about 2 MB, so load it after the first interactive frame rather than in the critical bundle.
-  setTimeout(() => loadJSON("communes", true).then((d) => search.addCommunes?.(d?.communes || [])), 0);
 
   const toastEl = document.getElementById("toast");
   let toastTimer = 0;
@@ -1266,7 +1264,7 @@ async function main() {
   // Small optional map-layer files load once the first frame is on screen (extensions can await app.loadData).
   // (A timer backs up the frame callback, which never fires while the page is in a background tab.)
   let eagerKicked = false;
-  const kickEager = () => { if (!eagerKicked) { eagerKicked = true; EAGER_DATA.forEach((n) => loadData(n)); } };
+  const kickEager = () => { if (!eagerKicked) { eagerKicked = true; EAGER_DATA.forEach((n) => loadData(n)); loadData("communes").then((d) => search.addCommunes?.(d?.communes || [])); } };
   requestAnimationFrame(() => setTimeout(kickEager, 0));
   setTimeout(kickEager, 400);
   // Extensions load after the first frame is on its way; a missing extension folder is fine.
