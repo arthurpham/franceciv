@@ -3,6 +3,8 @@
 A French adaptation of Andrej Karpathy's MIT-licensed [`usaciv`](https://karpathy.ai/usaciv/) visualizer.
 The original browser engine, rendering art, interaction model and pipeline architecture are vendored here with attribution; this repository replaces the United States data spine with French public data.
 
+**Live website: [www.arthurpham.com/franceciv](https://www.arthurpham.com/franceciv/).**
+
 **Current status: France MVP.** It renders metropolitan France, Corsica and five overseas department-region insets at 8 km hex resolution, with régions, départements, INSEE aires d'attraction des villes, terrain, land cover, population, GDP and employment-derived yields.
 
 ![France drawn as a 4X strategy map](docs/images/france-mvp.png)
