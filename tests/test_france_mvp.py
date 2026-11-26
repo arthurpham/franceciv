@@ -45,8 +45,12 @@ def test_committed_france_core_contract():
     assert "out-of-school" in by_id["higher_education"]["unit"]
     # Known Paris (department 75) census ratios, rounded to the four decimals written by the builder.
     expected = {"higher_education": 0.6593, "seniors": 0.1768, "immigration": 0.2122, "public_transit": 0.6108, "car_commuting": 0.0898}
+    world = web("world.json")
+    paris_county = next(i for i, c in enumerate(world["counties"]) if c["geoid"] == "75")
+    paris_cells = [i for i, c in enumerate(world["county"]) if c == paris_county and world["owner"][i] >= 0]
+    assert paris_cells
     for lid, want in expected.items():
-        assert any(v is not None and abs(v - want) < 0.00005 for v in by_id[lid]["values"]), lid
+        assert all(abs(by_id[lid]["values"][i] - want) < 0.00005 for i in paris_cells), lid
 
 
 def test_hex_grid_index_round_trip():
