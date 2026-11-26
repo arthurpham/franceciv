@@ -94,7 +94,7 @@ class FrenchCulture(Source):
         with open(self.raw_dir / "sise-establishments.csv", encoding="utf-8-sig") as f:
             for row in csv.DictReader(f, delimiter=";"):
                 year = row.get("Année universitaire")
-                if year != "2024-25" or row.get("Type d'établissement") != "Université":
+                if year != "2024-25" or not (row.get("Typologie de l'établissement") or "").startswith("Université"):
                     continue
                 students = integer(row.get("Nombre total d'étudiants inscrits (inscriptions principales et secondes) y compris doubles inscriptions CPGE"))
                 commune = row.get("etablissement_code_commune")
