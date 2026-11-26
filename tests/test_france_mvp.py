@@ -47,3 +47,19 @@ def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
     assert g.col_row(i) == (42, 17)
+
+
+def test_resource_postprocessor_cache_invariants():
+    """The resources builder patches states.json, then writes resources.json last.
+
+    This ordering is what lets the mtime-based build cache treat resources.json as newer
+    than its states.json input while still rebuilding after france_core refreshes states.
+    """
+    from pipeline.build import resources
+
+    src = (ROOT / "pipeline" / "build" / "resources.py").read_text()
+    assert "states.json" in resources.REQUIRES
+    assert src.index('write_web("states.json"') < src.index('write_web("resources.json"')
+    states = web("states.json")
+    assert states and all(s.get("energy") is not None for s in states)
+    assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 12
