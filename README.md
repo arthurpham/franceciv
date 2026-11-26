@@ -18,7 +18,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming and rainfall.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
-- Detailed named watercourses from IGN BD CARTO, plus schematic road and rail links and real airports and ports from Natural Earth, OurAirports and Eurostat traffic series.
+- Detailed named watercourses from IGN BD CARTO, schematic road and rail links, real airports and ports, busy SNCF passenger stations, and a commune-derived fiber eligibility lens.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
 - The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for all metropolitan communes.
@@ -50,9 +50,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline build world france_core climate hydrography citizens districts military resources infrastructure wonders trade communes catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline build world france_core climate hydrography connectivity citizens districts military resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
@@ -66,6 +66,8 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - ODRÉ national registry of electricity generation and storage installations.
 - Météo-France SIM2 monthly climate reanalysis, 1961–2025.
 - IGN BD CARTO named watercourse segments.
+- SNCF Gares & Connexions station traffic and station reference coordinates.
+- ARCEP Ma connexion internet commune technology-eligibility statistics.
 - NOAA ETOPO1 elevation and bathymetry.
 - Natural Earth 1:50m neighbouring countries, lakes and rivers; 1:10m roads, railroads and ports.
 - OurAirports and Eurostat `avia_paoa` / `mar_go_aa` transport traffic.

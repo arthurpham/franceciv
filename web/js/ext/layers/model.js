@@ -75,7 +75,7 @@ export const SITE_RULES = {
 export function createModel(w) {
   const m = {
     w, version: 0, data: {},
-    net: null, ports: [], airports: [], installations: [], ranges: [], parks: [], wonders: [], routes: [],
+    net: null, ports: [], airports: [], stations: [], installations: [], ranges: [], parks: [], wonders: [], routes: [],
     rangeById: new Map(),
     _vis: new Map(),
   };
@@ -90,6 +90,10 @@ export function createModel(w) {
       m.airports = (data?.airports || []).filter(okCell(w)).map((a, k) => {
         const tier = airportTier(a);
         return { kind: "airport", data: a, cell: a.cell, tier, prio: 400 + tier * 1000 + k, minRpx: SITE_RULES.airport.minRpx(tier), pref: towards(w, a, 30) };
+      });
+      m.stations = (data?.stations || []).filter(okCell(w)).map((st, k) => {
+        const tier = st.passengers >= 10_000_000 ? 0 : st.passengers >= 3_000_000 ? 1 : 2;
+        return { kind: "station", data: st, cell: st.cell, tier, prio: 500 + k, minRpx: [10, 16, 24][tier], pref: towards(w, st, 20) };
       });
     } else if (name === "military") {
       m.installations = (data?.installations || []).filter(okCell(w)).map((f, k) => ({

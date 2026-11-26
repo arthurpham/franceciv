@@ -13,7 +13,7 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_transport", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_transport", "fr_rail_stations", "cities.json"]
 PRODUCES = ["infrastructure.json"]
 
 ROAD_CLASSES = [{"id": "motorway", "name": "Motorway / European route"}, {"id": "major", "name": "Major highway"}]
@@ -138,6 +138,7 @@ def build():
     bounds = load_interim("fr_boundaries")
     aav = load_interim("fr_aav")
     trans = load_interim("fr_transport")
+    rail_stations_src = load_interim("fr_rail_stations")
     cities = json.loads((WEB_DATA / "cities.json").read_text())
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
@@ -176,7 +177,7 @@ def build():
         if not base:
             continue
         pax, prev = years.get("2023"), years.get("2022")
-        if not pax or pax < 100_000:
+        if not pax or pax < 20_000:
             continue
         geo = site_geo(base["lon"], base["lat"])
         label = trans["airport_labels"].get("FR_" + ident, base["name"])
@@ -209,7 +210,7 @@ def build():
             commune = commune_by_name.get(n)
             if commune and commune.get("lon") is not None:
                 lon, lat = commune["lon"], commune["lat"]
-        if lon is None or rec["tons"] < 1_000_000:
+        if lon is None or not rec["tons"]:
             continue
         name = re.sub(r"\s*\([^)]*\)", "", label).strip()
         ports.append({"id": code.removeprefix("FR_"), "name": name, "type": "coastal", "rank": 0,
@@ -219,15 +220,27 @@ def build():
     for rank, p in enumerate(ports, 1):
         p["rank"] = rank
 
+
+    stations = []
+    for st in rail_stations_src["stations"]:
+        if st["passengers"] < 250_000:
+            continue
+        stations.append({
+            "id": st["uic"], "name": st["name"], "passengers": st["passengers"], "year": st["year"],
+            "segment": st.get("segment"), **site_geo(st["lon"], st["lat"]),
+        })
+    stations.sort(key=lambda st: -st["passengers"])
+
     write_web("infrastructure.json", {
         "version": 1,
-        "vintage": {"roads": "Natural Earth v5.1.2 (1:10m)", "rail": "Natural Earth v5.1.2 (1:10m)", "ports": "Eurostat mar_go_aa, 2023", "airports": "Eurostat avia_paoa, 2023; OurAirports positions"},
-        "sources": ["fr_transport"],
+        "vintage": {"roads": "Natural Earth v5.1.2 (1:10m)", "rail": "Natural Earth v5.1.2 (1:10m)", "ports": "Eurostat mar_go_aa, 2023", "airports": "Eurostat avia_paoa, 2023; OurAirports positions", "stations": "SNCF station traffic 2025"},
+        "sources": ["fr_transport", "fr_rail_stations"],
         "rules": {
             "roads": "Natural Earth European-route/motorway lines form class 0; major highways and expressways at scale rank 7 or better form class 1. Geometry is schematic map art, not a complete road inventory.",
             "rail": "Natural Earth rail scale ranks 1–5 form main lines and ranks 6–8 secondary lines. Geometry is schematic and incomplete.",
-            "ports": "Eurostat ports with at least one million metric tonnes handled in 2023, positioned by Natural Earth or their namesake commune.",
-            "airports": "Metropolitan airports with at least 100,000 passengers on board in 2023. Hub letters are local display-size buckets.",
+            "ports": "Eurostat ports reporting metric tonnes handled in 2023, positioned by Natural Earth or their namesake commune.",
+            "airports": "Metropolitan airports with at least 20,000 passengers on board in 2023. Hub letters are local display-size buckets.",
+            "stations": "Passenger stations with at least 250,000 passengers in 2025. SNCF changed the traffic methodology in 2025, so values are not directly comparable with 2015–2024.",
         },
         "road_classes": ROAD_CLASSES,
         "rail_tiers": RAIL_TIERS,
@@ -236,5 +249,6 @@ def build():
         "rail": rail,
         "ports": ports,
         "airports": airports,
+        "stations": stations,
     })
-    print(f"    roads {len(roads)}, rail {len(rail)}, ports {len(ports)}, airports {len(airports)}")
+    print(f"    roads {len(roads)}, rail {len(rail)}, ports {len(ports)}, airports {len(airports)}, stations {len(stations)}")

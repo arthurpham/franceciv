@@ -52,16 +52,17 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography] = await Promise.all([
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
-    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true),
+    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true),
   ]);
   if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
-  if (climate?.lenses?.length) {
-    if (climate.group && !lensFile.groups.some((g) => g.id === climate.group.id)) lensFile.groups.push(climate.group);
+  for (const extra of [climate, connectivity]) {
+    if (!extra?.lenses?.length) continue;
+    if (extra.group && !lensFile.groups.some((g) => g.id === extra.group.id)) lensFile.groups.push(extra.group);
     const known = new Set(lensFile.lenses.map((l) => l.id));
-    lensFile.lenses.push(...climate.lenses.filter((l) => !known.has(l.id)));
+    lensFile.lenses.push(...extra.lenses.filter((l) => !known.has(l.id)));
   }
   const w = prepareWorld(world, cities, { resources });
   const state = {
