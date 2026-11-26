@@ -82,6 +82,9 @@ export const tips = {
       lines.push(`${esc(k)} · hand-picked (curated, not ranked by data)`);
       if (mt.visits != null) lines.push(`${num(mt.visits)} recreation visits (${esc(mt.year)})`);
       if (mt.designated) lines.push(`National Historic Landmark since ${esc(mt.designated)}`);
+    } else if (mt.designated) {
+      lines.push(`${esc(k)} · UNESCO World Heritage, inscribed ${esc(mt.designated)}`);
+      if (mt.criteria) lines.push(`Criteria: ${esc(mt.criteria)}`);
     } else {
       lines.push(`${esc(k)} · #${esc(x.rank)} by visits${mt.unit_type ? ` among ${esc(mt.unit_type === "National Park" ? "National Parks" : "other park units")}` : ""}`);
       if (mt.visits != null) lines.push(`<b>${num(mt.visits)}</b> recreation visits (${esc(mt.year)})${mt.visits_of ? ` ${muted(`(${esc(mt.visits_of)})`)}` : ""}`);

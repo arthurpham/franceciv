@@ -16,7 +16,7 @@ from ..core.geo import MapProjection
 from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_eurostat", "fr_insee_stats"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_eurostat", "fr_insee_stats", "fr_elections", "fr_hazards"]
 PRODUCES = ["cities.json", "states.json", "nation.json", "counties.json", "lenses.json"]
 
 INDUSTRIES = {
@@ -134,6 +134,8 @@ def build():
     aav = load_interim("fr_aav")
     eu = load_interim("fr_eurostat")
     stats = load_interim("fr_insee_stats")
+    elections = load_interim("fr_elections")
+    hazards = load_interim("fr_hazards")
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
     states_meta = load_interim_payload_states = None
@@ -205,6 +207,42 @@ def build():
         emp = dep_values(emp_ths, dep, "TOTAL")
         return {k: round(v) if v else 0 for k, v in jobs.items()}, round((emp or 0) * 1000) if emp is not None else None
 
+    dep_hazard = {}
+    hazard_acc = {}
+    hazard_years = max(1, hazards["years"][1] - hazards["years"][0] + 1)
+    for c in bounds["communes"]:
+        dep = c["department"]
+        acc = hazard_acc.setdefault(dep, Counter())
+        row = hazards["communes"].get(c["code"], {})
+        acc["communes"] += 1
+        for key in ["events", "flood", "drought", "storm", "ground"]:
+            acc[key] += row.get(key, 0)
+    for dep, acc in hazard_acc.items():
+        denom = max(1, acc["communes"] * hazard_years)
+        events = max(1, acc["events"])
+        dep_hazard[dep] = {
+            "frequency": acc["events"] / denom,
+            "flood": acc["flood"] / events,
+            "drought": acc["drought"] / events,
+            "storm": acc["storm"] / events,
+        }
+
+    dep_election = {}
+    dep_election_acc = {}
+    for commune_code, row in elections["communes"].items():
+        dep = commune_code[:2]
+        if dep not in counties_meta:
+            continue
+        acc = dep_election_acc.setdefault(dep, Counter())
+        acc.update(row)
+    for dep, acc in dep_election_acc.items():
+        dep_election[dep] = {
+            "macron": acc["macron"] / acc["valid"] if acc["valid"] else None,
+            "le_pen": acc["le_pen"] / acc["valid"] if acc["valid"] else None,
+            "abstention": acc["abstentions"] / acc["registered"] if acc["registered"] else None,
+            "registered": acc["registered"],
+        }
+
     dep_econ = {}
     for dep in counties_meta:
         jobs, employed = dep_jobs(dep)
@@ -215,6 +253,7 @@ def build():
         comp = dep_comp.get(dep, {})
         gdp = dep_values(gdp_mio, dep)
         dep_econ[dep] = {
+            "_dep": dep,
             "population": comp.get("POP_2023") or dep_pop[dep] or None,
             "area": comp.get("SUP_2023") or dep_area[dep] or None,
             "jobs": jobs, "employed": employed,
@@ -485,15 +524,21 @@ def build():
       ("homeownership","prosperity","Homeownership","🏠","share of main homes","pct","linear",dep_comp_lens(lambda c: c.get("RP_PROP_2023",0)/c.get("RP_2023",1) if c.get("RP_2023") else None,4),"Owner-occupied share of main residences."),
       ("second_homes","land","Second homes","🏡","share of dwellings","pct","linear",dep_comp_lens(lambda c: c.get("RSEC_2023",0)/c.get("LOG_2023",1) if c.get("LOG_2023") else None,4),"Second homes and occasional dwellings as a share of all dwellings."),
       ("vacancy","land","Vacant homes","⬜","share of dwellings","pct","linear",dep_comp_lens(lambda c: c.get("LVAC_2023",0)/c.get("LOG_2023",1) if c.get("LOG_2023") else None,4),"Vacant dwellings as a share of all dwellings."),
+      ("lepen_2022","politics","Le Pen vote 2022","🗳️","share of valid votes","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("le_pen") if "_dep" in e else None,4),"Marine Le Pen's share of valid second-round votes in the 2022 presidential election, aggregated from commune results to departments."),
+      ("macron_2022","politics","Macron vote 2022","🗳️","share of valid votes","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("macron") if "_dep" in e else None,4),"Emmanuel Macron's share of valid second-round votes in the 2022 presidential election, aggregated from commune results to departments."),
+      ("abstention_2022","politics","Abstention 2022","🗳️","share of registered voters","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("abstention") if "_dep" in e else None,4),"Abstentions as a share of registered voters in the 2022 presidential second round."),
+      ("disasters","hazards","Natural disasters","🌊","recognitions / commune-year","float","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("frequency") if "_dep" in e else None,4),"Catastrophe-naturelle recognitions since 2000 per commune per year. Administrative recognition frequency, not measured damage."),
+      ("flood_events","hazards","Flood events","💧","share of recognitions","pct","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("flood") if "_dep" in e else None,4),"Flood, mudflow, wave and groundwater-rise recognitions as a share of local catastrophe-naturelle recognitions since 2000."),
+      ("drought_events","hazards","Drought events","🏜️","share of recognitions","pct","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("drought") if "_dep" in e else None,4),"Drought recognitions as a share of local catastrophe-naturelle recognitions since 2000."),
     ]
     lenses=[]
-    ramps={"people":["#1b1035","#4b2377","#9a3b8a","#e0645e","#f9b24a","#fff3a8"],"prosperity":["#152238","#274b73","#3d8395","#72ba8c","#d6ec91"],"land":["#27351f","#476c35","#7f9d4b","#c5bd69","#eee4a1"]}
+    ramps={"hazards":["#102a43","#2f6690","#7fb3d5","#f4d35e","#d95d39"],"politics":["#253858","#5f6f95","#b7c0d8","#e9c46a","#c36d3d"],"people":["#1b1035","#4b2377","#9a3b8a","#e0645e","#f9b24a","#fff3a8"],"prosperity":["#152238","#274b73","#3d8395","#72ba8c","#d6ec91"],"land":["#27351f","#476c35","#7f9d4b","#c5bd69","#eee4a1"]}
     for lid,group,name,emoji,unit,fmt,scale,vals,desc in defs:
       lo,hi=percentile(vals,2),percentile(vals,98)
       if lo is None or hi is None:
         continue
-      lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else ("fr_corine" if lid in {"forest","farmland","developed"} else "fr_insee_stats"),"description":desc,"values":vals})
-    lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land and housing"}],"lenses":lenses}
+      lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else ("fr_corine" if lid in {"forest","farmland","developed"} else ("fr_elections" if lid.endswith("_2022") else ("fr_hazards" if lid in {"disasters","flood_events","drought_events"} else "fr_insee_stats"))),"description":desc,"values":vals})
+    lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land and housing"},{"id":"politics","name":"Elections"},{"id":"hazards","name":"Natural hazards"}],"lenses":lenses}
 
     write_web("cities.json", cities)
     write_web("states.json", states)

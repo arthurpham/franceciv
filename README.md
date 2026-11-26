@@ -16,21 +16,25 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - Gold is Eurostat NUTS-3 GDP in current euros.
   - The other yields are Eurostat employment by high-level NACE industry.
   - Because Eurostat data is département-level, AAV values are allocated in proportion to commune population and should be read as estimates.
-- Population density, GDP per capita, employment density, industry, forest, farmland and built-up lenses.
+- Population, prosperity, housing, election and natural-hazard lenses, including income, poverty, unemployment, growth, homeownership, vacancy, 2022 presidential results and GASPAR catastrophe recognitions.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, gas/coal, wind, solar and batteries.
+- Schematic road and rail links plus real airports and ports from Natural Earth, OurAirports and Eurostat traffic series.
+- UNESCO World Heritage wonders from the official UNESCO XML export.
 - The original interactive map, city panels, minimap, search, sharing and lens histogram UI.
 
 ## Explicitly not in the MVP yet
 
-The original US layers for citizens, districts, infrastructure, military sites, wonders, trade routes and disasters are not yet implemented rather than shown with invalid American coordinates or statistics. The UI still contains some inherited US-oriented explanatory copy and advisor assumptions; those panels are best treated as scaffolding until the corresponding French datasets are implemented.
+The original US layers for citizens, districts, military sites and freight trade routes are not yet implemented rather than shown with invalid American coordinates or statistics. Infrastructure, wonders, elections and natural hazards now use French public data, but some inherited advisor copy and detailed panel assumptions still need France-specific rewriting.
 
 Other known limitations:
 
-- GDP and employment are 2023 Eurostat NUTS-3 values, not true AAV-level accounts.
-- NACE data is aggregated, so several original industry categories are approximate allocations rather than direct observations.
-- Median income, rent, home values, unemployment, education, growth and yearly population series are currently null because the INSEE commune/AAV statistical extraction is not yet wired into the frontend contracts.
+- AAV GDP remains allocated from department GDP using workplace-employment shares; it is an estimate, not a true AAV account.
+- Road and rail geometry is schematic Natural Earth cartography, not an exhaustive network inventory.
+- Election and hazard lenses are currently aggregated from communes to departments because the browser contract does not yet carry a commune hex index.
+- Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
+- UNESCO serial properties are represented by one French component point rather than full site boundaries.
 - Overseas France is excluded; Corsica is included.
-- Some art classification rules inherited from the United States may need France-specific visual tuning.
+- Freight, culture attendance/university wonders, commune search/cards, citizens and districts remain unimplemented.
 
 ## Quick start
 
@@ -45,9 +49,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
-uv run python -m pipeline build world france_core resources catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards
+uv run python -m pipeline build world france_core resources infrastructure wonders catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
@@ -60,7 +64,11 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - CORINE Land Cover 2018, served through the IGN Géoplateforme WMS.
 - ODRÉ national registry of electricity generation and storage installations.
 - NOAA ETOPO1 elevation and bathymetry.
-- Natural Earth 1:50m neighbouring countries, lakes and rivers.
+- Natural Earth 1:50m neighbouring countries, lakes and rivers; 1:10m roads, railroads and ports.
+- OurAirports and Eurostat `avia_paoa` / `mar_go_aa` transport traffic.
+- UNESCO World Heritage Centre official XML export.
+- Ministry of the Interior definitive 2022 presidential election results, mirrored on data.gouv.
+- GASPAR catastrophe-naturelle recognitions from Géorisques.
 
 The in-app Almanac/source catalogue is generated from the same source registry used by the pipeline.
 

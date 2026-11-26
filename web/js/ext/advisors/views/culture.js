@@ -13,7 +13,7 @@ const KIND = {
   university: { label: "Universities", color: "#4a86d6" },
   landmark: { label: "Landmarks", color: "#e0b54c" },
 };
-const RULE_TITLE = { national_park: "National parks", park_unit: "Other park units", research_university: "Research universities", landmark: "Landmarks" };
+const RULE_TITLE = { national_park: "National parks", park_unit: "Other park units", research_university: "Research universities", landmark: "Landmarks", unesco_natural: "Natural World Heritage", unesco_cultural: "Cultural World Heritage" };
 const DIS_COLOR = { hurricane: "#4f9ad6", flood: "#2fa4b8", fire: "#e8774a", severe_storm: "#9a7bc9", winter: "#c9dcef", other: "#9a9aa8" };
 
 export async function mount(ctx) {
@@ -343,7 +343,7 @@ export async function mount(ctx) {
 function metricText(w) {
   const m = w.metrics || {};
   if (w.kind === "university") return fin(m.rd_usd) ? `${money(m.rd_usd)} R&D` : "–";
-  if (w.kind === "natural") return fin(m.visits) ? `${count3(m.visits)} visits` : "–";
+  if (w.kind === "natural") return fin(m.visits) ? `${count3(m.visits)} visits` : fin(m.designated) ? `inscribed ${m.designated}` : "–";
   if (fin(m.visits)) return `${count3(m.visits)} visits`;
   return fin(m.designated) ? `landmark since ${m.designated}` : "landmark";
 }
