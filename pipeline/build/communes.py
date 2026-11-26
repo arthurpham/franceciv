@@ -43,11 +43,13 @@ def build():
             round(el.get("le_pen", 0) / valid, 4) if valid else None,
             round((el.get("abstentions") or 0) / registered, 4) if registered else None,
             hz.get("events"), hz.get("dominant"),
+            (bounds.get("epcis", {}).get(c.get("epci")) or {}).get("nom"),
+            (bounds.get("epcis", {}).get(c.get("epci")) or {}).get("population"),
         ])
     rows.sort(key=lambda r: (-r[3], r[1], r[0]))
     write_web("communes.json", {
         "version": 1,
-        "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density", "median_income", "growth", "owner_share", "second_home_share", "vacancy_share", "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant"],
+        "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density", "median_income", "growth", "owner_share", "second_home_share", "vacancy_share", "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant", "epci_name", "epci_population"],
         "sources": ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"],
         "hazard_years": hazard_payload["years"],
         "communes": rows,

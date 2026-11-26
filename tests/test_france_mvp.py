@@ -208,6 +208,7 @@ def test_commune_search_index_contract():
     assert 0 < paris[cols["macron_share"]] < 1
     assert paris[cols["density"]] > 10_000
     assert rows == sorted(rows, key=lambda r: (-r[cols["population"]], r[cols["name"]], r[cols["code"]]))
+    assert paris[cols["epci_name"]] == "Métropole du Grand Paris" and paris[cols["epci_population"]] > 7_000_000
     assert data["sources"] == ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"]
     assert data["hazard_years"][0] == 2000 and data["hazard_years"][1] >= 2024
     assert 0 < paris[cols["owner_share"]] < 1

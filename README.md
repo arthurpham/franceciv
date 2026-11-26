@@ -21,7 +21,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 - Detailed named watercourses from IGN BD CARTO, schematic road and rail links, real airports and ports, busy SNCF passenger stations, a commune-derived fiber eligibility lens, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, and school-density lenses.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
-- The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for all metropolitan communes.
+- The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for all metropolitan communes, including EPCI/intercommunality names and populations.
 
 ## Explicitly not in the MVP yet
 
@@ -59,7 +59,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 
 ## Data sources
 
-- Etalab / geo.api.gouv.fr: current région, département and commune boundaries, commune populations and centroids.
+- Etalab / geo.api.gouv.fr: current région, département and commune boundaries, commune populations/centroids, and EPCI reference data.
 - INSEE: 2020 aires d'attraction des villes, 2026 vintage geography.
 - Eurostat regional accounts: `nama_10r_3gdp`, `nama_10r_3gva`, `nama_10r_3empers` for 2024.
 - CORINE Land Cover 2018, served through the IGN Géoplateforme WMS.
