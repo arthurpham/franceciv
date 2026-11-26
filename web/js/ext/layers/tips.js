@@ -47,6 +47,13 @@ export const tips = {
     lines.push(muted("Eurostat airport passengers; letters are local display-size buckets."));
     return lines.join("<br>");
   },
+  station(st) {
+    return [
+      `<b>${esc(st.name)} station</b> ${muted(esc(st.state || ""))}`,
+      `<b>${num(st.passengers)}</b> passengers in ${esc(st.year)}`,
+      muted("SNCF Gares & Connexions. The revised 2025 methodology is not directly comparable with 2015–2024."),
+    ].join("<br>");
+  },
   fort(f, m) {
     const comp = m.data.military?.components?.find((c) => c.id === f.component);
     const name = comp?.name || FORT_KINDS[fortKind(f.component)]?.name || "Defense site";

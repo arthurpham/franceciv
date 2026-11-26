@@ -86,18 +86,23 @@ export function makeLayers(model, on, { tips = {}, app = null } = {}) {
   };
   const hubs = {
     id: "hubs", z: 65, minRpx: 10,
-    visible: () => !!on.hubs && (m.ports.length > 0 || m.airports.length > 0),
+    visible: () => !!on.hubs && (m.ports.length > 0 || m.airports.length > 0 || m.stations.length > 0),
     sig: ver,
-    list: (Rpx) => visibleSites(m, "hubs", [...m.ports, ...m.airports], Rpx),
+    list: (Rpx) => visibleSites(m, "hubs", [...m.ports, ...m.airports, ...m.stations], Rpx),
     draw(ctx, vp, w, o) {
       drawSites(ctx, vp, o, hubs.list(o.Rpx), (it, size) => {
         if (it.kind === "port") drawPort(ctx, it.x, it.y, size, { tier: it.tier, type: it.data.type });
-        else drawAirport(ctx, it.x, it.y, size, { tier: it.tier });
+        else if (it.kind === "airport") drawAirport(ctx, it.x, it.y, size, { tier: it.tier });
+        else {
+          ctx.fillStyle = "#f5efe2"; ctx.strokeStyle = "#47352a"; ctx.lineWidth = Math.max(1, size * 0.12);
+          ctx.beginPath(); ctx.arc(it.x, it.y, size * 0.42, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = "#47352a"; ctx.fillRect(it.x - size * 0.23, it.y - size * 0.08, size * 0.46, size * 0.16);
+        }
       });
     },
     warm(ctx, vp, w, o) { hubs.draw(ctx, vp, w, o); },
     hit: (x, y, Rpx) => hitSites(hubs.list(Rpx), x, y, Rpx, grid()),
-    tooltip: (it) => moved(it, (it.kind === "port" ? tips.port?.(it.data, m) : tips.airport?.(it.data, m)) ?? null),
+    tooltip: (it) => moved(it, (it.kind === "port" ? tips.port?.(it.data, m) : it.kind === "airport" ? tips.airport?.(it.data, m) : tips.station?.(it.data, m)) ?? null),
   };
   const forts = {
     id: "forts", z: 66, minRpx: 8,

@@ -78,6 +78,21 @@ def test_climate_and_hydrography_contracts():
     assert any(r["name"] == "la Seine" for r in hydro["rivers"])
 
 
+def test_connectivity_contracts():
+    connectivity = web("connectivity.json")
+    assert connectivity["covered_cells"] > 2500
+    lens = connectivity["lenses"][0]
+    assert lens["id"] == "fiber"
+    vals = [v for v in lens["values"] if v is not None]
+    assert len(vals) == connectivity["covered_cells"]
+    assert all(0 <= v <= 1 for v in vals)
+    infra = web("infrastructure.json")
+    assert len(infra["stations"]) >= 500
+    assert len(infra["ports"]) >= 30
+    assert max(s["passengers"] for s in infra["stations"]) > 100_000_000
+    assert "methodology" in infra["rules"]["stations"]
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
