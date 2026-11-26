@@ -303,3 +303,16 @@ def test_agriculture_tourism_electricity_contracts():
     assert 2 < sum(vals) / len(vals) < 10 and max(vals) < 15
     assert any(s["id"] == "fr_tourism" for s in web("sources.json"))
     assert any(s["id"] == "fr_electricity" for s in web("sources.json"))
+
+
+def test_public_services_contract():
+    data = web("public_services.json")
+    assert data["sources"] == ["fr_crime", "fr_schools"]
+    assert {l["id"] for l in data["lenses"]} == {"burglary", "violence", "primary_schools", "secondary_schools"}
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and max(vals) > 0
+    burglary = data["lenses"][0]["values"]
+    assert 0.1 < sum(v for v in burglary if v is not None) / sum(v is not None for v in burglary) < 2
+    assert any(s["id"] == "fr_crime" for s in web("sources.json"))
+    assert any(s["id"] == "fr_schools" for s in web("sources.json"))
