@@ -69,7 +69,7 @@ export const FORT_KINDS = {
   guard: { name: "Army National Guard", wall: "#a8a28c", accent: "#6a6a52", flag: "#cfc3a0", pad: "rgba(110,110,84,.55)" },
   air_guard: { name: "Air National Guard", wall: "#aeb0b2", accent: "#5a6a7a", flag: "#b9c8d8", pad: "rgba(90,106,122,.55)" },
   reserve: { name: "Reserve", wall: "#a49e92", accent: "#6a6258", flag: "#d8cfba", pad: "rgba(106,98,88,.5)" },
-  other: { name: "Defense agency", wall: "#a2a2a2", accent: "#4a4a5a", flag: "#d0d0d0", pad: "rgba(74,74,90,.5)" },
+  other: { name: "Joint defense base", wall: "#a2a2a2", accent: "#4a4a5a", flag: "#d0d0d0", pad: "rgba(74,74,90,.5)" },
 };
 
 /** military.json component id → a fort kind above. */

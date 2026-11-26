@@ -25,7 +25,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 ## Explicitly not in the MVP yet
 
-Citizens now use INSEE census tables, while the original US military layer remains unimplemented rather than shown with invalid American statistics. Infrastructure, wonders, elections and natural hazards use French public data, but some inherited advisor copy and detailed panel assumptions still need France-specific rewriting.
+Citizens, districts, infrastructure, wonders, elections, natural hazards and historical defense-base personnel now use French public data. Some detailed panel assumptions and lesser-used inherited advisor copy still need France-specific review.
 
 Other known limitations:
 
@@ -35,7 +35,7 @@ Other known limitations:
 - Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
 - UNESCO serial properties are represented by one French component point rather than full site boundaries. Museum attendance sums distinct physical sites sharing one Muséofile institution; universities are mapped at administrative headquarters communes rather than campus footprints.
 - Overseas France is excluded; Corsica is included.
-- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; the military layer remains unimplemented.
+- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells. Military markers use a sparse 2012 Ministry personnel table: they are historical base-seat aggregates, not current units, boundaries, ranges or a full order of battle.
 
 ## Quick start
 
@@ -50,9 +50,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
-uv run python -m pipeline build world france_core citizens districts resources infrastructure wonders trade communes catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline build world france_core citizens districts military resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
@@ -72,6 +72,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - GASPAR catastrophe-naturelle recognitions from Géorisques.
 - SDES 2019 road, rail and inland-waterway goods-flow workbooks.
 - Ministry of Culture museum attendance and Muséofile directory; MESRI SISE university enrolment.
+- Ministry of the Armed Forces: 2012 defense-base stationed personnel, preserved through the data.gouv.fr Tabular API extraction.
 
 The in-app Almanac/source catalogue is generated from the same source registry used by the pipeline.
 

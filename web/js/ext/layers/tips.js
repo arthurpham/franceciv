@@ -57,7 +57,7 @@ export const tips = {
       `${esc(name)}${f.joint ? " · joint base" : ""} · ${esc(tier)}${esc(status)}`,
     ];
     if (f.area_km2 != null) lines.push(`Boundary ${int(f.area_km2)} km²`);
-    lines.push(muted("DoD MIRTA. Sized by boundary area: no per-base headcount is published."));
+    lines.push(muted("Ministry of the Armed Forces, 2012. Marker is the support-group seat, not a boundary."));
     return lines.join("<br>");
   },
   range(r, m) {
@@ -65,7 +65,7 @@ export const tips = {
     return [
       `<b>${esc(r.name)}</b> ${muted(esc(r.state || ""))}`,
       `Restricted ground · ${esc(comp?.name || "")} · ${int(r.area_km2)} km²`,
-      muted("One of the 30 largest DoD boundaries (MIRTA), drawn on the hexes it covers."),
+      muted("Restricted-ground polygons are not currently available in the French open-data military layer."),
     ].join("<br>");
   },
   wonder(x, m) {

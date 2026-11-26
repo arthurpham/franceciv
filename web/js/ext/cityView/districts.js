@@ -1,5 +1,5 @@
 // City View "Districts": the metro's real industry specialisation (districts.json, INSEE workplace employment) as strategy-game
-// districts, plus the Encampment tier from military.json (installations + armed-forces residents).
+// districts, plus the Encampment tier from military.json (installations + stationed personnel).
 //
 //   cityDistricts(ddata, mil, id) → [district]   the metro's districts, strongest first, each with what the dock and
 //                                                the map plaques need ({id, name, short, color, icon, lq, emp, …})
@@ -135,7 +135,7 @@ function districtCard(d, row, ddata, mil) {
     const inst = installationsById(mil);
     const names = (mc.installations || []).map((i) => inst.get(i)?.name).filter(Boolean);
     milHtml = `<div class="cv-dc-mil">
-      <p><b>${esc(d.tierLabel)}</b>${mc.naval ? " (naval)" : ""}: ${int(mc.armed_forces)} residents in the armed forces, ${pct(mc.share, mc.share < 0.01 ? 2 : 1)} of people 16 and over.</p>
+      <p><b>${esc(d.tierLabel)}</b>${mc.naval ? " (naval)" : ""}: ${int(mc.armed_forces)} stationed personnel (2012), ${pct(mc.share, mc.share < 0.01 ? 2 : 1)} of the AAV population.</p>
       ${names.length ? `<p class="cv-dc-inst">${names.slice(0, 5).map((n) => `<span>${esc(n)}</span>`).join("")}${
         mc.installation_count > Math.min(5, names.length) ? `<small>+${mc.installation_count - Math.min(5, names.length)} more</small>` : ""}</p>` : ""}
     </div>`;
