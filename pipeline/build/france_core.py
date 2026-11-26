@@ -29,6 +29,21 @@ INDUSTRIES = {
     "arts": "Arts, entertainment & recreation", "accommodation": "Accommodation & food services",
     "other": "Other services", "public_admin": "Public administration",
 }
+
+# Non-overlapping gross value added groups published by Eurostat regional accounts.
+GVA_INDUSTRIES = {
+    "agriculture": ("A", "Agriculture, forestry & fishing"),
+    "industry_energy": ("B-E", "Industry including energy"),
+    "construction": ("F", "Construction"),
+    "trade_transport_accommodation": ("G-I", "Trade, transport, accommodation & food"),
+    "information": ("J", "Information & communication"),
+    "finance": ("K", "Finance & insurance"),
+    "real_estate": ("L", "Real estate"),
+    "professional_admin": ("M_N", "Professional & administrative services"),
+    "public_education_health": ("O-Q", "Public administration, education & health"),
+    "arts_other": ("R-U", "Arts, entertainment & other services"),
+}
+
 YIELDS = [
     {"key": "food", "icon": "y-food", "emoji": "🌾", "label": "Food", "color": "#7fbf3f", "unit": "workers", "industries": ["agriculture"], "description": "Employment in agriculture, forestry and fishing (Eurostat NACE A), allocated within departments in proportion to population."},
     {"key": "production", "icon": "y-production", "emoji": "⚙️", "label": "Production", "color": "#d9823b", "unit": "workers", "industries": ["manufacturing", "construction", "mining"], "description": "Employment in industry (NACE B–E) plus construction (NACE F)."},
@@ -212,6 +227,9 @@ def build():
         vals = [v for (nut, n), v in table.items() if n == nace and nut_to_dep.get(nut) == dep]
         return vals[0] if vals else None
 
+    def dep_gva(dep):
+        return {key: (lambda v: round(v * 1e6) if v is not None else None)(dep_values(gva_mio, dep, nace)) for key, (nace, _label) in GVA_INDUSTRIES.items()}
+
     # Department population/area from communes.
     dep_pop = Counter()
     dep_area = Counter()
@@ -328,8 +346,17 @@ def build():
             "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(rcomp.get("POP_2023"), rcomp.get("POP_2017"))),
             "growth_years": [2017, 2023] if rcomp.get("POP_2023") and rcomp.get("POP_2017") else None,
             "pop_series": {str(y): v for y, v in comp_series(rcomp, "POP")}, "ranks": {}, "label": None,
+            "gdp_by_industry": dict(Counter() + Counter()),
             "land": None, "energy": None,
         })
+
+    # Regional gross value added by broad non-overlapping Eurostat industry group.
+    for s in states:
+        deps = [d for d, c in counties_meta.items() if c["state_fips"] == s["fips"]]
+        totals = Counter()
+        for d in deps:
+            totals.update({k: v or 0 for k, v in dep_gva(d).items()})
+        s["gdp_by_industry"] = {k: round(totals.get(k, 0)) for k in GVA_INDUSTRIES}
 
     # Yield ranks and direct land-cover shares for every region.
     for key in ["food", "production", "gold", "science", "culture"]:
@@ -480,7 +507,11 @@ def build():
         "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(fr_c.get("POP_2023"), fr_c.get("POP_2017"))),
         "growth_years": [2017, 2023] if fr_c.get("POP_2023") and fr_c.get("POP_2017") else None,
     }
-    nation = {"vintage": "INSEE populations / Eurostat regional accounts 2023", "year": 2023, "gdp_vintage": "Eurostat nama_10r_3gdp, 2023", "nation": nation_obj, "yields": YIELDS, "industries": INDUSTRIES, "gdp_industries": {}}
+    nat_gva = Counter()
+    for dep in counties_meta:
+        nat_gva.update({k: v or 0 for k, v in dep_gva(dep).items()})
+    nation_obj["gdp_by_industry"] = {k: round(nat_gva.get(k, 0)) for k in GVA_INDUSTRIES}
+    nation = {"vintage": "INSEE populations / Eurostat regional accounts 2023", "year": 2023, "gdp_vintage": "Eurostat nama_10r_3gva/nama_10r_3gdp, 2023", "nation": nation_obj, "yields": YIELDS, "industries": INDUSTRIES, "gdp_industries": {k: label for k, (_nace, label) in GVA_INDUSTRIES.items()}}
 
     # Departments (counties contract).
     fields_def = [
@@ -491,10 +522,27 @@ def build():
         ("developed", "Built-up", "pct", "share of land"), ("income", "Median standard of living", "eur", "euros per year"),
         ("poverty", "Poverty", "pct", "share of residents"), ("growth", "Population growth", "signed", "2017–2023"),
         ("homeownership", "Owner-occupied", "pct", "share of main homes"), ("second_homes", "Second homes", "pct", "share of dwellings"),
-        ("vacancy", "Vacant homes", "pct", "share of dwellings"), ("cbsa", "Main AAV", "text", None), ("cell", "Map cell", "int", None),
+        ("vacancy", "Vacant homes", "pct", "share of dwellings"),
+        ("unemployment", "Unemployment", "pct", "share of labour force"), ("higher_education", "Bac+2 or higher", "pct", "share of adults"),
+        ("seniors", "Aged 65 or over", "pct", "share of residents"), ("immigration", "Immigrants", "pct", "share of residents"),
+        ("public_transit", "Public-transit commuting", "pct", "share of workers"), ("car_commuting", "Car commuting", "pct", "share of workers"),
+        ("disasters", "Natural disasters", "float", "recognitions / current commune since 2000"),
+        ("flood_events", "Flood share", "pct", "share of recognitions"), ("drought_events", "Drought share", "pct", "share of recognitions"),
+        ("macron_2022", "Macron 2022", "pct", "share of valid ballots"), ("lepen_2022", "Le Pen 2022", "pct", "share of valid ballots"),
+        ("abstention_2022", "Abstention 2022", "pct", "share of registered voters"),
+        ("cbsa", "Main AAV", "text", None), ("cell", "Map cell", "int", None),
     ]
-    insee_fields = {"population", "land_km2", "density", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy"}
-    fields = [{"key": k, "label": lab, "format": fmt, "unit": unit, "higher_is": "neutral", "source": "fr_insee_stats" if k in insee_fields else "fr_eurostat", "description": ""} for k, lab, fmt, unit in fields_def]
+    insee_fields = {"population", "land_km2", "density", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy", "unemployment", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
+    hazard_fields = {"disasters", "flood_events", "drought_events"}
+    election_fields = {"macron_2022", "lepen_2022", "abstention_2022"}
+    corine_fields = {"forest", "crop", "developed"}
+    def field_source(k):
+        if k in insee_fields: return "fr_insee_stats"
+        if k in hazard_fields: return "fr_hazards"
+        if k in election_fields: return "fr_elections"
+        if k in corine_fields: return "fr_corine"
+        return "fr_eurostat"
+    fields = [{"key": k, "label": lab, "format": fmt, "unit": unit, "higher_is": "neutral", "source": field_source(k), "description": ""} for k, lab, fmt, unit in fields_def]
     rows = []
     for idx, dep in enumerate(county_ids):
         meta = counties_meta[dep]
@@ -521,6 +569,18 @@ def build():
                      round(dep_comp.get(dep,{}).get("RP_PROP_2023",0)/dep_comp.get(dep,{}).get("RP_2023",1),4) if dep_comp.get(dep,{}).get("RP_2023") else None,
                      round(dep_comp.get(dep,{}).get("RSEC_2023",0)/dep_comp.get(dep,{}).get("LOG_2023",1),4) if dep_comp.get(dep,{}).get("LOG_2023") else None,
                      round(dep_comp.get(dep,{}).get("LVAC_2023",0)/dep_comp.get(dep,{}).get("LOG_2023",1),4) if dep_comp.get(dep,{}).get("LOG_2023") else None,
+                     round(e.get("unemployment"),4) if e.get("unemployment") is not None else None,
+                     round(e.get("higher_education"),4) if e.get("higher_education") is not None else None,
+                     round(e.get("seniors"),4) if e.get("seniors") is not None else None,
+                     round(e.get("immigration"),4) if e.get("immigration") is not None else None,
+                     round(e.get("public_transit"),4) if e.get("public_transit") is not None else None,
+                     round(e.get("car_commuting"),4) if e.get("car_commuting") is not None else None,
+                     round(dep_hazard.get(dep,{}).get("frequency"),4) if dep_hazard.get(dep,{}).get("frequency") is not None else None,
+                     round(dep_hazard.get(dep,{}).get("flood"),4) if dep_hazard.get(dep,{}).get("flood") is not None else None,
+                     round(dep_hazard.get(dep,{}).get("drought"),4) if dep_hazard.get(dep,{}).get("drought") is not None else None,
+                     round(dep_election.get(dep,{}).get("macron"),4) if dep_election.get(dep,{}).get("macron") is not None else None,
+                     round(dep_election.get(dep,{}).get("le_pen"),4) if dep_election.get(dep,{}).get("le_pen") is not None else None,
+                     round(dep_election.get(dep,{}).get("abstention"),4) if dep_election.get(dep,{}).get("abstention") is not None else None,
                      aa["id"] if aa else None, cell])
     counties_out = {"vintage": "geo.api.gouv.fr populations; Eurostat 2023", "fields": fields, "columns": [x[0] for x in fields_def], "rows": rows}
 

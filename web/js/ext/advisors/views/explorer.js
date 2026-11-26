@@ -352,11 +352,11 @@ export async function mount(ctx) {
     if (!lensFields.length) lensRow.innerHTML = `<span class="adv-note">No map lens for these columns: hover and brush to see places on the map.</span>`;
     fieldInfo.innerHTML = [fx, fy, fs, fc].filter((f, i, a) => f && a.indexOf(f) === i).map((f) => `<p><b>${esc(f.label)}</b>${f.unit ? ` <span class="sub">${esc(f.unit)}</span>` : ""}: ${esc(f.description || "")}</p>`).join("");
     const srcIds = [fx, fy, fs, fc].filter(Boolean).map((f) => f.source).filter(Boolean);
-    srcEl.innerHTML = sourcesHtml(data, [...srcIds, st.level === "counties" ? "acs_5yr" : "acs_1yr"], [
-      "Columns marked ≈ are population-weighted means of county values: a fair guide, not the true median of the area.",
-      `Metro and state data are ${esc(data.vintage)}; county data are ${esc(data.countyVintage)}. GDP is BEA, counted where the work is done; jobs are counted where people live.`,
-      "Alaska and Hawaii are not on the map, so they are not in the tables.",
-      ...(st.level === "counties" && data.countiesOffMap ? [`${int(data.countiesOffMap)} small counties are smaller than one hex: they are in the table and chart but cannot be outlined on the map.`] : []),
+    srcEl.innerHTML = sourcesHtml(data, [...srcIds, "fr_insee_stats", "fr_eurostat"], [
+      "Columns marked ≈ are population-weighted means of department values: a fair guide, not the true median of the area.",
+      `Urban-area and regional data are ${esc(data.vintage)}; department data are ${esc(data.countyVintage)}. GDP is Eurostat output where the work is done; jobs are INSEE workplace jobs.`,
+      "Overseas France is not on the map, so it is not in the tables.",
+      ...(st.level === "counties" && data.countiesOffMap ? [`${int(data.countiesOffMap)} small departments are smaller than one hex: they are in the table and chart but cannot be outlined on the map.`] : []),
     ]);
   }
 

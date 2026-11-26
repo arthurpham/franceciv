@@ -38,7 +38,7 @@ export const LAND = [
 const sum = (o) => Object.values(o || {}).reduce((a, v) => a + (Number.isFinite(v) ? v : 0), 0);
 const HEX_AREA = (R) => (3 * Math.sqrt(3) / 2) * R * R; // km² of one hex
 
-/** Industries by jobs (ACS C24030, where residents work) with location quotients vs the nation. */
+/** Industries by jobs (INSEE census C24030, counted at employers) with location quotients vs the nation. */
 export function jobIndustries(city, nation) {
   const n = nation.nation;
   const total = city.employed || sum(city.jobs) || 1;
@@ -57,7 +57,7 @@ export function jobIndustries(city, nation) {
     .sort((a, b) => b.jobs - a.jobs);
 }
 
-/** GDP by industry (BEA CAGDP2) with shares and location quotients vs U.S. GDP shares. */
+/** GDP by industry (Eurostat CAGDP2) with shares and location quotients vs French GDP shares. */
 export function gdpIndustries(city, nation) {
   const g = city.gdp_by_industry;
   const ng = nation.nation.gdp_by_industry || {};
@@ -78,14 +78,14 @@ export function gdpIndustries(city, nation) {
       };
     })
     .sort((a, b) => b.value - a.value);
-  // What BEA still withholds after recovery, as its own grey row.
+  // What Eurostat still withholds after recovery, as its own grey row.
   const und = Number.isFinite(city.gdp_undisclosed) ? city.gdp_undisclosed
     : Object.values(g).some((v) => v == null) && Number.isFinite(city.gdp) ? Math.max(0, city.gdp - sum(g)) : 0;
   if (und > 0) {
     const missing = Object.entries(g).filter(([, v]) => v == null).map(([k]) => k);
     rows.push({
       key: "undisclosed", value: und, share: und / total, natShare: 0, lq: null, undisclosed: true, missing,
-      label: "Undisclosed by BEA", short: "Undisclosed", color: "#4a5260", icon: "lock",
+      label: "Undisclosed by Eurostat", short: "Undisclosed", color: "#4a5260", icon: "lock",
     });
   }
   return rows;
@@ -151,12 +151,12 @@ export function buildModel(app, city) {
     };
   });
 
-  // Industries (ACS) and GDP by industry (BEA). The map's districts are the real ones from districts.json (BLS
-  // QCEW), placed by placeDistricts() once that file arrives; until then there are none.
+  // Industries (INSEE census) and GDP by industry (Eurostat). The map's districts are the real ones from districts.json (INSEE census
+  // INSEE census), placed by placeDistricts() once that file arrives; until then there are none.
   const inds = jobIndustries(city, nation);
   const gdpInds = gdpIndustries(city, nation);
   // District plaques go on footprint hexes near the centre that have no resource site and no other city; the rest
-  // (small metros) sit in a row inside the city's own hex.
+  // (small urban areas) sit in a row inside the city's own hex.
   const cx = grid.cx(city.cell), cy = grid.cy(city.cell);
   // The city's banner stands over the hexes just north of it, so those come after the other near hexes.
   const R = grid.R;

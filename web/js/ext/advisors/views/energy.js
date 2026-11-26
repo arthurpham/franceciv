@@ -148,7 +148,7 @@ export function mount(ctx) {
   }
 
   // --- per state ------------------------------------------------------------------------------------------------
-  const sBody = section(el, { title: "Power by state", note: "Mapped capacity per state, by type. Click a state to filter everything to it; click it again to clear." });
+  const sBody = section(el, { title: "Power by region", note: "Mapped capacity per region, by type. Click a region to filter everything to it; click it again to clear." });
   const stateRows = states
     .map((s, i) => ({ key: s.abbr, label: s.name, idx: i, parts: s.energy?.by_type || {}, total: s.energy?.total || 0, text: mw(s.energy?.total) }))
     .filter((r) => r.total > 0)
@@ -179,11 +179,11 @@ export function mount(ctx) {
       <p>${esc(ty.description)}</p><span class="src">Source: ${esc(src ? `${src.title} (${src.vintage || src.publisher})` : ty.source)}</span></div></div>`;
   }).join("")}`).join("");
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["eia_860m", "eia_coal", "msha_mines", "eia_shale_plays"], [
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_energy"], [
     "Only sites above each type's threshold are mapped (e.g. gas plants of 1,500 MW or more, wind clustered per hex at 500 MW or more), so totals are <b>not</b> state or national capacity.",
-    "Capacity is nameplate-style net summer capacity (MW), not how much electricity a site produces: a 1,000 MW solar farm generates far less in a year than a 1,000 MW nuclear plant.",
-    "Mines are sized by employees (MSHA) or coal output (EIA); oil and gas plays by area. These units cannot be added to MW.",
-    "A site counts in the state its operator files it under; a few border sites sit in a hex another state owns.",
+    "Capacity is registry rated capacity (MW), not how much electricity a site produces: a 1,000 MW solar farm generates far less in a year than a 1,000 MW nuclear plant.",
+    "Different resource types use different public units and thresholds; they cannot be added to MW.",
+    "Power sites are grouped by the region containing their mapped point; a few border sites can sit close to a neighbouring region's hexes.",
   ]));
 
   // --- map ------------------------------------------------------------------------------------------------------

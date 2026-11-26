@@ -281,38 +281,27 @@ additive: oil and gas items each carry their whole play's area, so summing them 
 
 ## counties.json
 
-One row per county on the map (the lower 48 + DC, world.json `counties` order), **column-oriented**:
+One row per metropolitan French department (`world.json` `counties` order), **column-oriented**:
 
 ```jsonc
 {
-  "vintage": "ACS 2024 5-year",
-  "fields": [{"key": "population", "label": "Population", "format": "int", "unit": "people", "higher_is": "neutral",
-              "source": "acs_5yr", "description": "..."}],    // one entry per column, in column order
-  "columns": ["geoid", "name", "state", "population", "land_km2", "density", "income", "home_value", "poverty",
-              "median_age", "foreign_born", "bachelors", "broadband", "commute", "homeownership", "uninsured",
-              "forest", "crop", "pasture", "developed", "cbsa", "cell"],
-  "rows": [["01001", "Autauga County", "AL", 59285, 1539.6, 38.5, 69841, 197900, 0.11, 39.1, ...,  "33860"]]
+  "vintage": "geo.api.gouv.fr populations; Eurostat 2023",
+  "fields": [{"key": "population", "label": "Population", "format": "int", "unit": "people", "source": "fr_insee_stats", "description": "..."}],
+  "columns": ["geoid", "name", "state", "population", "land_km2", "density", "gdp", "gdp_per_capita", "employment", "industry", "forest", "crop", "developed", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy", "unemployment", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022", "cbsa", "cell"],
+  "rows": [["01", "Ain", "ARA", ...]]
 }
 ```
 
-`rows[i][j]` is column `columns[j]` of county i; `fields` describes each column (`fields[j].key == columns[j]`).
-`format` is one of the lens formats plus `text` (geoid, name, state, cbsa) and `km2`; as in lenses, `pct` values are
-**0..1 fractions**. County metrics are computed exactly as the matching lenses (lens id `age` → `median_age`, `home` →
-`home_value`). `density` = ACS population ÷ Gazetteer land area (people / km²). Land shares (`forest`, `crop`,
-`pasture`, `developed`, same groupings as world.json `pct`) are the mean of the hex shares over the county's sample
-points (`_world.county_samples`: a hex counts once per sample of the county in it), `null` for small counties that no
-sample hits. `cbsa` is the cities.json id of the metro/micro area the county belongs to (OMB delineation), or `null`
-(not in a CBSA, or in one too small for ACS 1-year data and so not in cities.json). `cell` (format `int`) is a
-representative US land cell: the one nearest the county's Gazetteer centre point, in its own state where possible, so a
-county smaller than a hex can still be ringed and framed. `null` always means no data.
+`rows[i][j]` is column `columns[j]` of department i, and `fields` describes each column in column order. `pct` and
+`signed` values are **0..1 fractions**. `state` is the region abbreviation and `cbsa` the containing AAV id where the
+representative city belongs; these inherited contract names are kept for browser compatibility. `cell` is a representative
+French land cell used for outlining/framing even when the department is smaller than one hex.
 
-**Faith, wellbeing, disaster and veteran columns** (`pipeline/build/counties.py` `community_fields`; `fields` describe
-each, same null rules), after `cell`, in this order: `faith` (float, adherents per 100 residents, 1 decimal; null for CT), `faith_tradition` (text: a `faith_tradition`
-category id), `amenities` (float index, 1 decimal), `mhlth` (pct, PLACES age-adjusted frequent mental distress),
-`loneliness` (pct, PLACES; null in about 845 counties of states PLACES 2025 left out), `disasters` (int, DR declarations
-since 2000-01-01, 0 = none), `veterans` (int, `B21001_002`), `veterans_pct` (pct of civilians 18+), `armed_forces` (int,
-ACS `B23025_006`), `armed_forces_pct` (pct of population 16+). A column whose source interim is missing is all null.
-Categorical county columns are `text` (the category id), not `category`.
+Population, density, income, poverty, growth, housing, unemployment, education, age, immigration and commuting fields come
+from INSEE census/Comparateur tables. GDP, GDP per person and employment come from Eurostat regional accounts. Forest,
+crop and developed shares are CORINE hex-cover means. `disasters` is GASPAR recognitions since 2000 normalised by the
+current commune count; flood/drought fields are shares of those recognitions. The three 2022 election fields are shares of
+valid ballots or registered voters as labelled. `null` always means no data.
 
 ## Optional map-layer files
 
@@ -321,10 +310,10 @@ a `check(web_dir)` (see Pipeline conventions). Shared rules:
 
 * Top level always has `"version": 1`, `"vintage"` (a human string, or `{part: string}`), and `"sources": [source ids]`
   (sources.json ids, so the Almanac can cite them).
-* `cell` = a world.json cell index (pointy-top odd-r, `row * cols + col`); a site's `cell` is a US land cell (`owner >= 0`)
+* `cell` = a world.json cell index (pointy-top odd-r, `row * cols + col`); a site's `cell` is a metropolitan-French land cell (`owner >= 0`)
   unless stated. `x`, `y` = map km. `county` = 5-digit GEOID from world.json `counties` (or null), `cbsa` = a cities.json
   `id` (or null), `state` = postal abbr.
-* Money is **US dollars** (not thousands or millions) unless the key says otherwise (`_musd`); shares are 0..1 fractions;
+* Money is **euros** (not thousands or millions) unless the key says otherwise; shares are 0..1 fractions;
   `null` = unknown, never `0`. A value that is a **lower bound** (suppressed parts left out) says so (`lower_bound: true`
   or a `suppressed` count).
 * Rules that pick things (districts, wonders, routes) are published inside the file as text (`rule` / `rules`) so the UI

@@ -8,8 +8,8 @@ import { hasIcon } from "../icons.js";
 import { icon, glyph } from "./icon.js";
 import { DISTRICT_ICON } from "./infoPanel.js";
 
-export const METRO_MIN = 250000; // metros in growth / specialisation / per-person rankings
-export const BIG_METRO_MIN = 500000; // metros in the unemployment rankings
+export const METRO_MIN = 250000; // urban areas in growth / specialisation / per-person rankings
+export const BIG_METRO_MIN = 500000; // urban areas in the unemployment rankings
 const TOP = 8;
 const GDP_ROWS = 8; // industries shown before "Show all"
 // A related map lens for some reports (shown only when lenses.json has it). These are related measures, not the
@@ -69,12 +69,12 @@ export function statDefs(nation) {
   return [
     {
       key: "population", label: "Population", name: "Population", color: "#e8dcc0", iconId: "pop", emoji: "👥", unit: "people",
-      description: "Residents (ACS B01003).", source: nation?.vintage || "", value: n.population ?? null,
+      description: "Residents (INSEE census).", source: nation?.vintage || "", value: n.population ?? null,
     },
     ...yields,
     {
       key: "unemployment", label: "Unemployment", name: "Unemployment rate", color: "#e8dcc0", iconId: "unemployment", emoji: "😐",
-      unit: "rate", description: "Unemployed ÷ civilian labour force (ACS B23025).", source: nation?.vintage || "", value: n.unemployment ?? null,
+      unit: "rate", description: "Unemployed ÷ labour force (INSEE census).", source: nation?.vintage || "", value: n.unemployment ?? null,
     },
   ];
 }
@@ -108,22 +108,10 @@ function rank(list, valueOf, { asc = false, min = 0, fmt = count3, exact = int, 
     .map(({ r, v }, i) => ({ rank: i + 1, kind: r.kind, ref: r.ref, name: r.name, sub: subOf ? subOf(r.o) : r.sub, value: v, text: fmt(v), exact: exact ? exact(v) : "" }));
 }
 
-// Which states the "States" rankings cover. states.json holds the states drawn on the map; when the U.S. total
-// includes people outside them (Alaska and Hawaii are not on the map), say so rather than imply all 50 are ranked.
+// Which regions the "States" rankings cover. states.json holds the regions drawn on the map; when the national total
+// Overseas France is outside the metropolitan map scope.
 function stateScope(n, st) {
-  const abbrs = new Set(st.map((r) => r.o.abbr).filter(Boolean));
-  const hasDC = abbrs.has("DC");
-  const sum = st.reduce((a, r) => a + (fin(r.o.population) ? r.o.population : 0), 0);
-  const gap = fin(n.population) && n.population > 0 ? (n.population - sum) / n.population : 0;
-  const label = hasDC ? "States & DC" : "States";
-  if (!st.length || gap < 0.001) return { label, note: "" };
-  const missing = [["AK", "Alaska"], ["HI", "Hawaii"]].filter(([a]) => !abbrs.has(a)).map(([, name]) => name);
-  const outside = missing.length ? missing.join(" and ") : `${compact(n.population - sum)} residents`;
-  const what = `${st.length - (hasDC ? 1 : 0)} states on the map${hasDC ? " + DC" : ""}`;
-  return {
-    label, inMap: `${hasDC ? "Map states & DC" : "Map states"}`,
-    note: `Ranks the ${what}; ${outside} ${missing.length > 1 ? "are" : "is"} in the U.S. total but not ranked.`,
-  };
+  return { label: "Regions", inMap: "Map regions", note: `Ranks the ${st.length} metropolitan regions on the map; overseas France is outside the map scope.` };
 }
 
 // Sorted [{r, v}] of every area with a value (for extremes and medians).
@@ -171,7 +159,7 @@ export function buildReport(key, { nation, states, cities, lenses, lensVintage }
 function reportPopulation(rep, n, st, metros) {
   const yrs = Array.isArray(n.growth_years) && n.growth_years.length === 2 ? n.growth_years : null;
   const since = yrs ? ` since ${yrs[0]}` : "";
-  if (fin(n.growth)) rep.context.push(`${signedPct(n.growth)}${since} (Census population estimates)`);
+  if (fin(n.growth)) rep.context.push(`${signedPct(n.growth)}${since} (INSEE populations)`);
   const emp = ratio(n.employed, n.population);
   if (emp != null) rep.context.push(`${compact(n.employed)} employed, ${pct(emp)} of residents`);
 
@@ -180,7 +168,7 @@ function reportPopulation(rep, n, st, metros) {
     label: `${prefix}${x.r.name}`, sub: x.r.kind === "city" ? x.r.sub : "", value: x.v, text: signedPct(x.v), tone: x.v >= 0 ? "good" : "bad",
   });
   const groups = [];
-  if (fin(n.growth)) groups.push({ rows: [{ label: "United States", value: n.growth, text: signedPct(n.growth), tone: n.growth >= 0 ? "good" : "bad", strong: true }] });
+  if (fin(n.growth)) groups.push({ rows: [{ label: "France", value: n.growth, text: signedPct(n.growth), tone: n.growth >= 0 ? "good" : "bad", strong: true }] });
   const extremes = (list, what) => {
     if (list.length < 2) return;
     const k = Math.min(3, Math.floor(list.length / 2));
@@ -189,13 +177,13 @@ function reportPopulation(rep, n, st, metros) {
     groups.push({ title: bottom.every((x) => x.v < 0) ? `Shrinking ${what}` : `Slowest-growing ${what}`, rows: bottom.map((x) => row(x)) });
   };
   extremes(sorted(st, g), "states");
-  extremes(sorted(metros, g, METRO_MIN), `metros (${compact(METRO_MIN)}+)`);
+  extremes(sorted(metros, g, METRO_MIN), `urban areas (${compact(METRO_MIN)}+)`);
   if (groups.length) rep.breakdown = { title: yrs ? `Population change ${yrs[0]}–${yrs[1]}` : "Population change", note: rep.scope.note, groups };
 
   rep.boards.modes = [
     { id: "abs", label: "Largest", states: rank(st, (o) => o.population), metros: rank(metros, (o) => o.population) },
     {
-      id: "rel", label: "Fastest growing", hint: `Population change${since}; metros of ${compact(METRO_MIN)}+ people.`,
+      id: "rel", label: "Fastest growing", hint: `Population change${since}; urban areas of ${compact(METRO_MIN)}+ people.`,
       states: rank(st, g, { fmt: signedPct, exact: (v) => signedPct(v, 2) }), metros: rank(metros, g, { fmt: signedPct, exact: (v) => signedPct(v, 2), min: METRO_MIN }),
     },
   ];
@@ -211,10 +199,10 @@ function reportUnemployment(rep, n, st, metros) {
   const row = (label, x) => ({ label: `${label}: ${x.r.name}`, sub: x.r.kind === "city" ? x.r.sub : "", value: x.v, text: pct(x.v), tone: tone(x.v) });
   const spread = (list) => (list.length >= 3 ? [row("Highest", list[0]), row("Median", list[Math.floor(list.length / 2)]), row("Lowest", list.at(-1))] : []);
   const groups = [];
-  if (fin(n.unemployment)) groups.push({ rows: [{ label: "United States", value: n.unemployment, text: pct(n.unemployment), strong: true }] });
+  if (fin(n.unemployment)) groups.push({ rows: [{ label: "France", value: n.unemployment, text: pct(n.unemployment), strong: true }] });
   const sRows = spread(ss), mRows = spread(sorted(metros, u, BIG_METRO_MIN));
   if (sRows.length) groups.push({ title: rep.scope.label, rows: sRows });
-  if (mRows.length) groups.push({ title: `Large metros (${compact(BIG_METRO_MIN)}+)`, rows: mRows });
+  if (mRows.length) groups.push({ title: `Large urban areas (${compact(BIG_METRO_MIN)}+)`, rows: mRows });
   if (groups.length) rep.breakdown = { title: "Spread", note: rep.scope.note, groups };
 
   const hint = `Metros of ${compact(BIG_METRO_MIN)}+ people.`;
@@ -228,7 +216,7 @@ function reportUnemployment(rep, n, st, metros) {
 function reportGold(rep, nation, n, st, metros) {
   const gdp = (o) => o.gdp ?? o.yields?.gold ?? null;
   const pp = ratio(rep.total, n.population);
-  // GDP and population can come from different years (BEA GDP lags the ACS by a year): say which.
+  // GDP and population can come from different statistical series/years: say which.
   const popYear = fin(nation.year) ? nation.year : null;
   const years = n.gdp_year && popYear && n.gdp_year !== popYear ? `${n.gdp_year} GDP ÷ ${popYear} residents` : "GDP ÷ residents";
   if (pp != null) rep.context.push(`${money(pp)} per person (${years})`);
@@ -248,7 +236,7 @@ function reportGold(rep, nation, n, st, metros) {
   rep.boards.modes = [
     { id: "abs", label: "Largest GDP", states: rank(st, gdp, { fmt: money, exact: dollars }), metros: rank(metros, gdp, { fmt: money, exact: dollars }) },
     {
-      id: "rel", label: "Per person", hint: `${years}; metros of ${compact(METRO_MIN)}+ people.`,
+      id: "rel", label: "Per person", hint: `${years}; urban areas of ${compact(METRO_MIN)}+ people.`,
       states: rank(st, perPerson, { fmt: money, exact: dollars }), metros: rank(metros, perPerson, { fmt: money, exact: dollars, min: METRO_MIN }),
     },
   ];
@@ -267,7 +255,7 @@ function reportJobs(rep, def, nation, n, st, metros) {
     const sum = gdpOf.reduce((a, b) => a + b, 0);
     rep.context.push(`${inds.length > 1 ? "These industries produce" : "The industry produces"} ${money(sum)} of GDP (${pct(sum / n.gdp)}${n.gdp_year ? `, ${n.gdp_year}` : ""})`);
   }
-  // Worker counts are ACS (where people live); the GDP figures are BEA (where the work is done): credit both.
+  // Worker counts are INSEE workplace jobs; GDP figures are Eurostat output where the work is done: credit both.
   if (inds.some((k) => fin(n.gdp_by_industry?.[k])) && nation.gdp_vintage && nation.gdp_vintage !== rep.source) {
     rep.source = `${rep.source ? `${rep.source} (workers); ` : ""}${nation.gdp_vintage} (GDP)`;
   }
@@ -297,7 +285,7 @@ function reportJobs(rep, def, nation, n, st, metros) {
     { id: "abs", label: "Most workers", states: rank(st, y), metros: rank(metros, y) },
     {
       id: "rel", label: "Specialisation",
-      hint: `Share of the area's employed in ${def.label.toLowerCase()} jobs ÷ the U.S. share (${pct(nShare)}); metros of ${compact(METRO_MIN)}+ people.`,
+      hint: `Share of the area's employed in ${def.label.toLowerCase()} jobs ÷ the France share (${pct(nShare)}); urban areas of ${compact(METRO_MIN)}+ people.`,
       states: rank(st, lq, { fmt: fmtLq, exact: exactLq, subOf: shareSub }), metros: rank(metros, lq, { fmt: fmtLq, exact: exactLq, subOf: shareSub, min: METRO_MIN }),
     },
   ];
@@ -416,7 +404,7 @@ export function initYieldReports(opts) {
         <div class="yr-controls">
           <div class="yr-tabs" role="tablist" aria-label="Areas">
             <button role="tab" id="yr-tab-states" data-tab="states" aria-controls="yr-board" aria-selected="${tab === "states"}" tabindex="${tab === "states" ? 0 : -1}" ${hasStates ? "" : "disabled"}>States</button>
-            <button role="tab" id="yr-tab-metros" data-tab="metros" aria-controls="yr-board" aria-selected="${tab === "metros"}" tabindex="${tab === "metros" ? 0 : -1}" ${hasMetros ? "" : "disabled"}>Metros</button>
+            <button role="tab" id="yr-tab-metros" data-tab="metros" aria-controls="yr-board" aria-selected="${tab === "metros"}" tabindex="${tab === "metros" ? 0 : -1}" ${hasMetros ? "" : "disabled"}>Urban areas</button>
           </div>
           ${modes.length > 1 ? `<div class="yr-modes" role="group" aria-label="Ranking">${modes
             .map((x) => `<button data-mode="${x.id}" aria-pressed="${x.id === mode}">${esc(x.label)}</button>`).join("")}</div>` : ""}

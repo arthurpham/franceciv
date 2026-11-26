@@ -8,7 +8,7 @@
 //
 //   loadPainter() → Promise<void>          try render/art/people.js once
 //   figureCanvas(row, key, cssH, dpr) → canvas   a cached canvas of one figure, cssH css px tall, 2:3 aspect
-//   CATEGORY_COLOR[row][key]                the colour a category uses in legends and the U.S. bar
+//   CATEGORY_COLOR[row][key]                the colour a category uses in legends and the national bar
 
 let external = null; // render/art/people.js's drawCitizen, once loaded
 let tried = null;
