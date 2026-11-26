@@ -287,10 +287,17 @@ def test_military_contract():
 
 def test_agriculture_tourism_electricity_contracts():
     agriculture = web("agriculture.json")
-    assert agriculture["sources"] == ["fr_corine"]
-    assert {l["id"] for l in agriculture["lenses"]} == {"vineyards", "orchards"}
+    assert agriculture["sources"] == ["fr_corine", "fr_agreste"]
+    assert {l["id"] for l in agriculture["lenses"]} == {"vineyards", "orchards", "farm_density", "average_farm_size"}
     vineyard_vals = [v for v in agriculture["lenses"][0]["values"] if v]
     assert len(vineyard_vals) > 100 and max(vineyard_vals) > 0.1
+    density = next(l for l in agriculture["lenses"] if l["id"] == "farm_density")
+    size = next(l for l in agriculture["lenses"] if l["id"] == "average_farm_size")
+    density_vals = [v for v in density["values"] if v is not None]
+    size_vals = [v for v in size["values"] if v is not None]
+    assert len(density_vals) > 2500 and max(density_vals) > 100
+    assert len(size_vals) > 2500 and 1 < sum(size_vals) / len(size_vals) < 100
+    assert agriculture["agreste_blank_communes"] > 0
 
     tourism = web("tourism.json")
     assert tourism["sources"] == ["fr_tourism"]
