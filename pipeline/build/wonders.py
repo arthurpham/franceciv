@@ -67,7 +67,7 @@ def build():
         wonders.append({
             "id": f"museum-{row['id']}", "name": row["name"], "short": row["name"],
             "kind": "landmark", "rule": "museum_attendance", "rank": 0,
-            "metrics": {"visits": row["visits"], "year": row["year"], "domain": row.get("domain"), "url": row.get("url")},
+            "metrics": {"visits": row["visits"], "year": row["year"], "sites": row.get("sites"), "domain": row.get("domain"), "url": row.get("url")},
             "cells": None, "curated": False, **geo(row["lon"], row["lat"]),
         })
 
@@ -95,7 +95,7 @@ def build():
         wonders.append({
             "id": f"university-{row['id']}", "name": row["name"], "short": row["name"],
             "kind": "university", "rule": "university_enrolment", "rank": 0,
-            "metrics": {"students": row["students"], "year": row["year"], "seat": row.get("seat"), "type": row.get("type")},
+            "metrics": {"students": row["students"], "year": row["year"], "academic_year": "2024-25", "seat": row.get("seat"), "type": row.get("type")},
             "cells": None, "curated": False, **base,
         })
 

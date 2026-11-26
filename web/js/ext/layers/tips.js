@@ -74,9 +74,11 @@ export const tips = {
     const mt = x.metrics || {};
     const lines = [`<b>${esc(x.name)}</b> ${muted(esc([x.state].filter(Boolean).join("")))}`];
     if (x.kind === "university") {
-      lines.push(`${esc(k)} · #${esc(x.rank)} by research spending`);
-      if (mt.rd_usd != null) lines.push(`R&amp;D ${usd(mt.rd_usd)} (FY${esc(mt.year)})${mt.federal_usd != null ? `, ${pct(mt.federal_usd / mt.rd_usd, 0)} federal` : ""}`);
-      if (mt.enrollment != null) lines.push(`${int(mt.enrollment)} students (12-month headcount, ${esc(mt.enrollment_year)})`);
+      lines.push(`${esc(k)} · #${esc(x.rank)} by enrolment`);
+      if (mt.students != null) lines.push(`<b>${num(mt.students)}</b> students (${esc(mt.academic_year || mt.year)})`);
+    } else if (x.rule === "museum_attendance") {
+      lines.push(`${esc(k)} · #${esc(x.rank)} by museum visits`);
+      if (mt.visits != null) lines.push(`<b>${num(mt.visits)}</b> visits (${esc(mt.year)})${mt.sites > 1 ? ` ${muted(`across ${int(mt.sites)} reporting sites`)}` : ""}`);
     } else if (x.curated) {
       lines.push(`${esc(k)} · hand-picked (curated, not ranked by data)`);
       if (mt.visits != null) lines.push(`${num(mt.visits)} recreation visits (${esc(mt.year)})`);
