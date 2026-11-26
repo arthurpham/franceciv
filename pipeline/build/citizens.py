@@ -194,7 +194,7 @@ def build():
 def check(web_dir):
     path = web_dir / "citizens.json"
     if not path.exists():
-        return [("FAIL", "citizens.json missing")]
+        return [("NOTE", "citizens.json missing (optional layer)")]
     data = json.loads(path.read_text())
     errors = []
     groups = data.get("groups") or {}
@@ -219,8 +219,9 @@ def check(web_dir):
             errors.append(f"{prefix}: counts must be non-negative integers")
         if row.get("total") != sum(counts.values()):
             errors.append(f"{prefix}: total does not equal the sum of counts")
-        if not isinstance(figs, dict) or set(figs) != set(keys) or sum(figs.values()) != FIGURES[row_id]:
-            errors.append(f"{prefix}: figures do not sum to {FIGURES[row_id]}")
+        if (not isinstance(figs, dict) or set(figs) != set(keys) or sum(figs.values()) != FIGURES[row_id]
+                or not all(isinstance(v, int) and v >= 0 for v in figs.values())):
+            errors.append(f"{prefix}: figures must be non-negative integers summing to {FIGURES[row_id]}")
         if not isinstance(shares, dict) or set(shares) != set(keys) or not all(0 <= v <= 1 for v in shares.values()):
             errors.append(f"{prefix}: shares missing, out of range or keyed incorrectly")
         elif abs(sum(shares.values()) - 1) > 0.01:
