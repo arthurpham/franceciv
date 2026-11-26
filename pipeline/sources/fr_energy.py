@@ -24,7 +24,7 @@ class FrenchEnergyRegistry(Source):
         publisher="RTE, Enedis and network operators through Open Data Réseaux Énergies (ODRÉ)",
         homepage="https://odre.opendatasoft.com/explore/dataset/registre-national-installation-production-stockage-electricite-agrege/",
         license="Licence Ouverte 2.0",
-        description="Installations of at least 5 MW connected to the French electricity networks, with sector, technology, "
+        description="Installations of at least 500 kW connected to the French electricity networks, with sector, technology, "
         "maximum installed or discharge power, municipality and service status.",
         used_for=["Power-plant and energy-storage resources on the map"],
     )

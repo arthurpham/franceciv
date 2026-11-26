@@ -143,5 +143,5 @@ def build():
         summary = states.get(st["abbr"], {})
         by_type = {k: v["value"] for k, v in summary.items()}
         sites = {k: v["count"] for k, v in summary.items()}
-        st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; not complete regional capacity."} if by_type else None
+        st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; zero means no mapped site, not missing data."}
     write_web("states.json", states_doc)
