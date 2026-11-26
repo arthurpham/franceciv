@@ -279,3 +279,27 @@ def test_military_contract():
     assert data["cities"]["018"]["armed_forces"] == 23_120
     assert data["states"]["IDF"]["ile_de_france_aggregate"] == 20_131
     assert any(s["id"] == "fr_military" for s in web("sources.json"))
+
+
+def test_agriculture_tourism_electricity_contracts():
+    agriculture = web("agriculture.json")
+    assert agriculture["sources"] == ["fr_corine"]
+    assert {l["id"] for l in agriculture["lenses"]} == {"vineyards", "orchards"}
+    vineyard_vals = [v for v in agriculture["lenses"][0]["values"] if v]
+    assert len(vineyard_vals) > 100 and max(vineyard_vals) > 0.1
+
+    tourism = web("tourism.json")
+    assert tourism["sources"] == ["fr_tourism"]
+    hotel = tourism["lenses"][0]
+    vals = [v for v in hotel["values"] if v is not None]
+    assert hotel["id"] == "hotel_tourism" and len(vals) > 2500
+    assert 0.5 < sum(vals) / len(vals) < 10 and max(vals) > 10
+
+    electricity = web("electricity.json")
+    assert electricity["sources"] == ["fr_electricity"]
+    use = electricity["lenses"][0]
+    vals = [v for v in use["values"] if v is not None]
+    assert use["id"] == "electricity_use" and len(vals) > 2500
+    assert 2 < sum(vals) / len(vals) < 10 and max(vals) < 15
+    assert any(s["id"] == "fr_tourism" for s in web("sources.json"))
+    assert any(s["id"] == "fr_electricity" for s in web("sources.json"))

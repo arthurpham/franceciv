@@ -53,7 +53,7 @@ export function lensValueAt(lens, t) {
 }
 
 const TERRAIN = { id: null, icon: "terrain", emoji: "🗺️", name: "Terrain" };
-const RECENT_KEY = "civusa.recentLenses";
+const RECENT_KEY = "franceciv.recentLenses";
 const DEFAULT_RECENT = ["density", "income", "bachelors"];
 const BINS = 40;
 const HOVER_HALF = 0.08; // half-width of the hover band, in ramp units
