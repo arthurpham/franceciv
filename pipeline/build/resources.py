@@ -105,7 +105,7 @@ def build():
         dep = c.get("department")
         state = state_abbr.get(c.get("region"))
         county = dep
-        cbsa = commune_aav.get(code)
+        aav = commune_aav.get(code)
         raw_name = sorted(Counter(g["names"]).items(), key=lambda kv: (-kv[1], kv[0]))[0][0] if g["names"] else c["name"]
         plant_name = raw_name
         upper = raw_name.upper()
@@ -114,7 +114,7 @@ def build():
             plant_name = "Nuclear power plant of " + plant_name.replace("(Le)", "Le").replace("(La)", "La")
         detail = f"{g['units']} installation{'s' if g['units'] != 1 else ''} registered in {c['name']}; source name: {raw_name}"
         items.append({"type": k, "name": plant_name, "x": round(x, 1), "y": round(y, 1), "cell": cell,
-                      "value": round(g["mw"]), "detail": detail, "state": state, "cbsa": cbsa})
+                      "value": round(g["mw"]), "detail": detail, "state": state, "aav": aav})
 
     order = {t["id"]: n for n, t in enumerate(TYPES)}
     items.sort(key=lambda i: (order[i["type"]], -(i["value"] or 0), i["name"]))

@@ -9,13 +9,13 @@ const muted = (s) => `<span class="muted">${s}</span>`;
 const num = (n, d = 1) => (n == null || !Number.isFinite(n) ? "–" : compact(n));
 const sign = (x) => (x > 0 ? "+" : x < 0 ? "−" : "±");
 
-function usd(n) {
+function eur(n) {
   if (n == null || !Number.isFinite(n)) return "–";
   const a = Math.abs(n);
-  if (a >= 1e12) return `$${(n / 1e12).toFixed(2)} trillion`;
-  if (a >= 1e9) return `$${(n / 1e9).toFixed(a >= 1e10 ? 1 : 2)} billion`;
-  if (a >= 1e6) return `$${(n / 1e6).toFixed(1)} million`;
-  return `$${int(n)}`;
+  if (a >= 1e12) return `€${(n / 1e12).toFixed(2)} trillion`;
+  if (a >= 1e9) return `€${(n / 1e9).toFixed(a >= 1e10 ? 1 : 2)} billion`;
+  if (a >= 1e6) return `€${(n / 1e6).toFixed(1)} million`;
+  return `€${int(n)}`;
 }
 
 const HUB_NAME = { L: "Large hub", M: "Medium hub", S: "Small hub", N: "Nonhub primary airport" };
@@ -44,7 +44,7 @@ export const tips = {
       }
       lines.push(`<b>${num(a.enplanements)}</b> passengers (arrivals + departures) in ${esc(a.year)}${ch}`);
     }
-    lines.push(muted("Eurostat airport passengers; display size buckets, not FAA hub categories."));
+    lines.push(muted("Eurostat airport passengers; letters are local display-size buckets."));
     return lines.join("<br>");
   },
   fort(f, m) {

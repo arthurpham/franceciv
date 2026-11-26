@@ -19,18 +19,11 @@ export async function mount(ctx) {
   const { app, data, el, link } = ctx;
   const won = await app.loadData("wonders");
   const { states: stLevel, counties } = data.levels;
-  const lensFaith = app.lensById?.get("faith"), lensTrad = app.lensById?.get("faith_tradition");
-  const lensAmen = app.lensById?.get("amenities"), lensDis = app.lensById?.get("disasters");
+  const lensDis = app.lensById?.get("disasters");
 
   // --- headline -------------------------------------------------------------------------------------------------
   const wonders = (won?.wonders || []).map((w) => ({ ...w, key: w.id }));
   const byKind = (k) => wonders.filter((w) => w.kind === k).length;
-  let adherents = null;
-  if (counties) {
-    let a = 0, p = 0;
-    for (const r of counties.rows) if (fin(r.v.faith) && fin(r.v.population)) { a += (r.v.faith / 100) * r.v.population; p += r.v.population; }
-    adherents = p ? (a / p) * 100 : null;
-  }
   const tileEl = mk("div");
   el.appendChild(tileEl);
   const drawTiles = (dis) => {
@@ -51,9 +44,6 @@ export async function mount(ctx) {
     value: "terrain",
     options: [
       { value: "terrain", label: "Terrain", lens: () => null },
-      ...(lensFaith ? [{ value: "faith", label: "Faith", lens: () => "faith" }] : []),
-      ...(lensTrad ? [{ value: "trad", label: "Tradition", lens: () => "faith_tradition" }] : []),
-      ...(lensAmen ? [{ value: "amen", label: "Amenities", lens: () => "amenities" }] : []),
       ...(lensDis ? [{ value: "dis", label: "Disasters", lens: () => "disasters" }] : []),
     ],
   });
@@ -145,7 +135,6 @@ export async function mount(ctx) {
     "UNESCO serial properties are represented by one French component point rather than their full boundaries.",
     "Museum attendance uses each museum's latest annual total, summing distinct physical sites that share one Muséofile institution. Repeated correction rows for the same site are not double-counted.",
     "University enrolment includes principal and secondary enrolments and CPGE double enrolments. SISE places institutions at their administrative headquarters commune, not across every campus.",
-    "France has no census religion question comparable to the original US faith lens, so that layer is intentionally absent.",
   ]);
 
   const api = {

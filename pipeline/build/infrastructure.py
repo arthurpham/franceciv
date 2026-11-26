@@ -162,7 +162,7 @@ def build():
         return {
             "x": round(x, 1), "y": round(y, 1), "cell": cell,
             "county": c["department"] if c else None,
-            "cbsa": commune_aav.get(c["code"]) if c else None,
+            "aav": commune_aav.get(c["code"]) if c else None,
             "state": state_abbr.get(c["region"]) if c else state_abbr.get(world["states"][world["owner"][cell]]) if cell >= 0 and world["owner"][cell] >= 0 else None,
         }
 
@@ -227,7 +227,7 @@ def build():
             "roads": "Natural Earth European-route/motorway lines form class 0; major highways and expressways at scale rank 7 or better form class 1. Geometry is schematic map art, not a complete road inventory.",
             "rail": "Natural Earth rail scale ranks 1–5 form main lines and ranks 6–8 secondary lines. Geometry is schematic and incomplete.",
             "ports": "Eurostat ports with at least one million metric tonnes handled in 2023, positioned by Natural Earth or their namesake commune.",
-            "airports": "Metropolitan airports with at least 100,000 passengers on board in 2023. Hub letters are display-size buckets, not FAA categories.",
+            "airports": "Metropolitan airports with at least 100,000 passengers on board in 2023. Hub letters are local display-size buckets.",
         },
         "road_classes": ROAD_CLASSES,
         "rail_tiers": RAIL_TIERS,

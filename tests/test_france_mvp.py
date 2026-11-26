@@ -41,6 +41,10 @@ def test_committed_france_core_contract():
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
     assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     assert len(lenses["lenses"][0]["values"]) == len(web("world.json")["owner"])
+    counties = web("counties.json")
+    ci = counties["columns"].index("cell")
+    assert all(isinstance(r[ci], int) and 0 <= r[ci] < len(web("world.json")["owner"]) for r in counties["rows"])
+    assert next(r for r in counties["rows"] if r[0] == "92")[ci] is not None
     by_id = {x["id"]: x for x in lenses["lenses"]}
     assert "out-of-school" in by_id["higher_education"]["unit"]
     # Known Paris (department 75) census ratios, rounded to the four decimals written by the builder.
@@ -212,7 +216,7 @@ def test_military_contract():
     assert data["national"]["personnel"]["total"] > 250_000
     toulon = next(r for r in rows if r["id"] == "base-toulon")
     assert toulon["personnel"] == 23_120 and toulon["tier"] == "major"
-    assert toulon["seat_commune"] == "Toulon" and toulon["cbsa"] == "018"
+    assert toulon["seat_commune"] == "Toulon" and toulon["aav"] == "018"
     assert all(r["area_km2"] is None and r["cells"] is None for r in rows)
     assert all(r["component"] == "other" and r["joint"] for r in rows)
     paris = data["cities"]["001"]

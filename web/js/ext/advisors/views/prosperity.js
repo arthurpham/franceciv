@@ -133,7 +133,7 @@ export function mount(ctx) {
   drawU();
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_insee_stats"], [
-    "Median standard of living is an INSEE income measure per consumption unit, not the original US median household income.",
+    "Median standard of living is an INSEE income measure per consumption unit, not a median household-income total.",
     "No comparable public French median home-value or rent series is used, so affordability and rent-burden charts from the US version are intentionally absent.",
     "Poverty means below 60% of the median standard of living; housing shares are shares of dwellings or main homes, not people.",
     ...(data.countiesOffMap ? [`${int(data.countiesOffMap)} of the smallest departments are smaller than one hex, so selecting them outlines nothing on the map.`] : []),

@@ -121,12 +121,12 @@ export function buildModel(app, city) {
     .filter((c) => c != null && c >= 0);
   const mask = new Set(footprint);
 
-  // Resource sites of the metro (resources.json items tagged with this cbsa), biggest first per type.
+  // Resource sites of the metro (resources.json items tagged with this aav), biggest first per type.
   const items = resources?.items || [];
   const typeById = new Map((resources?.types || []).map((t) => [t.id, t]));
   const sites = [];
   items.forEach((it, index) => {
-    if (it.cbsa === city.id) sites.push({ item: it, index, type: typeById.get(it.type) || null });
+    if (it.aav === city.id) sites.push({ item: it, index, type: typeById.get(it.type) || null });
   });
   const catRank = { energy: 0, mineral: 1, agri: 2 };
   sites.sort((a, b) => (catRank[a.type?.category] ?? 3) - (catRank[b.type?.category] ?? 3)

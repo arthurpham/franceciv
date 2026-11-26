@@ -1,714 +1,115 @@
-# Data contracts
+# Data contracts (v2, France)
 
-> France adaptation note: the filenames and schema names are inherited from `usaciv` for browser compatibility. In this repository, `states` are French metropolitan régions, `counties`/GEOIDs are départements (`2A`/`2B` in Corsica), and city IDs are three-digit INSEE aire d'attraction des villes codes. Monetary values are euros rather than dollars; the `eur` unit/format is the French equivalent of the upstream `usd` contract.
+The Python pipeline and the browser agree on the JSON files in `web/data/`. All coordinates are **map kilometres** in the Albers equal-area projection fitted to metropolitan France and Corsica, origin top-left, y down. Pointy-top odd-r hex index is `row * cols + col`. `null` means unavailable; `0` is never a stand-in for unknown.
 
+## French naming inherited from the original schema
 
-The pipeline (Python) and the browser (web/js) agree on these files in `web/data/`. Change a contract here first, then on
-both sides. All coordinates are **map km**: Albers equal-area, origin top-left, y **down** (see `pipeline/core/geo.py`).
-Per-cell arrays have length `grid.cols * grid.rows`, with index `row * cols + col` (pointy-top, odd-r layout, see
-`pipeline/core/hexgrid.py` ⇄ `web/js/hex.js`). `null` always means "no data". Never write `0` as a stand-in for "unknown".
+The file and object names `states`, `counties`, and `metros` are retained only as browser/pipeline compatibility names. Their meanings in this repository are always French:
+
+| Schema name | French geography |
+|---|---|
+| `state`, `state_fips`, region abbreviation | metropolitan région |
+| `county`, `geoid` | département (`2A`/`2B` in Corsica) |
+| `metro`, city id, `aav` | INSEE aire d'attraction des villes (AAV), three-digit code |
+| commune | French commune, five-character INSEE code |
+
+Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-compatible formatter alias and must format euros, never dollars. Population values are INSEE municipal/legal populations unless a file says otherwise. “Metropolitan France” means the 13 metropolitan régions including Corsica; overseas collectivities are outside the map.
 
 ## Pipeline conventions
 
-* **Sources** (`pipeline/sources/*.py`) are discovered automatically: any `Source` subclass with `info = SourceInfo(...)`.
-  `process()` returns a dict. It may include `"vintage"` (str) and `"_files"` (list of raw-file paths relative to
-  `data/raw/<id>/` that this processing actually used; the Almanac cites only those).
-* **Builders** (`pipeline/build/*.py`) are discovered automatically: a module with `REQUIRES`, `PRODUCES` and `build()`.
-  They run in dependency order. Interims made by builders start with `_`. Helpers without `build()` (e.g. `yields.py`) are fine.
-* The **`_world` interim** (made by `world`) holds: `grid`, `projection` (`MapProjection` kwargs), `owner`, `county`,
-  `county_samples` (7 county indices per US cell, `[]` for other cells; sample 0 = centre), `states` (fips list, same order as
-  world.json states), `counties` (geoid list), `water`, `cover`, `pct` (same as world.json). Builders that need to know whether a
-  cell is land must use `owner[cell] >= 0`.
-* Python is **standard library only**. Downloads go through `Source.download()` (or `Source.download_prefix()` for the
-  leading block of a big sorted file), which cache them and record provenance in `data/raw/<id>/manifest.json`;
-  `Source.discard(rel_path)` forgets a cached file that turned out to be bad. All three wrap `core.fetch`.
-* Under `--offline` (`core.fetch.OFFLINE`, `Source.offline`) sources skip discovery requests and use the newest complete
-  cached data; a download of a file that is not cached raises `OfflineError`.
-* **Builder checks.** Any module in `pipeline/build/` may define `check(web_dir: Path) -> list[(level, message)]`, level one
-  of `PASS`, `NOTE`, `WARN`, `FAIL`. `pipeline check` discovers and runs them after its own checks (section "builder
-  checks", each line prefixed with the module name), so a new builder never edits `pipeline/check.py`. Rules: read only
-  `web_dir` (tests point it at a tiny synthetic dataset); report a **missing output as a NOTE** (never WARN/FAIL: the unit
-  tests run every discovered check against a dataset without your files); a check that raises is reported as a FAIL.
-  Validate your file's shape against this document (keys, types, null rules, cell ranges against world.json) and add a
-  short data-quality summary (counts, coverage) as PASS/NOTE lines.
-* **ACS interims.** `acs_1yr` keeps every estimate line (`<TABLE>_<line>`, e.g. `C24010_007`) of its tables for the nation
-  (`geos["0100000US"]`), the states (`geos["0400000USss"]`) and every CBSA (`cbsa["<5-digit code>"]`): `b01003 c24030 b19025
-  b19013 b25064 b25077 b23025` plus, for citizens, `c24010` (occupation; male lines 002-037, female = male + 36), `b01001`
-  (age; male 003-025, female = male + 24), `b01002` (median age), `c08301` (commute), `c15003` (education 25+) and `b05002`
-  (place of birth). Sexes are **not** summed in the interim: builders add male + female lines. Census leaves some small
-  CBSAs out of a table entirely (C24010 has 520 of 536 CBSAs, C08301 525, B05002 535): the CBSA's record then simply lacks
-  those keys (treat as null). `acs_5yr` (`geos["0500000USsscc"]`, counties) adds `b21001` (veterans: `B21001_001` civilian
-  population 18+, `_002` veterans) and `b23025` (`B23025_001` population 16+, `_006` in the armed forces, by residence).
+* `pipeline/sources/*.py` download and normalize public source data into `data/interim/<source>.json`; every `Source` records raw-file provenance.
+* `pipeline/build/*.py` modules with `REQUIRES`, `PRODUCES` and `build()` are discovered automatically and run in dependency order. Builder interims start with `_`.
+* Builders may define `check(web_dir)`; `pipeline check` discovers those checks. A missing optional output is a NOTE in synthetic test data, not a failure.
+* Python is standard-library only. Downloads are cached under `data/raw/` and checksummed in manifests.
+* The `_world` interim contains `grid`, `projection`, `owner`, `county`, seven-point `county_samples`, `states`, `counties`, `water`, `cover`, and `pct`. `owner[cell] >= 0` is French land; `-1` is water and `-2` foreign land.
 
-## world.json
+## Core files
 
-```jsonc
-{
-  "version": 2,
-  "grid": {"radius": 25, "cols": 117, "rows": 90},
-  "width": 5002.0, "height": 3301.7, "margin": 200,
-  "owner":  [int],   // -1 water, -2 foreign land (Canada, Mexico, the Caribbean), >=0 index into states
-  "county": [int],   // index into counties, -1 if none
-  "elev":   [int],   // metres. Land: mean of land samples only. Water: mean of the hex's ETOPO samples below sea
-                     // level (its depth, <= 0); lakes: min(mean, 0); -4000 where ETOPO has no samples
-  "elev_max": [int], // optional: metres, the highest land sample in the hex (0 for water); the art uses it for snow
-  "water":  [int],   // 0 land, 1 ocean, 2 coast (next to land or shallower than 200 m), 3 lake
-  "relief": [int],   // 0 flat, 1 hills, 2 mountains, 3 peaks (alpine). 0 for water. A hex whose lower 60% of land
-                     // samples is flat lowland (spread < 60 m, under 400 m) is eased one class (valley floors)
-  "cover":  [int],   // land-cover id (see tables.cover). 0 = unknown/none (water, foreign land outside NLCD)
-  "pct": {           // share of the cell's land samples, 0..100 ints (US cells; 0 elsewhere)
-    "forest": [int], "crop": [int], "pasture": [int], "grass": [int], "shrub": [int],
-    "wetland": [int], "developed": [int]
-  },
-  "tables": {
-    "water":  [{"id": 0, "name": "Land"}, {"id": 1, "name": "Ocean", "color": "#1b4266", "rule": "..."}, ...],
-    "relief": [{"id": 0, "name": "Flat", "rule": "..."}, ...],
-    "cover":  [{"id": 1, "key": "forest_deciduous", "name": "Deciduous forest", "color": "#4f7a35", "nlcd": [41], "rule": "..."}, ...]
-  },
-  "states":   [{"fips": "01", "abbr": "AL", "name": "Alabama"}],
-  "counties": [{"geoid": "01001", "name": "Autauga County"}],
-  "rivers":   [{"name": "Mississippi", "rank": 1, "pts": [x0, y0, x1, y1, ...]}]   // clipped to the map; no lake centerlines
-}
-```
+### world.json
 
-Cover ids (fixed): 0 none · 1 forest_deciduous · 2 forest_evergreen · 3 forest_mixed · 4 scrub (scrub & desert) ·
-5 grassland · 6 pasture · 7 cropland · 8 wetland · 9 urban · 10 barren · 11 ice.
-Dominant cover per cell = the largest group among its land samples. A cell is **urban** if NLCD 22+23+24 (developed
-low/med/high) ≥ 30% of land samples. NLCD 21 (developed open space) counts toward grassland.
+`{"version":1,"grid":{cols,rows,radius},"projection":{...},"states":[...],"counties":[...],"owner":[],"county":[],"water":[],"cover":[],"pct":{...},"rivers":[],"lakes":[]}`.
 
-## cities.json
+* `owner`, `county`, `water` and `cover` are per-cell arrays.
+* `states` rows have `fips` (INSEE region code), `abbr`, `name`, `color`, `label` anchor and yield metadata added by builders.
+* `counties` rows have `geoid`, `name`, `state_fips` and area/population metadata. These are departments.
+* `pct` shares are fractions of each hex classified by CORINE Land Cover, grouped for the renderer. Renderer keys such as `cropland` are visual categories, not claims that the source is US NLCD.
+* Rivers and lakes are clipped to map coordinates and used for terrain rendering.
 
-A list sorted by population, descending:
+### cities.json
 
-```jsonc
-{
-  "id": "35620",                  // 5-digit CBSA code
-  "name": "New York", "full": "New York-Newark-Jersey City, NY-NJ Metro Area",
-  "states": ["NY", "NJ"], "metro": true, "capital": false,   // capital: the national capital (Washington)
-  "x": 3912.1, "y": 1100.4,       // principal city's true position (map km)
-  "cell": 4567,                   // land cell (owner >= 0), unique per city where possible; banners anchor here
-  "population": 20112448, "employed": 9876543,
-  "yields": {"food": 15523, "production": 1059252, "gold": 2.1e12, "science": 1470849, "culture": 252479},  // any may be null
-  "jobs": {"agriculture": 123, "...": null},
-  "median_income": 98000, "median_rent": 1700, "home_value": 650000, "unemployment": 0.0578, "rent_burden": 0.227,
-  "gdp": 2.1e12, "gdp_year": 2024,                       // BEA, current dollars; null if unavailable
-  "gdp_by_industry": {"manufacturing": 1.2e11, "...": null},  // optional. BEA-withheld (D) county values are
-                       // recovered from parent/sibling lines, else the parent's remainder is split in national proportions
-  "gdp_undisclosed": null,          // optional: total minus the industries above when some stay null (usd), else null
-  "gdp_estimated": ["utilities"],   // optional: industries whose value includes an apportioned county figure, or null
-  "growth": 0.0174, "growth_years": [2021, 2025],         // population change, see below
-  "counties": ["34003", "36005", "..."],                  // member county GEOIDs (OMB delineation, list 1), sorted
-  "footprint": [3721, 3722, 3845, "..."],                 // US land cells of the metro, sorted (see below)
-  "pop_series": {"2020": 20081935, "2021": 19708911, "...": null, "2025": 20112448},  // PEP, or null
-  "ranks": {"population": 1, "gdp": 1, "gdp_per_capita": 12, "growth": 301,
-            "food": 1, "production": 1, "gold": 1, "science": 1, "culture": 1},     // 1 = top; null if value null
-  "peers": ["31080", "16980", "..."]                      // ids of the 5 cities closest in population
-}
-```
+One object per displayed AAV. Important fields:
 
-* **`footprint`**: the hexes that make up the metro on the map (City view). A US land cell (`owner >= 0`) belongs to
-  a city when at least 4 of its 7 county samples (`_world.county_samples`) fall in the CBSA's member counties. The
-  city's own `cell` is always included, even when it fails that test (a small metro, or a banner cell nudged away), so
-  `footprint` is never empty. A cell is in at most one footprint by the majority rule, but a city's own `cell` may also
-  sit in a bigger neighbour's footprint.
-* **`counties`**: the CBSA's member counties from the OMB delineation (`cbsa_delineation`, list 1), the same list GDP is
-  summed over. Some may be outside the map's county list (none are, today).
-* **`pop_series`**: `{year (string): population}` for every year of the population-estimates vintage (2020 … latest,
-  `pep_population`), on today's metro borders. A year without an estimate is `null`; the whole field is `null` when the
-  CBSA is not in the estimates or its county list there differs from the delineation (the same guard as `growth`).
-  These are PEP numbers, so the latest year will not equal the ACS `population`.
-* **`ranks`**: rank among all cities in cities.json (metro and micro), 1 = highest, for `population`, `gdp`,
-  `gdp_per_capita` (`gdp / population`), `growth` (1 = fastest growing) and each yield key. `null` where the value is
-  null; non-null ranks are a permutation of 1..N, ties broken by population.
-* **`peers`**: the 5 other cities whose population is closest to this one's, by ratio (|log(p / q)|), nearest first.
+* identity/geography: `id`, `name`, `full`, `short`, `x`, `y`, `cell`, `footprint`, `counties` (department ids);
+* people/economy: `population`, `pop_series`, `growth`, `growth_years`, `employed`, `jobs`, `gdp`, `gdp_year`, `gdp_per_capita`, `median_income`, `poverty`, `unemployment`;
+* housing: `homeownership`, `second_homes`, `vacancy` as 0..1 shares from INSEE Comparateur;
+* game-style aggregates: `yields` (`food`, `production`, `gold`, `science`, `culture`), `specialisation`, ranks.
 
-**Growth** (cities, states and `nation.nation`): `growth = population(end) / population(2021) - 1`, a fraction
-(0.0174 = +1.74%), over `growth_years = [2021, end]`, where `end` equals nation.json `year` (the ACS year the panels
-show). Both populations come from one vintage of the Census population estimates (PEP, source `pep_population`), which
-estimates every year on the current (July 2023) metro delineations and with the same methods. So a city's growth is
-like for like: no county added or dropped between the two years (e.g. Chicago without Kenosha County in both years,
-Connecticut's planning regions back to 2020, renamed areas such as Kiryas Joel-Poughkeepsie-Newburgh), and no mix of
-estimate vintages. `population` itself stays the ACS 1-year total; the two are different estimates and will not
-divide exactly. The same `growth_years` is used in every file; it is null only when no estimates were fetched.
-`growth` is **null** (never a guess) when:
+AAV employment is direct INSEE census workplace employment. Department GDP is Eurostat regional accounts; AAV GDP is allocated by workplace employment and must be described as an estimate. City industry value-added breakdowns are omitted when no official AAV-level industry GDP exists.
 
-* |growth| > 25% (a sanity cap; no area comes near it);
-* for cities: the CBSA is not in the PEP metro file, or its member counties there differ from the OMB delineation
-  the rest of the map uses (`cbsa_delineation`). See `pipeline/build/growth.py`.
+### states.json
 
-Currently every city, every state and the nation have a rate. `check` fails if a state or the nation has none while
-`growth_years` is set, if rows disagree on `growth_years`, or if it does not end at nation.json `year`.
+One object per metropolitan région, using the same economic shape as cities plus `abbr`, `color`, ranks, land and energy summary metadata. Regional GDP/employment are direct Eurostat aggregates; census-derived social rates are aggregate or population-weighted as documented in the builder.
 
-## states.json
+### nation.json
 
-A list in the same order as world.json `states`, each with the same economic fields as a city (`population`, `employed`,
-`yields`, `jobs`, medians, `unemployment`, `rent_burden`, `gdp`, …) plus `fips`, `abbr`, `name`,
-`growth`/`growth_years` (as above), `ranks: {yieldKey: 1..49}` (1 = largest), and `label: {x, y, angle, size}` (null
-for a state without hexes, i.e. DC). `label` is an optional suggested anchor for the big state name: `angle` in degrees
-clockwise, `size` a suggested font height in map km, clamped to 14..110 km. The 14 km minimum can exceed very small
-states (RI, DE), so the frontend should still clamp or hide those labels. The frontend may compute its own.
+`{"version":1,"year":2023,"sources":[...],"nation":{...},"yields":[...]}`.
 
-Also, per state:
+`nation` is the metropolitan-France aggregate with the same economic/housing shape as cities. `yields` describe the five displayed yields; monetary/value-added yield units are `eur`.
 
-```jsonc
-"land": {"forest": 0.312, "crop": 0.204, "pasture": 0.051, "grass": 0.12, "shrub": 0.08, "wetland": 0.06,
-         "developed": 0.044},   // or null (no hexes, i.e. DC)
-"energy": {"unit": "MW", "total": 30530,
-           "by_type": {"nuclear": 3937, "hydro": 0, "coal_plant": 0, "gas_plant": 5100, "geothermal": 0,
-                       "pumped_storage": 0, "wind": 0, "solar": 7250, "battery": 4200},
-           "sites": {"nuclear": 1, "hydro": 0, "...": 0},
-           "note": "Only the mapped sites in resources.json ... not the state's total capacity."}
-```
+### lenses.json
 
-* **`land`**: land-cover shares as **0..1 fractions**: the mean of world.json `pct` over the state's cells
-  (`owner == index`) that have land-cover samples (`cover > 0`). Keys are world.json `pct` keys. `null` for a state
-  without such cells (DC).
-* **`energy`**: MW summed from resources.json items whose `cell` is in the state, for every resource type with unit
-  `MW` (all such types appear; `0` means no mapped site, a real zero for the map, not for the state). **It only counts
-  the mapped sites above each type's threshold** (e.g. gas plants ≥ 1,500 MW, wind ≥ 500 MW per hex; see the types'
-  `description`), so it is **not** the state's total generating capacity; `note` says so in plain words for the UI.
-  Items count in their resources.json `state`; a site EIA files once per state (Hoover Dam, AZ + NV) is one item
-  and counts in the state of its larger part. `sites` = number of mapped sites per type.
-  `energy` is `null` if resources.json was not built.
+`{"version":1,"source":"...","groups":[...],"lenses":[...]}`. Each lens has `id`, `group`, `name`, `icon`, `unit`, `format`, `scale`, `higher_is`, `description`, and a per-cell `values` array of world-grid length. `pct` and `signed` values are 0..1 fractions. Values must be null off French land.
 
-## nation.json
+Current lenses are French population/economy, housing, education, age, immigration, commuting, 2022 presidential election results, GASPAR hazard recognitions, and CORINE land-cover shares. Department-level density and employment lenses are area-weighted across hexes using `_world.county_samples`; this preserves departmental totals rather than duplicating population in border hexes.
 
-```jsonc
-{
-  "vintage": "ACS 2025 1-year", "year": 2025,
-  "gdp_vintage": "BEA CAGDP2, 2024",
-  "nation": { /* same economic shape as a city */ },
-  "yields": [{"key": "food", "icon": "y-food", "emoji": "🌾", "label": "Food", "color": "#7fbf3f",
-              "unit": "workers|usd", "description": "..."}],
-  "industries": {"agriculture": "Agriculture, forestry, fishing & hunting"}
-}
-```
+### counties.json
 
-## lenses.json
+Despite the filename, rows are departments. Shape: `{"version":1,"vintage":"...","fields":[...],"columns":[...],"rows":[...]}`. Required identity columns are `geoid`, `name`, `state`, `population`, `land_km2`, `density`, `aav`, `cell`; other columns mirror published lens metrics. `aav` is the principal AAV id used for rollups. `cell` is a representative display hex. Departments smaller than one hex may own no majority hex; the builder must then choose the nearest suitable land hex from the population-weighted centroid so `cell` is always a valid in-range integer. This representative cell is only for framing/highlighting, not statistical geography.
 
-Produced by `pipeline/build/lenses.py`.
+### sources.json
 
-```jsonc
-{
-  "vintage": "ACS 2024 5-year",
-  "groups": [{"id": "people", "name": "People"}, {"id": "prosperity", "name": "Prosperity"}, {"id": "knowledge", "name": "Knowledge"},
-             {"id": "life", "name": "Daily life"}, {"id": "land", "name": "Land"}],
-  "lenses": [{
-    "id": "density", "group": "people", "name": "Population", "icon": "l-people", "emoji": "👥",
-    "unit": "people / km²", "format": "int|usd|eur|pct|signed|float|minutes|years",   // pct values are 0..1 fractions; signed is a signed fractional change
-    "scale": "log|linear", "domain": [1, 2000],   // 2nd-98th percentile of the hex values, computed at build time "ramp": ["#..", "..."], "higher_is": "good|bad|neutral",
-    "source": "acs_5yr", "description": "...",
-    "values": [number|null],       // per cell; null on non-US cells
-    "note": "..."                  // optional: a short caveat the legend always shows (e.g. what a count does not measure)
-  }]
-}
-```
+Machine-readable bibliography for every source: id, title, publisher, url, license, retrieval date, files, hashes, and notes. User-facing source claims should be consistent with this file.
 
-**Categorical lenses** (`"format": "category"`): each value is an integer index into `categories` (or null);
-`"categories": [{"id": "catholic", "name": "Catholic", "color": "#…", "description"?: "…"}]` (≥ 2), `ramp` = the
-categories' colours in the same order, `"scale": "linear"`, `"domain": [0, n - 1]` (so the ramp stops land exactly on the
-colours). The legend shows swatches (click one to show only it) and tooltips show the category name. `check` enforces all
-of this.
+## Optional layer files
 
-**County lenses from the Religion Census, CDC PLACES, FEMA and ACS veterans** (ids are a contract with the frontend, which may link to them):
+Small eager layers are loaded after first paint; large layers are lazy.
 
-| id | group | format | values | note (legend caveat) |
-|---|---|---|---|---|
-| `faith` | `faith` (group "Faith") | `float`, unit `adherents per 100 residents`, domain clamped to `[0, 100]` | 2020 U.S. Religion Census adherents ÷ 2020 population × 100 (compute it; do not trust the RATE columns), per county spread to hexes like the other county lenses. Can exceed 100 (adherents are counted where the congregation is) | required: counts congregations' adherents where they worship, not residents' beliefs; about half of Americans are counted; some traditions (notably historically Black churches) are under-reported; 2020 data |
-| `faith_tradition` | `faith` | `category`: `evangelical`, `mainline`, `black_protestant`, `catholic`, `orthodox`, `lds`, `other` (Latter-day Saints split out of ARDA's "Other") | the county's largest tradition by adherents; null where no adherents were reported | same caveat |
-| `amenities` | `life` | `float`, unit `index`, `higher_is: good` | 100 − 10 × mean z-score of the CDC PLACES age-adjusted shares of frequent mental distress, depression, fair/poor health and no leisure-time activity (state the exact recipe in `description`); null where PLACES has no BRFSS core data (all of KY and PA in the 2025 release): never imputed | required: model-based estimates, not a happiness survey |
-| `disasters` | `hazards` (group "Hazards") | `int`, unit `declarations` | distinct FEMA major-disaster (DR) declarations naming the county since 2000 (Biological/COVID excluded; deduplicated by disaster number) | required: a declaration is an administrative act, not a measure of damage |
-| `veterans` | `people` | `pct` (0..1) | ACS 5-year `B21001_002 / B21001_001` (veterans among civilian adults 18+) | |
+### resources.json
 
-Connecticut: the map's counties are the 2022 planning regions (`09110`…`09190`). Sources on the 8 legacy counties (USRC,
-FEMA) need an overlap crosswalk, or CT stays null and the lens `note`/`description` says so.
+Energy and agricultural resource sites. Items have `type`, `name`, `x`, `y`, `cell`, numeric-or-null `value`, `detail`, `state`, `aav`. Electricity sites use the ODRÉ generation registry; `value` is MW where applicable. The builder also post-processes regional energy summaries into `states.json` before writing `resources.json` (this ordering is cache-significant).
 
-**As built** (`pipeline/build/lenses.py` `community_lenses`, appended after the land lenses so the
-existing lenses keep their array positions; every county value is spread to hexes with the same population weights as
-the other county lenses, and the county formulas are shared with counties.json):
+### infrastructure.json
 
-* `faith` (source `usrc_2020`): county `adherents / POP2020 × 100` (1 decimal); hex = population-weighted mean;
-  `domain` fixed `[0, 100]` (no percentile note); counties can exceed 100 (max ≈ 450). **CT is null** (USRC's 8 old
-  counties are not apportioned: no town-level adherent counts exist), as are the two counties with a blank total.
-* `faith_tradition` (`usrc_2020`): categories in this order `evangelical, mainline, black_protestant, catholic, orthodox,
-  lds, other` (each `{id, name, color, description}`; `other` = ARDA "Other" minus Latter-day Saints). Hex value = the
-  tradition with the most adherents after summing each county's adherents × the share of the county in the hex; null
-  where none were reported. Icon `l-faith-tradition`, name "Largest tradition".
-* `amenities` (`cdc_places`), **named "Wellbeing"** (the id stays `amenities` for URLs and icons; the description says
-  it stands in for the strategy-game Amenities): `100 − 10 × mean(z)` over `mhlth, depression, ghlth, lpa` (`_adjprev`), z against the
-  unweighted mean ± SD of all mapped counties that have all four (the values are printed in `description`); unit
-  `index (100 = average county)`, 1 decimal. Null for KY, PA (and Loving County, TX). PLACES already uses CT planning
-  regions.
-* `disasters` (`fema_declarations`): hex = population-weighted mean of the county counts **rounded to a whole number**
-  (`format: int`); no nulls (0 = no declaration, a real zero). CT regions count a disaster declared for any old county
-  they overlap (Census town crosswalk `ct_cou_to_cousub_crosswalk.xlsx`).
-* `veterans` (`acs_5yr`): pct, 4 decimals; no `note`.
-* Icons (fall back to the emoji until `web/js/icons.js` has them): `l-faith` 🕍, `l-faith-tradition` ⛪, `l-amenities` 🎭,
-  `l-disasters` 🌪️, `l-veterans` 🎖️. Groups `faith` and `hazards` sit between `life` and `land`.
-* `lenses.py` defines `check(web_dir)` (presence, required notes, faith domain, a short coverage summary).
+Airports and ports. Airport passengers come from Eurostat `avia_paoa`, coordinates from OurAirports. Port tonnage comes from Eurostat maritime statistics with Natural Earth fallback positions. Labels are French display buckets, not FAA hub categories. `aav` is the containing AAV inferred from the point.
 
-## resources.json
+### trade.json
 
-```jsonc
-{
-  "types": [{"id": "nuclear", "name": "Nuclear plant", "category": "energy|mineral|agri",
-             "emoji": "☢️", "icon": "r-nuclear", "color": "#e8d44d",
-             "unit": "MW", "description": "...", "source": "eia_860m"}],
-  "items": [{"type": "nuclear", "name": "Palo Verde", "x": 1234.5, "y": 2345.6, "cell": 4321,
-             "value": 3937, "detail": "3 units, Arizona Public Service"}]
-}
-```
+SDES 2019 interregional freight flows. Routes are schematic arcs between regional anchors: tonne-kilometres and tonnes are real aggregate statistics, but paths are not physical truck/rail routes. Rail suppression is represented explicitly. Fields use metric units; obsolete `value_musd` must not be emitted.
 
-Each item also has `"state": "AZ"` (the state the source files the site under, e.g. EIA's plant state; for oil/gas
-play hexes, or when that state is not on the map, the state owning its `cell`; a border site such as Vogtle, GA, can sit
-in a hex another state owns) and `"cbsa": "38060"` (the id of the
-cities.json city whose member counties contain the county at the cell's centre, `world.county[cell]`, or `null`).
+### military.json
 
-Items are the meaningful sites only (thresholds are documented in each type's `description`). The frontend draws at most
-one icon per cell at low zoom (the highest-ranked type wins) and may show more when zoomed in.
+Ministry of the Armed Forces 2012 `bases de défense` personnel table. Installations are support-group seat communes, not boundaries, ranges, barracks-level geography, or a current order of battle. City garrison tiers are derived only from stationed-personnel thresholds; `share` is a contextual scale mixing the 2012 personnel count with current population and must not be presented as a current rate.
 
-```jsonc
-"summary": {
-  "note": "Totals of the mapped sites only (each type's threshold applies) ...",
-  "national": {"nuclear": {"count": 54, "value": 96952, "unit": "MW"}, "oil": {"count": 120, "value": null, "unit": "km² play area"}},
-  "states":   {"AZ": {"nuclear": {"count": 1, "value": 3937, "unit": "MW"}, "...": {}}}   // only types present
-}
-```
+### wonders.json
 
-`summary.national` has every type in `types`; `summary.states` has, per state abbr with at least one item, the types
-present there. `value` is the sum of the items' `value` (nulls skipped), or `null` for a type whose values are not
-additive: oil and gas items each carry their whole play's area, so summing them is meaningless.
-
-## counties.json
-
-One row per metropolitan French department (`world.json` `counties` order), **column-oriented**:
-
-```jsonc
-{
-  "vintage": "geo.api.gouv.fr populations; Eurostat 2023",
-  "fields": [{"key": "population", "label": "Population", "format": "int", "unit": "people", "source": "fr_insee_stats", "description": "..."}],
-  "columns": ["geoid", "name", "state", "population", "land_km2", "density", "gdp", "gdp_per_capita", "employment", "industry", "forest", "crop", "developed", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy", "unemployment", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022", "cbsa", "cell"],
-  "rows": [["01", "Ain", "ARA", ...]]
-}
-```
-
-`rows[i][j]` is column `columns[j]` of department i, and `fields` describes each column in column order. `pct` and
-`signed` values are **0..1 fractions**. `state` is the region abbreviation and `cbsa` the containing AAV id where the
-representative city belongs; these inherited contract names are kept for browser compatibility. `cell` is a representative
-French land cell used for outlining/framing even when the department is smaller than one hex.
-
-Population, density, income, poverty, growth, housing, unemployment, education, age, immigration and commuting fields come
-from INSEE census/Comparateur tables. GDP, GDP per person and employment come from Eurostat regional accounts. Forest,
-crop and developed shares are CORINE hex-cover means. `disasters` is GASPAR recognitions since 2000 normalised by the
-current commune count; flood/drought fields are shares of those recognitions. The three 2022 election fields are shares of
-valid ballots or registered voters as labelled. `null` always means no data.
-
-## Optional map-layer files
-
-Every file below is **optional**: the app and `check` work without it, and each owning builder validates its own file with
-a `check(web_dir)` (see Pipeline conventions). Shared rules:
-
-* Top level always has `"version": 1`, `"vintage"` (a human string, or `{part: string}`), and `"sources": [source ids]`
-  (sources.json ids, so the Almanac can cite them).
-* `cell` = a world.json cell index (pointy-top odd-r, `row * cols + col`); a site's `cell` is a metropolitan-French land cell (`owner >= 0`)
-  unless stated. `x`, `y` = map km. `county` = 5-digit GEOID from world.json `counties` (or null), `cbsa` = a cities.json
-  `id` (or null), `state` = postal abbr.
-* Money is **euros** (not thousands or millions) unless the key says otherwise; shares are 0..1 fractions;
-  `null` = unknown, never `0`. A value that is a **lower bound** (suppressed parts left out) says so (`lower_bound: true`
-  or a `suppressed` count).
-* Rules that pick things (districts, wonders, routes) are published inside the file as text (`rule` / `rules`) so the UI
-  and the Almanac can quote them.
-* **Loading** (browser): `infrastructure`, `military`, `wonders`, `trade` load eagerly right after the first frame (keep
-  each **under ~300 kB**); `citizens`, `districts`, `disasters` load on demand with `app.loadData(name)`.
+French wonders selected by published rules: UNESCO properties, national parks, most-visited museums (Ministry attendance plus Muséofile locations), and largest universities (MESRI/SISE enrolment). Museum attendance is aggregated across distinct physical sites sharing one institution when appropriate. University locations are administrative headquarters, not every campus.
 
 ### citizens.json (lazy)
 
-Per metro (AAV), the citizen mix for the City View's person icons, from INSEE 2023 census Melodi tables
-(`fr_insee_stats`), built by `pipeline/build/citizens.py`. Figures are computed in the pipeline with
-**largest-remainder rounding** so each row's figures sum exactly to its figure count. About 200 kB: load on demand.
-
-```jsonc
-{
-  "version": 1, "vintage": "INSEE census 2023", "year": 2023, "sources": ["fr_insee_stats"],
-  "figures": {"workforce": 20, "age": 10, "commute": 10, "education": 10, "nativity": 10},
-  "rows": {"workforce": "Employed residents by broad socio-professional category", "age": "…"},
-  "groups": {"workforce": [{"key": "executive", "label": "Business owners and senior managers"}, …], "age": […]},
-  "rule": {"specialist_high": 1.5, "specialist_low": 0.67, "min_share": 0.01, "max_high": 4, "max_low": 2, "text": "…"},
-  "national": { /* a row for metropolitan France (INSEE geo FM) */ },
-  "cities": {"001": { /* a row for the Paris AAV */ }}
-}
-```
-
-A city row has `workforce`, `age`, `commute`, `education` and `nativity` objects with `total`, integer `counts`,
-fractional `shares` and integer `figures`; it also has `specialists` and `reliable`. Workforce uses the six broad INSEE PCS categories with stable frontend keys
-`farmer`, `executive`, `scholar`, `clerk`, `service` and `maker`. These are socio-professional categories of
-employed residents, not North-American Census occupations or workplace-industry groups.
-
-French category meanings differ deliberately from the original US contract:
-
-* age: under 15, 15–24, 25–64, 65+;
-* commute: no transport/working at home, walking, bicycle or motorized two-wheeler, car/truck/van, public transport;
-* education: below baccalauréat, baccalauréat, bac+2, bac+3/4, bac+5 or more, for non-enrolled residents aged 15+;
-* nativity: INSEE immigrant status (`born_in_state` is the stable frontend key for non-immigrants; `foreign_born`
-  is the key for immigrants). France does not publish a direct equivalent of the US state-of-birth breakdown here.
-
-`specialists` compares each city's unrounded share with metropolitan France using the same 1.5× / 0.67× rule as the
-original visualization. `bachelors_plus` means bac+3/4 or higher among non-enrolled residents aged 15+, not short bac+2 higher education.
+INSEE census-derived citizen mixes by AAV: broad socio-professional categories, age bands, commuting modes, highest diploma, and immigrant status. Keys such as `born_in_state` are inherited schema names; in France the nativity pair means non-immigrant vs immigrant. Education keys are display categories aligned to French diploma levels; descriptions must use bac/bac+ terminology rather than US degree assumptions.
 
 ### districts.json (lazy)
 
-French workplace-industry specialisation from INSEE census employment (`fr_insee_stats`), built by
-`pipeline/build/districts.py`. The browser contract intentionally keeps the original district ids and row shape, but
-`naics` entries are broad NACE activity codes, pay/annual-change fields are null, and there is no disclosure suppression
-or county roll-up. Catalog entries use `naics` for the summed broad activity codes and omit the US ownership-specific `own` key. Location quotients compare each AAV with metropolitan France. About 210 kB: load on demand.
-
-### infrastructure.json (eager)
-
-Tile improvements: roads and rail rasterised onto hex links (no polylines), plus ports and airports as sites. Built by
-`pipeline/build/infrastructure.py` from `natural_earth_roads` (NE 1:10m roads + railroads, pinned v5.1.2), `usace_ports`
-and `faa_airports` (both in `pipeline/sources/transport_hubs.py`). About 200 kB.
-
-```jsonc
-{
-  "version": 1,
-  "vintage": {"roads": "Natural Earth v5.1.2 (1:10m)", "rail": "…", "ports": "USACE principal ports, CY2023 tonnage",
-              "airports": "FAA CY2025 enplanements, CY2025 all-cargo"},
-  "sources": ["natural_earth_roads", "usace_ports", "faa_airports"],
-  "rules": {"roads": "…", "rail": "…", "ports": "…", "airports": "…"},   // selection rules, quotable in the UI
-  "road_classes": [{"id": "interstate", "name": "Interstate"}, {"id": "major", "name": "Major highway"}],
-  "rail_tiers": [{"id": "main", "name": "Main line"}, {"id": "secondary", "name": "Secondary line"}],
-  "hubs": {"L": "Large hub", "M": "Medium hub", "S": "Small hub", "N": "Nonhub primary"},
-  "roads": [[3721, 3722, 0, "I-95"]],   // [cell a, cell b, class index, route name or null]; a < b, neighbours, unique pair
-  "rail": [[3721, 3845, 0]],            // [a, b, tier index]; a < b, neighbours, unique pair
-  "ports": [{"id": "2031", "name": "Houston Port Authority", "type": "coastal|great_lakes|inland", "rank": 1,
-             "tons": 309531236, "domestic": …, "foreign": …, "imports": …, "exports": …, "year": 2023,   // short tons
-             "x": …, "y": …, "cell": 9123, "county": "48201", "cbsa": "26420", "state": "TX"}],     // sorted by rank
-  "airports": [{"id": "ATL", "name": "Hartsfield/Jackson Atlanta International", "city": "Atlanta", "hub": "L|M|S|N|null",
-                "enplanements": 51459786, "enplanements_prev": 52511402, "cargo_lbs": 2864017498 | null, "year": 2025,
-                "x": …, "y": …, "cell": …, "county": …, "cbsa": …, "state": "GA"}]   // sorted by enplanements, desc
-}
-```
-
-* **Links** join **neighbouring** cells, at least one end on US land (`owner >= 0`) and neither end foreign land
-  (`owner == -2`). Each line is sampled every 4 km, gaps are filled by a hex line walk, and a cell the line only clips
-  at a corner is dropped (so a road along a row boundary does not zigzag). A pair appears once, with its best class
-  (an Interstate link is never also a major link). Rail samples inside Canada or Mexico are dropped.
-* **Road classes**: 0 = every NE road with `level == "Interstate"`; 1 = other roads at NE scale rank ≤ 6 plus
-  expressways typed "Major Highway"/"Beltway". Route names: `I-95`, `US 101`, or the NE name for state roads; where
-  several routes share a link the lowest number wins. **Rail tiers**: 0 = NE scale rank ≤ 5, 1 = 6–7.
-  Natural Earth road and rail work is map art, not statistics (older alignment, about half the real rail network).
-* **Ports**: USACE principal ports in the lower 48 (port-area centroid; long river ports are approximate). **Airports**:
-  every primary airport (`hub` L/M/S/N) plus every airport in FAA's all-cargo table (`hub` null if not primary),
-  placed by FAA id with the NASR airport master. `enplanements` null when the airport is only in the cargo table;
-  `cargo_lbs` (all-cargo landed weight) null when it is not in the cargo table (not zero cargo).
-* A site's `cell` is the US land cell at its point, else the nearest within 2 hexes; `x`/`y` stay the true position (a
-  port's may be on water). `county`/`cbsa` come from that cell's centre county (OMB delineation, cities.json ids only).
-  Tons and pounds are as published (short tons, landed lbs).
-
-### trade.json (eager)
-
-Domestic freight routes between current metropolitan French regions. Built by `pipeline/build/trade.py` from
-`fr_freight` (`sources/fr_freight.py`) after infrastructure, whose road/rail links the drawn paths use as a visual aid.
-About 25 kB.
-
-```jsonc
-{
-  "version": 1, "vintage": "SDES national goods-flow data, 2019", "year": 2019, "sources": ["fr_freight"],
-  "rule": "The 40 largest non-directional 2019 road, rail and inland-waterway freight flows …",   // quote in the UI
-  "path_note": "SDES publishes origin and destination regions, not the physical route: …",       // quote in the UI
-  "units": {"volume_mtkm": "million tonne-kilometres", "tons_k": "thousand metric tonnes (estimated)", "tmiles_m": "million tonne-kilometres (compatibility name)"},
-  "modes": [{"id": "truck", "name": "Road"}, {"id": "rail", "name": "Rail"}, {"id": "water", "name": "Inland waterway"}],
-  "commodities": {"all": "All commodities"},
-  "national_mtkm": {"domestic": 100139.25, "import": null, "export": null},   // all inter-region pairs in source
-  "zones": [{"id": "IDF", "name": "Île-de-France", "short": "Île-de-France", "kind": "region",
-             "states": ["IDF"], "cities": ["001"], "counties": 8,
-             "anchor": {"cell": 3845, "x": …, "y": …, "city": "001" | null},
-             "partners": [["HDF", 4419.6, "truck"]],                         // top 5 partners, any region
-             "totals_mtkm": {"within": null, "other_zones": …, "import": null, "export": null}}],
-  "routes": [{"a": "ARA", "b": "PAC", "rank": 1, "volume_mtkm": 5348.1, "tons_k": 29358.0,
-              "tmiles_m": 5348.1, "modes": {"truck": 0.7044, "rail": 0.1346, "water": 0.161},
-              "top_mode": "truck", "top_commodity": "all", "rail_suppressed": true, "dist_km": 209, "path": [5939, 5940, "…"]}]
-}
-```
-
-* **Zones** are the 13 current metropolitan regions. SDES publishes 2019 flows by the former 2016 NUTS-2 regions;
-  the builder aggregates those source regions into current regions. Flows that become internal to one current region are
-  excluded from routes, so totals are inter-regional flows only. `anchor` is the population-weighted middle of the
-  region's owned hexes.
-* **Routes** are non-directional: both directions are already combined in the source. The 40 largest pairs by
-  tonne-kilometres are kept. `modes` are tonne-kilometre shares and sum to one where all modes are known. `tons_k` is a
-  rough estimate derived from tonne-kilometres divided by centroid distance; it is not directly published tonnage.
-* `path` is a chain of neighbouring cells chosen over the cheapest mapped road/rail edges, falling back to
-  cross-country or water steps. It is only a drawing aid: SDES does not publish the physical itinerary.
-* Rail rows suppressed for statistical secrecy are absent, not zero, so rail volumes and shares are lower bounds; `rail_suppressed` marks routes whose underlying current-region pair contains at least one suppressed source row.
-  Air, maritime, pipeline, foreign trade and commodity detail are outside this dataset. Say these caveats in the UI.
-
-### military.json (eager)
-
-Built by `pipeline/build/military.py` from `fr_military` (`sources/fr_military.py`). About 26 kB.
-
-```jsonc
-{
-  "version": 1,
-  "vintage": {"installations": "Ministry of the Armed Forces defense-base personnel, 2012", "personnel": "Same 2012 file"},
-  "sources": ["fr_military"],
-  "rule": "An AAV appears as a garrison when …",
-  "rules": {"tier": "…", "ranges": "…", "encampment": "…", "installations": "…"},
-  "flagships": [],
-  "caveats": "…",
-  "components": [{"id": "other", "name": "Joint defense base", "codes": ["joint"]}],
-  "installations": [{"id": "base-toulon", "name": "Toulon", "component": "other", "joint": true,
-                     "status": "act", "tier": "major|base|site", "curated": false,
-                     "area_km2": null, "cells": null,                       // no boundary inventory is used
-                     "x": …, "y": …, "cell": …, "county": "83", "cbsa": "018", "state": "PAC",
-                     "state_filed": "PAC", "personnel": 23120, "formations": 48,
-                     "seat_commune": "Toulon", "match": "exact|locality alias|…", "year": 2012}],
-  "ranges": [],
-  "states": {"PAC": {"personnel": {"active": {"total": …}, "guard_reserve": {"total": null},
-                                  "civilian": {"total": null}, "total": …},
-                     "spending": null, "installations": 6, "ile_de_france_aggregate": 20131}},
-  "national": {"personnel": {"active": {"total": 260234}, "total": 260234},
-               "personnel_scope": "…", "published_total": 251063,
-               "spending": null, "veterans": null, "armed_forces_resident": null,
-               "matched_bases": 50, "unmatched_bases": []},
-  "cities": {"018": {"tier": "garrison|fortress", "armed_forces": 23120, "share": 0.039,
-                     "naval": false, "installations": ["base-toulon"], "installation_count": 1,
-                     "aggregate_included": true}}
-}
-```
-
-* Rows are 2012 **bases de défense**, geocoded at the support group's seat commune. They are not individual barracks,
-  base boundaries, training ranges or a current order of battle. `personnel` means stationed personnel in the historical
-  file, never troops counted by home residence. `formations` is the file's count of formations.
-* Installation tiers are a transparent display convenience: `major` at 5,000+ personnel, `base` at 2,000+, otherwise
-  `site`. They are not official importance tiers. Because the file is joint and does not publish service breakdowns,
-  every row uses component `other`/`joint` rather than guessed Army, Navy or Air Force labels.
-* Detailed rows exclude most of Île-de-France. The one aggregate Île-de-France row is added to Paris AAV city totals and
-  regional personnel, but is not drawn as an installation. Overseas and foreign rows are outside the map.
-* The file's national organisation total is 251,063, the sum of detailed rows outside Île-de-France. The browser
-  drops 10,960 overseas and foreign personnel, then adds the separate 20,131-person Île-de-France aggregate.
-* Encampment: an AAV appears when its geocoded base seats account for at least 1,000 personnel; `fortress` at 5,000+.
-  `share` divides 2012 personnel by the map's current AAV population only as contextual scale; it is not a historical
-  rate and is not used for selection. `armed_forces` is retained as the contract key for compatibility but now means
-  stationed personnel assigned by base seat, not residents in uniform.
-* `ranges`, spending, veterans, reserve and civilian breakdowns are null/empty because no comparable current French
-  public dataset is used. Do not resurrect US MIRTA/DMDC/OLDCC wording for this file.
-
-### wonders.json (eager)
-
-Built by `pipeline/build/wonders.py` from `fr_unesco` (`sources/fr_unesco.py`) and `fr_culture`
-(`sources/fr_culture.py`). About 31 kB, 72 wonders.
-
-```jsonc
-{
-  "version": 1,
-  "vintage": {"unesco": "UNESCO World Heritage List, current XML export"},
-  "sources": ["fr_unesco", "fr_culture"],
-  "rules": [
-    {"id": "unesco_natural", "kind": "natural", "kinds": ["natural"], "text": "Natural and mixed UNESCO properties …"},
-    {"id": "unesco_cultural", "kind": "landmark", "kinds": ["landmark"], "text": "Cultural UNESCO properties …"},
-    {"id": "museum_attendance", "kind": "landmark", "kinds": ["landmark"], "text": "The 12 most-visited open Musées de France …"},
-    {"id": "university_enrolment", "kind": "university", "kinds": ["university"], "text": "The 12 largest French universities …"}
-  ],
-  "national": {"world_heritage_entries": 48, "museum_visits_top": 8681079, "museum_year": 2024, "university_year": 2024},
-  "wonders": [{"id": "museum-M5031", "name": "musée du Louvre", "short": "musée du Louvre",
-               "kind": "natural|university|landmark", "rule": "museum_attendance", "rank": 1,
-               "metrics": {…}, "cells": null, "curated": false,
-               "x": …, "y": …, "cell": …, "county": "75", "cbsa": "001", "state": "IDF"}]
-}
-```
-
-* `rank` is 1-based within the wonder's rule. UNESCO rules rank by inscription year; museums rank by total visits;
-  universities rank by total students.
-* UNESCO metrics: `{designated, criteria, url, transnational}`. Natural and mixed properties use kind `natural`;
-  cultural properties use `landmark`. Serial properties are represented by one French component point, not full
-  boundaries.
-* Museum metrics: `{visits, year, sites, domain, url}`. The value is each museum institution's latest available
-  annual total, summed across distinct physical sites sharing its Muséofile identifier. Repeated correction rows for
-  the same institution/year/site are deduplicated by keeping the largest total.
-* University metrics: `{students, year, academic_year, seat, type}`. Students include principal and secondary enrolments and CPGE
-  double enrolments. SISE gives only the administrative headquarters commune, so positions are not full campus
-  footprints. Universities sharing a parent commune may be offset slightly for marker visibility; those offsets are
-  display geometry, not source geography.
-* `county`, `cbsa` and `state` are the map's department, AAV and region inferred from the point. `x`/`y` remain the
-  true or display-adjusted point in map kilometres; `cell` is the nearest French land hex.
+INSEE workplace-employment specialization by AAV and department. Internal industry keys are inherited compatibility keys, but their labels and definitions are broad NACE sections. There is no QCEW/BLS pay, annual-change, suppression, or county-series equivalent; those fields must be absent or null rather than fabricated.
 
 ### communes.json (lazy)
 
-Built by `pipeline/build/communes.py` from `fr_boundaries`, `fr_insee_stats`, `fr_elections` and `fr_hazards`.
-About 4.4 MB uncompressed, one row for every metropolitan commune
-including Corsica. Loaded only when the user first focuses or types in the top-bar search.
+Search/card data for communes: population, department, AAV, income where available, election results and hazard summaries. This file is large and must remain lazy-loaded on first search use.
 
-```jsonc
-{"version": 1,
- "sources": ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"],
- "hazard_years": [2000, 2025],
- "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density",
-             "median_income", "growth", "owner_share", "second_home_share", "vacancy_share",
-             "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant"],
- "communes": [["75056", "Paris", "Paris", 2103778, 650.6, 348.0, "11", 19959.9, 33650, -0.0065,
-                0.3323, 0.0987, 0.0992, 0.8511, 0.1489, 0.259, 8, "flood"]]}
-```
+### disasters.json (lazy), if present
 
-Rows are compact positional arrays in `columns` order, sorted by descending population. `x`/`y` are map kilometres
-for the commune centroid; they are display/search anchors, not exact municipal seat coordinates. Selecting a commune
-flies the camera there and opens a small commune card. Densities are residents per km²; `growth` is the compound
-2017–2023 population change rate; housing and election fields are shares; election shares use valid votes except
-`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions in the `hazard_years` range, not damage. GASPAR records under predecessor or delegated commune codes are attributed to the current whole commune through
-INSEE COG movements. Recently merged communes can lack a 2022 election row; median income is suppressed by
-statistical confidentiality in some small communes.
+Commune-level GASPAR detail. Recognitions are administrative catastrophe-naturelle decisions, not measurements of physical damage or hazard exposure. Municipal-merger attribution follows INSEE COG movement files; ambiguous splits, obsolete links and cycles must not be silently invented.
 
-### disasters.json (lazy)
+## Browser boundaries
 
-Built by `pipeline/build/disasters.py` from the sources `fema_declarations` (`pipeline/sources/openfema.py`) and
-`noaa_billions` (`pipeline/sources/noaa_billion.py`). About 160 kB.
-
-```jsonc
-{
-  "version": 1, "sources": ["fema_declarations", "noaa_billions"],
-  "vintage": {"fema": "OpenFEMA declarations as of 2026-11-25", "noaa": "NOAA NCEI billion-dollar disasters 1980–2024 (final release)"},
-  "fema": {
-    "window": ["2000-01-01", "2026-11-25"], "as_of": "2026-11-25",     // as_of = the day the declarations were fetched
-    "rule": "Distinct major-disaster (DR) declarations naming the county …",   // full text, quote it in the UI
-    "types": [{"id": "hurricane", "name": "Hurricanes & tropical storms", "incident_types": ["Hurricane", "Tropical Storm", "Tropical Depression", "Typhoon"]},
-              {"id": "flood", …}, {"id": "fire", …}, {"id": "severe_storm", …}, {"id": "winter", …},
-              {"id": "other", "incident_types": []}],          // other = every FEMA incidentType not listed above
-    "counties": {"columns": ["geoid", "total", "hurricane", "flood", "fire", "severe_storm", "winter", "other", "last_date"],
-                 "rows": [["01001", 14, 3, 2, 0, 8, 1, 0, "2025-04-02"]]},   // world.json counties order; 0 = none declared; last_date null if none
-    "states": {"TX": {"total": 120, "statewide": 3, "by_type": {"hurricane": 30, "...": 0}}},   // every DR disaster in the state (incl. AK, HI, territories)
-    "recent_days": 365,
-    "recent": [{"disaster": 4870, "type": "hurricane", "incident_type": "Hurricane", "title": "Severe Storms And Flooding",
-                "date": "2026-10-02", "state": "FL", "counties": ["12086"], "statewide": false, "areas": 1}]
-                // declared within recent_days of as_of, newest first; counties = map GEOIDs only (CT mapped to regions),
-                // areas = FEMA's designated-county count (also counts areas off the map, e.g. Alaska or Puerto Rico)
-  },
-  "noaa": {
-    "years": [1980, 2024], "final": true, "unit": "USD, CPI-adjusted", "rule": "…",
-    "types": [{"id": "drought", "name": "Drought"}, {"id": "flooding"}, {"id": "freeze"}, {"id": "severe_storm"},
-              {"id": "tropical_cyclone"}, {"id": "wildfire"}, {"id": "winter_storm"}],
-    "states": {"TX": {"count": {"drought": 20, "...": 0}, "cost_usd": {"drought": 4.4e10, "...": 0}}},   // incl. AK, HI, PR, VI, GU
-    "national": {"events": 403, "cost_usd": 2.92e12, "deaths": 16000,
-                 "by_year": [{"year": 1980, "events": 3, "cost_usd": …}],      // from the national event list
-                 "costliest": [{"name": "Hurricane Katrina (August 2005)", "type": "Tropical Cyclone", "begin": "2005-08-25",
-                                "cost_usd": 2.0e11, "deaths": 1833}]}          // top 10 by CPI-adjusted cost
-  }
-}
-```
-
-NOAA events span many states: never add state costs together into a national figure (use `national`). The shared
-helper `disasters.county_declarations(fema_interim, geoids)` gives the per-county counts used by the `disasters` lens,
-the counties.json column and this file, so the three always agree.
-
-## sources.json
-
-A list of `{id, title, publisher, homepage, license, description, used_for, vintage, files: [{file, url, retrieved, sha256, bytes}]}`.
-`files` lists only files the latest `process()` used (`_files`), or every manifest entry if the source didn't say. A file
-saved by `download_prefix()` has a `partial` note in the manifest, and its `sha256`/`bytes` describe the saved part.
-
-## Browser module boundaries (web/js)
-
-* `world.js`: `prepareWorld(world, cities, extras) → w` with `w.grid`, `w.raw`, `w.stateColor[]`, `w.cityByCell: Map<cell, city>`;
-  `applyLens(w, lens, band = null)` sets `w.colors`/`w.rgb`; exports `WATER = -1`, `FOREIGN = -2`.
-* `camera.js`: `Camera` with `fit()`, `toScreen()`, `toWorld()`, `zoomAt()`, `panBy()`, `centerOn()`, `flyTo(x, y, scale, ms)`,
-  `step(dt) → bool stillMoving`, `view()`.
-* `render/*`: map drawing and banners. `main.js` owns input, state and wiring. `ui/*` owns DOM panels.
-* The `state` object (owned by `main.js`, read by `render/*`): `cities`, `lens` (a lenses.json lens or null = terrain),
-  `band` (`[t0, t1]` in normalised lens units 0..1, or null: cells outside are dimmed, see `applyLens`), `hoverCell`,
-  `selectedCity` (a city object or null), `selectedState` (a state index, abbr, fips or `{index|abbr|fips}`, or null;
-  resolved with `world.js` `stateIndex(w, ref)`), `showResources`.
-* `render/snapshot.js`: `renderToCanvas(target, cam, w, state, nation, opts) → {cam, hits}` draws a full frame off-screen
-  (share images, OG cards) without touching the on-screen cache. `target` is a canvas, OffscreenCanvas or 2D context;
-  `opts`: `banners = true`, `overlay = true`, `dpr = 1`, `fit = "contain"|"cover"|"same"`, or an explicit `scale`, `x`, `y`.
-
-## Browser extension API (window.__app; main.js "extension API", app/api.js)
-
-Extensions live in `web/js/ext/<name>/index.js` and export `install(app)`; `ext/index.js` loads `cityView`, `advisors` and
-`layers` (roads, rail, forts, ports, airports, wonders and trade routes). The API:
-
-**Data.**
-* `app.data.<name>`: the core files (`world`, `cities`, `states`, `nation`, `lenses`, `resources`, `sources`) are loaded
-  before anything runs. Optional files: `undefined` until loaded, `null` when missing (404) or invalid.
-* `app.loadData(name) → Promise<data | null>`: loads `data/<name>.json` once (cached promise; later calls return the same
-  promise) and sets `app.data[name]`. Emits `"data"` `{name, data}` when it arrives. `infrastructure`, `military`,
-  `wonders`, `trade` are requested automatically right after the first frame; `citizens`, `districts`, `disasters` (and
-  `counties`) only when something calls `loadData`. `app.loadCounties()` = `app.loadData("counties")`.
-
-**Static map layers** (art that belongs in the cached map, drawn once per cache render):
-
-```js
-const off = app.registerStaticLayer({
-  id: "roads",                 // unique; registering the same id again replaces the layer
-  z: 55,                       // where it draws among the built-in steps (app.layerZ / render/map.js Z)
-  draw(ctx, vp, w, o) {},      // required. ctx starts in world km (saved/restored around the call)
-  visible() { return on; },    // optional; false = not drawn, not hit-tested (part of the cache key)
-  sig() { return "v1"; },      // optional; any string that changes when the art must re-render (cache key)
-  minRpx: 6, maxRpx: Infinity, // optional zoom range in hex radius css px (drawn when minRpx <= Rpx < maxRpx)
-  hit(xKm, yKm, Rpx) { return item | null; },   // optional hover / click test, pointer in world km
-  tooltip(item) { return "<b>html</b>" | {text: "plain"} | null; },  // optional; a string is HTML: escape data yourself
-  click(item, ev) { return true; },             // optional; true consumes the click (see below)
-  warm(ctx, vp, w, o) {},      // optional; paint sprites for vp's zoom in idle time (stamps may land anywhere)
-  snapshot: true,              // default true: drawn into share images too
-});
-off();   // or app.unregisterStaticLayer("roads" | layer)
-```
-
-* `o` = `{Rpx, s, dpr, lod, lens, selectedCity, showResources, snapshot, app, cells, range: {r0, r1, c0, c1},
-  world(), screen(), toScreen(x, y) → [css px]}`. `cells` are the visible cell indices; `o.screen()` switches ctx to
-  screen css px of the cache canvas (use `o.toScreen`), `o.world()` back. Use sprites (`render/art/sprites.js`
-  getSprite/drawSprite) for anything richer than a few paths.
-* Built-in z steps: `WATER 10`, `LAND 20` (land tiles), `GRID 30`, `GLYPHS 40` (terrain), `RIVERS_BORDERS 50`, `CITIES 60`
-  (city tiles), `FOG 70` (edge mist), `RESOURCES 80` (screen-space icons), `LABELS 90` (state names). A layer with z
-  between two steps draws after the lower one; equal to a step = right after it. Suggested slots: 45 terrain
-  improvements, **55 roads and rail**, 58 restricted ground / protected land hatching, **65 sites** (ports, airports,
-  forts, wonders, plaques), **85 trade routes** (above resources, under state names).
-* The cache key includes every layer's id, `visible()` and `sig()`, so toggling or restyling re-renders the cache and
-  nothing else does. Errors in `draw`/`hit`/`sig`/... are logged once per layer and the layer is skipped.
-* **Performance**: nothing may animate continuously (an idle map draws no frames); keep each layer under ~3 ms per cache
-  render at typical zooms (time it with `drawStatic(..., {layers: app.staticLayers(), timings: T})`: it reports
-  `layer:<id>`); precompute geometry once (not per draw); cull to `vp`.
-* `app.staticLayers()` lists the registered layers; `app.hitLayer(mx, my)` (screen css px) → `{layer: id, item} | null`.
-
-**Hover and click.** The hover tooltip asks the layers (highest z first, only those drawn at the current zoom) after the
-city banners: the first non-null `hit()` wins and its `tooltip(item)` is shown (the cell tooltip otherwise). The
-`"hover"` event payload is `{cell, city, resource, x, y, layer, item}` (`layer` = id or null). A click builds
-`ev = {cell, city, resource, state, x, y, pointerType, layer, item}`; outside a mode the layer's `click(item, ev)` goes
-first (true consumes it), then the `"mapclick"` handlers, then the default (select city/state). While a mode is active
-(City View, advisors) the `"mapclick"` handlers go first and the layer's `click` only after them.
-
-**Map toggles.** `app.ui.addMapToggle({id, label, icon, get() → bool, set(on), title?, default?}) → remove()`: a switch
-in the "Map" menu next to the Resources toggle in the lens dock (one button + a small menu, so it fits phones). `set` is
-yours (flip the state your layer's `visible()` reads); main redraws. The hash key `layers` lists the switches that are on
-(`#layers=roads,rail,military`, `layers=none`) and is written only while some switch differs from its default; switches
-added after load are set from it, and ids whose extension has not loaded yet stay in the URL. `app.ui.mapToggles()` →
-`[{id, label, on}]`. `app.ui.setMapToggle(id, on) → bool` switches one from code exactly as the menu would (redraw,
-hash), e.g. an advisor's "show roads, rail and forts" button; false if no toggle has that id (yet).
-
-**URL.** Core keys: `lens`, `city` (CBSA id), `state`, `at`, plus extension keys (`advisor`, `layers`, ...).
-* `#state=` accepts a FIPS code (`48`, `6`), a postal code (`TX`, `tx`) or a state name; a link keeps the form it
-  was opened with.
-* `at=x,y,z`: `x`, `y` = the map-km point at the centre of the screen (rounded), and `z` = **log2(camera scale ÷
-  home-fit scale)**, the zoom relative to the "whole country fits" view: `0` = home framing, `1` = twice as close,
-  negative = zoomed out past it. It is relative so a link frames the same area on any screen size; it is *not* the
-  absolute scale (css px per km) that `app.flyTo(x, y, scale)` and `camera.scale` use. Convert with
-  `scale = fitScale × 2^z`. `at` is written only once the user (or an extension) has moved the camera.
-* When the hash is written: during a fly-to the link names the **destination** right away (within one 350 ms debounce
-  of the flight starting); after a pan or wheel zoom it catches up 350 ms after the camera settles; `app.setMode`
-  writes it on the next task. Lens, selection and mode changes push a history entry (Back undoes them); camera moves
-  replace the current one. `app.hash.flush()` writes immediately (Share calls it before copying).
-
-**Optional state and debug handles** (not data contracts; don't rely on them from other extensions without asking):
-* `state.cityBadges`: an optional `Map<city id, {label, color: "#rrggbb"}>` that `render/banners.js` reads to draw a
-  city-type tab on banners that show their yield row. Filled by `ext/cityView` from districts.json; absent = no tabs.
-* `app.cityView.model`: read-only getter on the City View's current model (debugging).
-* `app.mapArt = {model, on, layers}`: added by `ext/layers` for debugging. `model` holds `installations`, `ports`,
-  `airports`, `wonders`, each item `{data (the json row), cell, x, y}`. The layers' hit items have the shape
-  `{kind: "fort"|"range"|"port"|"airport"|"wonder"|"route", data}` (route items: `data.route` with `a`/`b`); the
-  advisors rely on that shape for map-to-dashboard links, so keep it.
-
-**Who reads which fields.** The advisors read every counties.json column after `cell`, military.json `states`, districts.json
-`cities` and `counties`, and citizens.json `cities`; the City View reads citizens.json, districts.json, military.json
-`cities`, trade.json zones and infrastructure.json `cbsa`. Update `web/js/ext/advisors` and `web/js/ext/cityView`
-when renaming a field in those files.
-
-**Lenses.** Legend ticks print numbers only (plus short units: %, $, min, /km²); a longer `unit` is printed once under
-the ticks, so keep `unit` a plain phrase ("adherents per 100 residents"), not part of the number. `lens.note` is shown in the legend; `format: "category"` lenses get a swatch legend (see lenses.json).
+`web/js` renders the contracts above; it must not hard-code replacement statistics. User-facing geography labels are Region, Department, Urban area/AAV and Commune. Internal variables named `state`, `county` or `metro` may remain only because they implement the inherited schema. User-facing text, source notes, tooltips and caveats must describe French geography, French/European sources, euros and metric units. US-only concepts that have no French public equivalent (for example census religion, health-insurance coverage, veteran status, FEMA disaster assistance, QCEW pay) are intentionally absent rather than approximated.

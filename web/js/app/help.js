@@ -15,7 +15,7 @@ const ROWS = [
   ["Explore", [
     [["Click city"], "Open the city screen"],
     [["Click land"], "Open that state"],
-    [["/", `${MOD} K`], "Search cities and states"],
+    [["/", `${MOD} K`], "Search cities, communes and regions"],
     [["L", "Shift L"], "Next / previous lens"],
     [["Legend"], "Hover or drag the scale to show only that range"],
     [["R"], "Show or hide resources"],

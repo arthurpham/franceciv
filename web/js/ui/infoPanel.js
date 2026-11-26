@@ -34,9 +34,9 @@ export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
   if (v != null && nv != null && nv !== 0) {
     const ratio = v / nv;
     const cls = Math.abs(ratio - 1) < 0.03 || higherIsGood == null ? "" : (higherIsGood ? ratio >= 1 : ratio <= 1) ? "good" : "bad";
-    // Within 3% of the U.S. value reads as level: no arrow, no colour (the colour uses the same band).
+    // Within 3% of the national value reads as level: no arrow, no colour (the colour uses the same band).
     const arrow = Math.abs(ratio - 1) < 0.03 ? "≈" : ratio > 1 ? "▲" : "▼";
-    cmp = `<span class="cmp ${cls}">${arrow} US ${fmt(nv)}</span>`;
+    cmp = `<span class="cmp ${cls}">${arrow} France ${fmt(nv)}</span>`;
   }
   return `<div class="stat-row"><span class="sl">${icon(ic, fallback, { size: 14 })}${esc(label)}</span><span><b>${fmt(v)}</b>${cmp}</span></div>`;
 }
@@ -45,9 +45,9 @@ export function amenities(o, n) {
   return `
     ${statRow("unemployment", "😐", "Unemployment", o.unemployment, n.unemployment, (x) => pct(x), false)}
     ${statRow("l-income", "💵", "Median standard of living", o.median_income, n.median_income, dollars, true)}
-    ${statRow("l-home", "🏠", "Median home value", o.home_value, n.home_value, dollars, null)}
-    ${statRow("l-homeownership", "🔑", "Median gross rent / mo", o.median_rent, n.median_rent, dollars, false)}
-    ${statRow(null, "⚖️", "Rent ÷ income", o.rent_burden, n.rent_burden, (x) => pct(x), false)}`;
+    ${statRow("l-homeownership", "🔑", "Owner-occupied homes", o.homeownership, n.homeownership, (x) => pct(x), true)}
+    ${statRow("l-home", "🏡", "Second homes", o.second_homes, n.second_homes, (x) => pct(x), false)}
+    ${statRow(null, "🏚️", "Vacant homes", o.vacancy, n.vacancy, (x) => pct(x), false)}`;
 }
 
 // Workforce by industry with location quotients vs. the nation ("specialisation"). limit = max rows (0 = all).
@@ -106,13 +106,13 @@ export const popLine = (o, extra = "") =>
 export function showPanel(spec) {
   const panel = panelEl();
   panel.dataset.kind = spec.kind;
-  panel.setAttribute("aria-label", `${spec.kind === "state" ? "State" : "City"}: ${spec.title}`);
+  panel.setAttribute("aria-label", `${spec.kind === "state" ? "Region" : "City"}: ${spec.title}`);
   panel.innerHTML = `
     <div class="sheet-grip" aria-hidden="true"></div>
     <div class="cp-head">
       <div class="stripe" style="background:${spec.stripe}"></div>
       <button class="icon-btn cp-close" aria-label="Close panel (Esc)" title="Close (Esc)">${icon("close", "✕", { size: 13 })}</button>
-      <div class="cp-kind">${spec.kind === "state" ? "State" : "City"}</div>
+      <div class="cp-kind">${spec.kind === "state" ? "Region" : "City"}</div>
       <h2 class="cp-name">${spec.titleHtml ?? esc(spec.title)}</h2>
       ${spec.sub ? `<div class="cp-full">${spec.sub}</div>` : ""}
       ${spec.headExtra || ""}

@@ -14,11 +14,11 @@ const COUNTY_LENS = {
   public_transit: "public_transit", car_commuting: "car_commuting", disasters: "disasters", flood_events: "flood_events", drought_events: "drought_events",
   macron_2022: "macron_2022", lepen_2022: "lepen_2022", abstention_2022: "abstention_2022", forest: "forest", crop: "farmland", developed: "developed",
 };
-// County measures we can roll up to states and metros as population-weighted means.
+// Department measures we can roll up to states and metros as population-weighted means.
 const ROLLUP = ["density", "income", "poverty", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "homeownership", "second_homes", "vacancy", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
 // Rolled-up means that only approximate the area's true value (a median or an index whose denominator is not population).
 const APPROX = new Set(["income", "disasters"]);
-// No count/share pairs are currently rolled up from counties.
+// No count/share pairs are currently rolled up from departments.
 const SUMS = [];
 const LAND_KEYS = ["forest", "crop", "pasture", "grass", "shrub", "wetland", "developed"];
 export const LAND_LABEL = {
@@ -67,12 +67,11 @@ export function buildData(app) {
     F("population", "Population", "int", { unit: "people", source: src, group: "People", description: `Residents (${vintage}).`, lens: "density" }),
     F("growth", "Growth", "signed", { unit: "population change", higher_is: "neutral", source: "fr_insee_stats", group: "People", description: `Population change ${(nat.growth_years || []).join("–")} in INSEE comparateur-de-territoires populations, on current borders.` }),
     F("gdp", "GDP", "money", { unit: "euros per year", source: "fr_eurostat", description: `${nation.gdp_vintage || "Eurostat regional accounts"}: GDP in current euros, counted where the work is done.` }),
-    F("gdp_pc", "GDP per person", "usd", { unit: "euros per resident", higher_is: "good", source: "fr_eurostat", description: "GDP ÷ residents. Regional GDP and population can come from different statistical years." }),
+    F("gdp_pc", "GDP per person", "eur", { unit: "euros per resident", higher_is: "good", source: "fr_eurostat", description: "GDP ÷ residents. Regional GDP and population can come from different statistical years." }),
     F("median_income", "Standard of living", "eur", { unit: "median standard of living", higher_is: "good", source: src, group: "Prosperity", description: `Median standard of living (${vintage}).`, lens: "income" }),
-    F("median_rent", "Rent", "usd", { unit: "median gross rent / month", source: src, group: "Prosperity", description: `Median gross rent per month (${vintage}).` }),
-    F("home_value", "Home value", "usd", { unit: "median home value", source: src, group: "Prosperity", description: `Median value of owner-occupied homes (${vintage}).`, lens: "home" }),
-    F("affordability", "Home value ÷ income", "ratio", { unit: "years of income", higher_is: "bad", group: "Prosperity", description: "Median home value ÷ median household income: how many years of income a typical home costs.", derived: true }),
-    F("rent_burden", "Rent ÷ income", "pct", { unit: "median rent × 12 ÷ median income", higher_is: "bad", source: src, group: "Prosperity", description: "Median rent × 12 ÷ median household income (a ratio of medians, not the share of renters who are burdened)." }),
+    F("homeownership", "Owner-occupied homes", "pct", { unit: "share of main homes", higher_is: "good", source: "fr_insee_stats", group: "Prosperity", description: "Owner-occupied main homes ÷ all main homes (INSEE Comparateur 2023).", lens: "homeownership" }),
+    F("second_homes", "Second homes", "pct", { unit: "share of dwellings", source: "fr_insee_stats", group: "Prosperity", description: "Second homes ÷ all dwellings (INSEE Comparateur 2023).", lens: "second_homes" }),
+    F("vacancy", "Vacant homes", "pct", { unit: "share of dwellings", higher_is: "bad", source: "fr_insee_stats", group: "Prosperity", description: "Vacant dwellings ÷ all dwellings (INSEE Comparateur 2023).", lens: "vacancy" }),
     F("unemployment", "Unemployment", "pct", { unit: "unemployed ÷ labour force", higher_is: "bad", source: src, group: "Prosperity", description: `Unemployed ÷ labour force (${vintage}).` }),
     F("employed", "Workplace employment", "int", { unit: "jobs", source: src, description: `Jobs counted at employers/workplaces in the area (${vintage}).` }),
     ...(nation.yields || []).filter((y) => y.unit !== "usd").map((y) => F(`y_${y.key}`, `${y.label} workers`, "int", { unit: "workers", source: src, group: "Yields", description: y.description })),
@@ -83,20 +82,20 @@ export function buildData(app) {
     const approx = APPROX.has(k);
     return F(k, f.label + (approx ? " ≈" : ""), f.format, {
       unit: f.unit, higher_is: f.higher_is, source: f.source || "fr_insee_stats", group: groupOf(k), lens: COUNTY_LENS[k],
-      description: k === "density" ? `Residents ÷ land area, summed over member counties (${countyVintage}).`
-        : `${f.description} Rolled up from counties as a population-weighted mean${approx ? " (an approximation: not the area's own figure)" : ""}${!f.source ? ` (${countyVintage})` : ""}.`,
+      description: k === "density" ? `Residents ÷ land area, summed over member departments (${countyVintage}).`
+        : `${f.description} Rolled up from departments as a population-weighted mean${approx ? " (an approximation: not the area's own figure)" : ""}${!f.source ? ` (${countyVintage})` : ""}.`,
       derived: true,
     });
   }), ...SUMS.flatMap(([n, p]) => {
     const fn = counties.fields.find((x) => x.key === n), fp = counties.fields.find((x) => x.key === p);
     if (!fn || !fp) return [];
     return [
-      F(n, fn.label, fn.format, { unit: fn.unit, source: fn.source, group: groupOf(n), description: `${fn.description} Summed over member counties (${countyVintage}).`, derived: true }),
-      F(p, fp.label, fp.format, { unit: fp.unit, source: fp.source, group: groupOf(p), lens: COUNTY_LENS[p], description: `${fp.description} Summed counts over member counties ÷ their summed base populations (${countyVintage}).`, derived: true }),
+      F(n, fn.label, fn.format, { unit: fn.unit, source: fn.source, group: groupOf(n), description: `${fn.description} Summed over member departments (${countyVintage}).`, derived: true }),
+      F(p, fp.label, fp.format, { unit: fp.unit, source: fp.source, group: groupOf(p), lens: COUNTY_LENS[p], description: `${fp.description} Summed counts over member departments ÷ their summed base populations (${countyVintage}).`, derived: true }),
     ];
   })].filter(Boolean) : [];
 
-  // --- roll-ups from counties -------------------------------------------------------------------------------------
+  // --- roll-ups from departments -------------------------------------------------------------------------------------
   const roll = { states: new Map(), metros: new Map() };
   const cRows = [];
   if (counties) {
@@ -133,7 +132,7 @@ export function buildData(app) {
     };
     for (const { r } of cRows) {
       add(roll.states, r[col.state], r);
-      add(roll.metros, r[col.cbsa], r);
+      add(roll.metros, r[col.aav], r);
     }
   }
   const rolled = (map, key) => {
@@ -171,8 +170,8 @@ export function buildData(app) {
   const typeById = new Map((resources?.types || []).map((t) => [t.id, t]));
   const mwByMetro = new Map();
   items.forEach((it) => {
-    if (typeById.get(it.type)?.unit !== "MW" || !fin(it.value) || !it.cbsa) return;
-    mwByMetro.set(it.cbsa, (mwByMetro.get(it.cbsa) || 0) + it.value);
+    if (typeById.get(it.type)?.unit !== "MW" || !fin(it.value) || !it.aav) return;
+    mwByMetro.set(it.aav, (mwByMetro.get(it.aav) || 0) + it.value);
   });
 
   // --- states ---------------------------------------------------------------------------------------------------
@@ -227,16 +226,16 @@ export function buildData(app) {
     const countyRows = cRows.map(({ r, i }) => {
       const v = {};
       cols.forEach((k, j) => (v[k] = r[j]));
-      v.metro = v.cbsa ? cityName.get(v.cbsa) || null : null;
+      v.metro = v.aav ? cityName.get(v.aav) || null : null;
       return { key: v.geoid, name: shortCounty(v.name), full: v.name, sub: v.state, level: "counties", ref: i, v };
     });
     // counties.json rows follow world.json counties; map by geoid anyway in case they ever diverge.
     const worldIdx = new Map((w.raw.counties || []).map((c, k) => [c.geoid, k]));
     for (const row of countyRows) row.ref = worldIdx.get(row.key) ?? row.ref;
     const rowByWorld = new Map(countyRows.map((r) => [r.ref, r]));
-    // Counties smaller than a hex own no cell: counties.json `cell` (the hex nearest the county's centre) stands in.
+    // Departments smaller than a hex own no cell: counties.json `cell` (the hex nearest the department's centre) stands in.
     const cellsOfRow = (r) => countyCells.get(r.ref) || (Number.isInteger(r.v.cell) ? [r.v.cell] : []);
-    const fields = counties.fields.filter((f) => f.key !== "cbsa" && f.key !== "geoid" && f.key !== "cell").map((f) => ({
+    const fields = counties.fields.filter((f) => f.key !== "aav" && f.key !== "geoid" && f.key !== "cell").map((f) => ({
       ...F(f.key, f.key === "name" ? "Department" : f.label, f.format, { unit: f.unit, higher_is: f.higher_is, source: f.source, description: f.description, lens: COUNTY_LENS[f.key], group: groupOf(f.key) }),
     }));
     fields.splice(2, 0, F("metro", "Main urban area", "text", { group: "Name", description: "The largest aire d'attraction des villes touching the department, if it is on the map." }));
@@ -252,7 +251,7 @@ export function buildData(app) {
       focus: (row) => {
         let cells = cellsOfRow(row);
         // A county smaller than a hex owns no cell: frame its metro instead, or open its state.
-        if (!cells.length && row.v.cbsa) cells = cities.find((c) => c.id === row.v.cbsa)?.footprint || [];
+        if (!cells.length && row.v.aav) cells = cities.find((c) => c.id === row.v.aav)?.footprint || [];
         if (!cells.length) return app.selectState(row.v.state, { fly: true });
         let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         for (const c of cells) {
@@ -345,7 +344,7 @@ function extendMilitary(data, mil) {
     for (const it of mil.installations || []) if (it[k]) m.set(it[k], (m.get(it[k]) || 0) + 1);
     return m;
   };
-  const byState = instBy("state"), byMetro = instBy("cbsa");
+  const byState = instBy("state"), byMetro = instBy("aav");
   states.addFields([
     F4("mil_active", "Stationed military personnel", "int", { unit: "people at base seats", source: "fr_military", group: "Military", description: `Stationed personnel in bases de défense whose support-group seat is in the region (${v.personnel || "2012"}). Includes the one aggregate Île-de-France row there; not troops by home residence or current strength.` }),
     F4("installations", "Defense bases", "int", { unit: "base seats", source: "fr_military", group: "Military", description: `Geocoded bases de défense in the region (${v.installations || "2012"}). Markers are support-group seats, not boundaries or every barracks.` }),
@@ -375,12 +374,11 @@ function extendDistricts(data, d) {
   const lb = (x) => (x?.lower_bound ? " (at least)" : "");
   metros.addFields([
     F4("city_type", "City type", "text", { source: "fr_insee_stats", group: "Districts", description: `The city's badge: named after its strongest exceptionally concentrated district when one passes the badge override, otherwise its strongest district; a speciality nickname is used when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
-    F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the metro qualifies for, strongest first. ${d.rule?.text || ""}` }),
+    F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the urban area qualifies for, strongest first. ${d.rule?.text || ""}` }),
     F4("n_districts", "Number of districts", "int", { source: "fr_insee_stats", group: "Districts", description: "How many districts pass the rule (up to 5)." }),
     F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}). Counted where the employer is, not where workers live.` }),
-    F4("qcew_pay", "Average pay", "usd", { unit: "$ per job per year", source: "fr_insee_stats", group: "Districts", description: `Average annual pay per covered job (${vint}).` }),
     F4("top_industry", "Most specialised industry", "text", { source: "fr_insee_stats", group: "Districts", description: "The detailed industry (of those this project fetches) with the highest location quotient and at least 1,000 jobs." }),
-    F4("top_lq", "Its location quotient", "lq", { unit: "× the metropolitan-France share of jobs", source: "fr_insee_stats", group: "Districts", description: "Location quotient of the most specialised industry: its share of the metro's jobs ÷ its share of metropolitan-France jobs." }),
+    F4("top_lq", "Its location quotient", "lq", { unit: "× the metropolitan-France share of jobs", source: "fr_insee_stats", group: "Districts", description: "Location quotient of the most specialised industry: its share of the urban area's jobs ÷ its share of metropolitan-France jobs." }),
   ]);
   for (const r of metros.rows) {
     const c = d.cities?.[r.key];
@@ -389,14 +387,14 @@ function extendDistricts(data, d) {
       city_type: c?.badge?.label ?? null,
       districts: c ? (c.districts || []).map((x) => cat.get(x.id)?.name || x.id).join(", ") || null : null,
       n_districts: c ? (c.districts || []).length : null,
-      qcew_jobs: c?.emp ?? null, qcew_pay: c?.avg_pay ?? null,
+      qcew_jobs: c?.emp ?? null,
       top_industry: top ? `${d.industries?.[top.naics]?.title || top.naics}${lb(top)}` : null,
       top_lq: top?.lq ?? null,
     });
   }
   if (counties && d.counties) {
     counties.addFields([
-      F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the county qualifies for, strongest first (${vint}). ${d.rule?.county_note || ""}` }),
+      F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the department qualifies for, strongest first (${vint}). ${d.rule?.county_note || ""}` }),
       F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}).` }),
     ]);
     for (const r of counties.rows) {

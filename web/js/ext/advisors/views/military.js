@@ -126,7 +126,7 @@ export async function mount(ctx) {
     <li>It shows 2012 <em>bases de défense</em>: joint support organisations and the personnel counted as stationed in them.</li>
     <li>Markers are at the support group's seat commune. They do not show every barracks, training ground, boundary or unit location.</li>
     <li>No branch split is published in this file, so every installation is shown as a joint defense base rather than guessed as Army, Navy or Air Force.</li>
-    <li>No defense spending, veteran, reserve or current personnel geography is included because no comparable current public dataset was found.</li>
+    <li>No defense-spending, reserve or current personnel geography is included because no comparable current public dataset was found.</li>
   </ul>`);
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, mil.sources || ["fr_military"], [esc(mil.caveats || "")].filter(Boolean)));

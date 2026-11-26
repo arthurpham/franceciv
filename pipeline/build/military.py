@@ -96,7 +96,7 @@ def build():
             "id": f"base-{slug(row['name'])}", "name": titlecase(row["name"]), "component": "other", "joint": True,
             "status": "act", "tier": tier, "curated": False, "area_km2": None, "cells": None,
             "x": round(x, 1), "y": round(y, 1), "cell": nearest_land(world, grid, x, y),
-            "county": commune["department"], "cbsa": aav_id, "state": state_abbr.get(commune["region"]),
+            "county": commune["department"], "aav": aav_id, "state": state_abbr.get(commune["region"]),
             "state_filed": state_abbr.get(commune["region"]), "personnel": personnel, "formations": row.get("formations"),
             "seat_commune": commune["name"], "match": match, "year": mil["year"],
         })
@@ -104,8 +104,8 @@ def build():
 
     city_groups = {}
     for f in installations:
-        if f["cbsa"]:
-            city_groups.setdefault(f["cbsa"], []).append(f)
+        if f["aav"]:
+            city_groups.setdefault(f["aav"], []).append(f)
     city_rows = {}
     for city_id, rows in city_groups.items():
         personnel = sum(f["personnel"] for f in rows)

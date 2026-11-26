@@ -16,20 +16,16 @@ const DEFAULT_COLS = {
 const DEFAULT_XY = {
   states: { x: "median_income", y: "growth", s: "population", c: "unemployment" },
   metros: { x: "gdp_pc", y: "growth", s: "population", c: "median_income" },
-  counties: { x: "income", y: "bachelors", s: "population", c: "density" },
+  counties: { x: "income", y: "higher_education", s: "population", c: "density" },
 };
 // Table headers: short enough for a ~60 px column (they wrap to two lines; &shy; marks where a long word may break).
 const SHORT = {
-  population: "People", gdp_pc: "GDP per person", median_income: "Income", median_rent: "Rent", unemployment: "Unemploy&shy;ment",
-  affordability: "Home ÷ income", rent_burden: "Rent ÷ income", homeownership: "Home&shy;owners", land_km2: "Land area",
-  energy_mw: "Mapped power", foreign_born: "Born abroad", median_age: "Median age", uninsured: "Unin&shy;sured", broadband: "Broad&shy;band",
-  // county lenses, military, industry districts, citizens
-  faith_tradition: "Largest tradition", amenities: "Amen&shy;ities", mhlth: "Mental distress", loneliness: "Lone&shy;liness", disasters: "Disas&shy;ters",
-  veterans_pct: "Veterans share", armed_forces: "Armed forces", armed_forces_pct: "Armed forces share", mil_active: "Stationed personnel",
-  mil_guard_reserve: "Guard & Reserve", mil_civilian: "DoD civilians", def_spending: "Defense $", def_per_resident: "Defense $ per resident",
-  def_pct_gdp: "Defense % of GDP", installations: "Instal&shy;lations", encampment: "Garrison", city_type: "City type", n_districts: "Districts (n)",
-  qcew_jobs: "Jobs (QCEW)", qcew_pay: "Pay (QCEW)", top_industry: "Top industry", top_lq: "Top LQ", cz_median_age: "Median age (1-yr)",
-  cz_degree: "Degree (1-yr)", cz_specialist: "Top citizen", cz_drove_alone: "Drive alone", cz_transit: "Transit", cz_home: "Work from home",
+  population: "People", gdp_pc: "GDP per person", median_income: "Income", unemployment: "Unemploy&shy;ment",
+  homeownership: "Home&shy;owners", second_homes: "Second homes", vacancy: "Vacant homes", land_km2: "Land area",
+  energy_mw: "Mapped power", disasters: "Hazard frequency", flood_events: "Flood share", drought_events: "Drought share",
+  mil_active: "Stationed personnel", installations: "Instal&shy;lations", encampment: "Garrison", city_type: "City type", n_districts: "Districts (n)",
+  qcew_jobs: "Jobs (INSEE)", top_industry: "Top industry", top_lq: "Top LQ",
+  cz_degree: "Bac+3 or higher", cz_specialist: "Top citizen", cz_drove_alone: "Car to work", cz_transit: "Transit", cz_home: "No transport",
 };
 const OPS = { num: [">", "≥", "<", "≤", "="], text: ["=", "contains", "≠"] };
 
@@ -40,7 +36,7 @@ const save = (s) => { try { localStorage.setItem(STORE, JSON.stringify(s)); } ca
 
 export async function mount(ctx) {
   const { app, data, el, link } = ctx;
-  // Columns from the optional files (garrisons and defense $, industry districts, citizen mixes): loaded on demand,
+  // Columns from the optional files (garrisons, industry districts, citizen mixes): loaded on demand,
   // only when the Explorer opens, and added to the levels once.
   await extendData(data, ["military", "districts", "citizens"]);
   const avail = ["states", "metros", "counties"].filter((k) => data.levels[k]);

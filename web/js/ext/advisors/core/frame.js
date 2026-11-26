@@ -4,7 +4,7 @@
 // of the screen that is really free (whether or not app.visibleArea() already accounts for docks) and fit world
 // boxes into it:
 //   mapArea(app)                  → {x0, y0, x1, y1} css px of map not under the top bar, docks or a sheet
-//   landBox(app)                  → km bbox of the lower 48 (cached)
+//   landBox(app)                  → km bbox of metropolitan France (cached)
 //   frameBox(app, box, opts)      fly so the km box fits the free area (opts: pad, maxScale, ms)
 //   frameNation(app)              the whole country beside the dock
 //   focusPoint(app, x, y, scale)  centre a km point in the free area

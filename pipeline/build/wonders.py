@@ -47,7 +47,7 @@ def build():
         return {
             "x": round(x, 1), "y": round(y, 1), "cell": cell,
             "county": c["department"] if c else None,
-            "cbsa": commune_aav.get(c["code"]) if c else None,
+            "aav": commune_aav.get(c["code"]) if c else None,
             "state": state_abbr.get(c["region"]) if c else None,
         }
 
