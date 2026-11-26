@@ -113,7 +113,7 @@ function citizens(m) {
     : `${pct(empShare)} jobs per resident${usEmpShare != null ? ` · France ${pct(usEmpShare)}` : ""}`;
   const multi = m.tiles.length > 1;
   const tilesNote = multi
-    ? `On the map each urban-area hex shows <b>≈ residents</b> (department population density × hex area, an estimate) and its
+    ? `On the map each urban-area hex shows <b>≈ residents</b> (department population density × hex area × French-territory share, an estimate) and its
        <b>main land use</b> (share of the hex's land)${m.residentsSum > 0
         ? `. Together the ${m.tiles.length} hexes hold about ${compact(m.residentsSum)} people by that estimate` : ""}.`
     : `This urban area fits inside one map hex (about ${compact(m.hexArea)} km²), shown with its city.`;

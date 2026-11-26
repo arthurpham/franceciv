@@ -739,17 +739,17 @@ def quality_density(r: Report, ctx: dict, lenses: dict, samples, county_pop: dic
         r.note("density conservation: no department populations (counties.json missing)")
         return None
     hex_area = 1.5 * math.sqrt(3) * ctx["grid"]["radius"] ** 2
-    published_share = ctx.get("france_share") or []
-    share_source = "_world samples" if samples else "committed france_share" if published_share else "assumed 1"
+    published_share = ctx.get("france_share") if isinstance(ctx.get("france_share"), list) else []
+    share_source = "committed france_share" if published_share else "_world samples" if samples else "assumed 1"
     total = 0.0
     for i, v in enumerate(dens["values"]):
         if v is None or ctx["owner"][i] < 0:
             continue
         s = samples[i] if samples and i < len(samples) else None
-        if s:
-            land = sum(1 for k in s if k >= 0) / len(s)
-        elif i < len(published_share) and is_num(published_share[i]):
+        if i < len(published_share) and is_num(published_share[i]):
             land = published_share[i]
+        elif s:
+            land = sum(1 for k in s if k >= 0) / len(s)
         else:
             land = 1.0
         total += v * hex_area * land
