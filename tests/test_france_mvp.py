@@ -177,3 +177,25 @@ def test_hazard_commune_resolver_stops_at_current_communes():
     resolve = commune_resolver(current, movements)
     assert resolve("76095") == "76095"  # Bihorel is current again; do not follow its obsolete merger
     assert resolve("12114") == "12218"  # Grand-Vabre reaches current Conques-en-Rouergue without cycling
+
+
+def test_citizens_contract():
+    data = web("citizens.json")
+    paris = data["cities"]["001"]
+    assert data["sources"] == ["fr_insee_stats"]
+    assert len(data["cities"]) >= 170
+    assert set(data["groups"]) == {"workforce", "age", "commute", "education", "nativity"}
+    for row_id, n in data["figures"].items():
+        row = paris[row_id]
+        assert row is not None
+        keys = [g["key"] for g in data["groups"][row_id]]
+        assert set(row["counts"]) == set(keys)
+        assert sum(row["counts"].values()) == row["total"]
+        assert sum(row["figures"].values()) == n
+        assert all(0 <= row["shares"][k] <= 1 for k in keys)
+    assert paris["commute"]["shares"]["transit"] > data["national"]["commute"]["shares"]["transit"]
+    assert paris["education"]["bachelors_plus"] > data["national"]["education"]["bachelors_plus"]
+    assert 0 < paris["nativity"]["foreign_born"] < 1
+    assert paris["workforce"] is not None
+    assert sum(paris["workforce"]["figures"].values()) == 20
+    assert paris["specialists"]
