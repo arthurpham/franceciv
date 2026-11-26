@@ -94,6 +94,10 @@ Physical river-flood exposure. Values are approximate hex-area shares derived fr
 
 Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.
 
+### agriculture.json
+
+CORINE vineyard/orchard land-cover shares plus Agreste 2020 farm density and average farm size. Agreste values are commune census statistics aggregated to hexes by commune centroid. Blank commune cells conflate no farm and statistical suppression, so they are omitted from both numerator and denominator rather than zero-filled. Utilised agricultural area is assigned to the farm headquarters commune and may include land worked elsewhere.
+
 ### military.json
 
 Ministry of the Armed Forces 2012 `bases de défense` personnel table. Installations are support-group seat communes, not boundaries, ranges, barracks-level geography, or a current order of battle. City garrison tiers are derived only from stationed-personnel thresholds; `share` is a contextual scale mixing the 2012 personnel count with current population and must not be presented as a current rate.
