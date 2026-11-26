@@ -668,6 +668,21 @@ Built by `pipeline/build/wonders.py` from `fr_unesco` (`sources/fr_unesco.py`) a
 * `county`, `cbsa` and `state` are the map's department, AAV and region inferred from the point. `x`/`y` remain the
   true or display-adjusted point in map kilometres; `cell` is the nearest French land hex.
 
+### communes.json (lazy)
+
+Built by `pipeline/build/communes.py` from `fr_boundaries`. About 2 MB, one row for every metropolitan commune
+including Corsica. Loaded after the first interactive frame solely for top-bar commune search.
+
+```jsonc
+{"version": 1,
+ "columns": ["code", "name", "department", "population", "x", "y", "state_fips"],
+ "communes": [["01001", "L'Abergement-Clémenciat", "Ain", 860, 735.4, 425.6, "84"]]}
+```
+
+Rows are compact positional arrays in `columns` order, sorted by descending population. `x`/`y` are map kilometres
+for the commune centroid; they are display/search anchors, not exact municipal seat coordinates. Selecting a commune
+flies the camera there; it does not open a full commune statistics card.
+
 ### disasters.json (lazy)
 
 Built by `pipeline/build/disasters.py` from the sources `fema_declarations` (`pipeline/sources/openfema.py`) and

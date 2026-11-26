@@ -672,9 +672,12 @@ async function main() {
     states: w.raw.states.map((s, i) => ({ name: states?.[i]?.name || s.name, abbr: s.abbr, population: states?.[i]?.population })),
     onPick(r) {
       if (r.kind === "city") selectCity(r.city, { fly: true });
+      else if (r.kind === "commune") app.flyTo(r.commune.x, r.commune.y, 4.2);
       else selectState(r.index, { fly: true });
     },
   });
+  // The commune index is about 2 MB, so load it after the first interactive frame rather than in the critical bundle.
+  setTimeout(() => loadJSON("communes", true).then((d) => search.addCommunes?.(d?.communes || [])), 0);
 
   const toastEl = document.getElementById("toast");
   let toastTimer = 0;

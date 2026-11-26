@@ -133,3 +133,16 @@ def test_museum_attendance_parser_deduplicates_sites(tmp_path, monkeypatch):
     assert year == 2024
     assert rows[0]["visits"] == 150
     assert rows[0]["sites"] == 2
+
+
+def test_commune_search_index_contract():
+    data = web("communes.json")
+    cols = {k: i for i, k in enumerate(data["columns"])}
+    rows = data["communes"]
+    assert len(rows) > 34_000
+    assert cols["code"] == cols["name"] - 1
+    paris = next(r for r in rows if r[cols["code"]] == "75056")
+    assert paris[cols["name"]] == "Paris"
+    assert paris[cols["population"]] > 2_000_000
+    assert all(len(r) == len(data["columns"]) for r in rows[:100])
+    assert rows == sorted(rows, key=lambda r: (-r[cols["population"]], r[cols["name"]], r[cols["code"]]))
