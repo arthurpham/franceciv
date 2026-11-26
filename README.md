@@ -21,7 +21,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 - Schematic road and rail links plus real airports and ports from Natural Earth, OurAirports and Eurostat traffic series.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
-- The original interactive map, city panels, minimap, search, sharing and lens histogram UI.
+- The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search across cities, regions and all metropolitan communes.
 
 ## Explicitly not in the MVP yet
 
@@ -35,7 +35,7 @@ Other known limitations:
 - Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
 - UNESCO serial properties are represented by one French component point rather than full site boundaries. Museum attendance sums distinct physical sites sharing one Muséofile institution; universities are mapped at administrative headquarters communes rather than campus footprints.
 - Overseas France is excluded; Corsica is included.
-- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; commune search/cards, citizens and districts remain unimplemented.
+- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; commune cards, citizens and districts remain unimplemented.
 
 ## Quick start
 
@@ -52,7 +52,7 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ```bash
 uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
 uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
-uv run python -m pipeline build world france_core resources infrastructure wonders trade catalog
+uv run python -m pipeline build world france_core resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.

@@ -1,8 +1,8 @@
-// Top-bar search over cities and states: prefix matches first, then word-prefix, then substring; ties by population.
-import { esc, popShort } from "../format.js";
+// Top-bar search over cities, communes and regions: prefix matches first, then word-prefix, then substring; ties by population.
+import { esc, int, popShort } from "../format.js";
 import { icon } from "../ui/icon.js";
 
-const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const norm = (s) => String(s || "").toLowerCase().replace(/œ/g, "oe").replace(/æ/g, "ae").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const MAX = 8;
 
 /**
@@ -14,7 +14,7 @@ export function initSearch(opts) {
   if (!input || !box) return { focus() {}, close() {}, get isOpen() { return false; } };
   // The full placeholder only fits the wide search box; narrower ones say just "Search".
   const narrow = matchMedia("(max-width: 1120px)");
-  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities & states");
+  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities, communes & regions");
   setPlaceholder();
   narrow.addEventListener?.("change", setPlaceholder);
 
@@ -64,7 +64,7 @@ export function initSearch(opts) {
 
   function render() {
     if (!results.length) {
-      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city or state matches “${esc(input.value.trim())}”</div>` : "";
+      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city, commune or region matches “${esc(input.value.trim())}”</div>` : "";
       box.hidden = !input.value.trim();
       input.setAttribute("aria-expanded", String(!box.hidden));
       input.removeAttribute("aria-activedescendant");
@@ -73,9 +73,9 @@ export function initSearch(opts) {
     }
     box.innerHTML = results
       .map((e, i) => `<div class="sr-item ${i === sel ? "sel" : ""}" role="option" id="sr-${i}" aria-selected="${i === sel}" data-i="${i}">
-        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
+        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : e.kind === "commune" ? icon("terrain", "📍", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
         <span class="sr-main"><b>${esc(e.label)}</b><span class="sr-sub">${esc(e.sub)}</span></span>
-        <span class="sr-pop">${e.pop ? popShort(e.pop) : ""}</span></div>`)
+        <span class="sr-pop">${e.popText || (e.pop ? popShort(e.pop) : "")}</span></div>`)
       .join("");
     box.hidden = false;
     input.setAttribute("aria-expanded", "true");
@@ -90,7 +90,7 @@ export function initSearch(opts) {
     close();
     input.value = "";
     input.blur();
-    opts.onPick(e.kind === "city" ? { kind: "city", city: e.city } : { kind: "state", index: e.index });
+    opts.onPick(e.kind === "city" ? { kind: "city", city: e.city } : e.kind === "commune" ? { kind: "commune", commune: e.commune } : { kind: "state", index: e.index });
   }
 
   function close() {
@@ -151,6 +151,18 @@ export function initSearch(opts) {
   window.addEventListener("resize", () => !box.hidden && position());
 
   return {
+    addCommunes(rows) {
+      for (const c of rows || []) {
+        const commune = { code: c[0], name: c[1], department: c[2], population: c[3], x: c[4], y: c[5], state_fips: c[6] };
+        entries.push({ kind: "commune", commune, name: commune.name, n: norm(commune.name), full: norm(`${commune.name} ${commune.department}`),
+          pop: commune.population || 0, popText: int(commune.population || 0), sub: `${commune.department} · commune`, label: commune.name });
+      }
+      if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
+        results = query(input.value);
+        sel = results.length ? 0 : -1;
+        render();
+      }
+    },
     focus() {
       input.focus();
       input.select();
