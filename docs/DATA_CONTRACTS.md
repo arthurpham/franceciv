@@ -670,18 +670,28 @@ Built by `pipeline/build/wonders.py` from `fr_unesco` (`sources/fr_unesco.py`) a
 
 ### communes.json (lazy)
 
-Built by `pipeline/build/communes.py` from `fr_boundaries`. About 2 MB, one row for every metropolitan commune
-including Corsica. Loaded after the first interactive frame solely for top-bar commune search.
+Built by `pipeline/build/communes.py` from `fr_boundaries`, `fr_insee_stats`, `fr_elections` and `fr_hazards`.
+About 4.4 MB uncompressed, one row for every metropolitan commune
+including Corsica. Loaded only when the user first focuses or types in the top-bar search.
 
 ```jsonc
 {"version": 1,
- "columns": ["code", "name", "department", "population", "x", "y", "state_fips"],
- "communes": [["01001", "L'Abergement-Clémenciat", "Ain", 860, 735.4, 425.6, "84"]]}
+ "sources": ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"],
+ "hazard_years": [2000, 2025],
+ "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density",
+             "median_income", "growth", "owner_share", "second_home_share", "vacancy_share",
+             "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant"],
+ "communes": [["75056", "Paris", "Paris", 2103778, 650.6, 348.0, "11", 19959.9, 33650, -0.0065,
+                0.3323, 0.0987, 0.0992, 0.8511, 0.1489, 0.259, 8, "flood"]]}
 ```
 
 Rows are compact positional arrays in `columns` order, sorted by descending population. `x`/`y` are map kilometres
 for the commune centroid; they are display/search anchors, not exact municipal seat coordinates. Selecting a commune
-flies the camera there; it does not open a full commune statistics card.
+flies the camera there and opens a small commune card. Densities are residents per km²; `growth` is the compound
+2017–2023 population change rate; housing and election fields are shares; election shares use valid votes except
+`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions in the `hazard_years` range, not damage. GASPAR records under predecessor or delegated commune codes are attributed to the current whole commune through
+INSEE COG movements. Recently merged communes can lack a 2022 election row; median income is suppressed by
+statistical confidentiality in some small communes.
 
 ### disasters.json (lazy)
 

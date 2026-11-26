@@ -6,6 +6,7 @@ import { renderTopbar } from "./ui/topbar.js";
 import { showCellTooltip, showCityTooltip, showHtmlTooltip, hideTooltip } from "./ui/tooltip.js";
 import { initLensDock, formatLensValue, lensValueAt } from "./ui/lenses.js";
 import { openCityPanel, closeCityPanel } from "./ui/cityPanel.js";
+import { initCommunePanel } from "./ui/communePanel.js";
 import { openStatePanel } from "./ui/statePanel.js";
 import { installSheetSwipe } from "./ui/infoPanel.js";
 import { initPedia } from "./ui/pedia.js";
@@ -48,6 +49,7 @@ const PAN_LEAD = 0.6; // a pan that runs off the cache re-renders it shifted thi
 const DOUBLE_MS = 260;
 const SELECT_ANIM_MS = 33; // ~30 fps while a state's border highlight animates
 const isMobile = () => matchMedia("(max-width: 700px)").matches;
+let communeCardOpen = false;
 
 async function main() {
   const [world, cities, nation, lenses, sources, resources, statesData] = await Promise.all([
@@ -418,11 +420,11 @@ async function main() {
   function visibleArea(panelOpen = panelShown(), docks = true) {
     const d = docks === true ? dockState() : docks || NO_DOCKS;
     if (isMobile()) {
-      const sheet = panelOpen || d.open;
+      const sheet = panelOpen || d.open || communeCardOpen;
       return { x0: 0, y0: TOPBAR_H, x1: cam.w, y1: sheet ? cam.h * 0.45 : cam.h - 56 };
     }
     const dl = d.l, dr = d.r;
-    const x1 = cam.w - dr - (panelOpen && cam.w > 760 ? PANEL_W : 0);
+    const x1 = cam.w - dr - ((panelOpen || communeCardOpen) && cam.w > 760 ? PANEL_W : 0);
     return { x0: Math.min(dl, x1 - 100), y0: TOPBAR_H, x1, y1: cam.h };
   }
 
@@ -667,13 +669,16 @@ async function main() {
   if (searchIc) searchIc.innerHTML = icon("search", "🔍", { size: 14 });
   document.querySelector(".search-kbd")?.setAttribute("title", "Press / or Ctrl K to search");
 
+  const communePanel = initCommunePanel({ onVisibility: (open) => { communeCardOpen = open; } });
+  events.on("select", (sel) => { if (sel) communePanel.close(); });
   const search = initSearch({
+    loadCommunes: () => loadData("communes"),
     cities,
     states: w.raw.states.map((s, i) => ({ name: states?.[i]?.name || s.name, abbr: s.abbr, population: states?.[i]?.population })),
     onPick(r) {
-      if (r.kind === "city") selectCity(r.city, { fly: true });
-      else if (r.kind === "commune") { clearSelection(); app.flyTo(r.commune.x, r.commune.y, 4.2); }
-      else selectState(r.index, { fly: true });
+      if (r.kind === "city") { communePanel.close(); selectCity(r.city, { fly: true }); }
+      else if (r.kind === "commune") { clearSelection(); communePanel.open(r.commune); app.flyTo(r.commune.x, r.commune.y, 4.2); }
+      else { communePanel.close(); selectState(r.index, { fly: true }); }
     },
   });
 
@@ -1095,6 +1100,7 @@ async function main() {
     if (pedia.isOpen) return pedia.close();
     if (modes.escape()) return; // the active mode (e.g. the City view) goes before the panels
     if (events.emit("escape", {})) return;
+    if (communePanel.isOpen) return communePanel.close();
     if (state.selectedCity || state.selectedState != null) return clearSelection();
   }
 
@@ -1264,7 +1270,7 @@ async function main() {
   // Small optional map-layer files load once the first frame is on screen (extensions can await app.loadData).
   // (A timer backs up the frame callback, which never fires while the page is in a background tab.)
   let eagerKicked = false;
-  const kickEager = () => { if (!eagerKicked) { eagerKicked = true; EAGER_DATA.forEach((n) => loadData(n)); loadData("communes").then((d) => search.addCommunes?.(d?.communes || [])); } };
+  const kickEager = () => { if (!eagerKicked) { eagerKicked = true; EAGER_DATA.forEach((n) => loadData(n)); } };
   requestAnimationFrame(() => setTimeout(kickEager, 0));
   setTimeout(kickEager, 400);
   // Extensions load after the first frame is on its way; a missing extension folder is fine.

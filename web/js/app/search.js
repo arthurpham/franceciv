@@ -102,11 +102,13 @@ export function initSearch(opts) {
   }
 
   input.addEventListener("input", () => {
+    ensureCommunes();
     results = query(input.value);
     sel = results.length ? 0 : -1;
     render();
   });
   input.addEventListener("focus", () => {
+    ensureCommunes();
     if (input.value.trim()) {
       results = query(input.value);
       sel = results.length ? 0 : -1;
@@ -150,19 +152,28 @@ export function initSearch(opts) {
   });
   window.addEventListener("resize", () => !box.hidden && position());
 
+  function addCommunes(payload) {
+    const rows = payload?.communes || payload || [];
+    for (const c of rows) {
+      const commune = payload?.columns ? Object.fromEntries((payload.columns || []).map((k, i) => [k, c[i]])) : { code: c[0], name: c[1], department: c[2], population: c[3], x: c[4], y: c[5], state_fips: c[6] };
+      if (payload?.hazard_years) [commune.hazard_start_year, commune.hazard_end_year] = payload.hazard_years;
+      entries.push({ kind: "commune", commune, name: commune.name, n: norm(commune.name), full: norm(`${commune.name} ${commune.department}`),
+        pop: commune.population || 0, popText: int(commune.population || 0), sub: `${commune.department} · commune`, label: commune.name });
+    }
+    if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
+      results = query(input.value);
+      sel = results.length ? 0 : -1;
+      render();
+    }
+  }
+
+  let communeLoad = null;
+  function ensureCommunes() {
+    if (!communeLoad && opts.loadCommunes) communeLoad = opts.loadCommunes().then(addCommunes);
+  }
+
   return {
-    addCommunes(rows) {
-      for (const c of rows || []) {
-        const commune = { code: c[0], name: c[1], department: c[2], population: c[3], x: c[4], y: c[5], state_fips: c[6] };
-        entries.push({ kind: "commune", commune, name: commune.name, n: norm(commune.name), full: norm(`${commune.name} ${commune.department}`),
-          pop: commune.population || 0, popText: int(commune.population || 0), sub: `${commune.department} · commune`, label: commune.name });
-      }
-      if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
-        results = query(input.value);
-        sel = results.length ? 0 : -1;
-        render();
-      }
-    },
+    addCommunes,
     focus() {
       input.focus();
       input.select();

@@ -547,3 +547,10 @@ body.panel-open #lens-area { right: calc(394px + var(--dock-right, 0px)); }
   .yr-total > b { font-size: 30px; }
   .yr-row { padding: 7px 8px; }
 }
+
+#commune-panel{position:fixed;right:12px;top:48px;z-index:29;width:min(360px,calc(100vw - 24px));max-height:calc(100vh - 60px);overflow:auto;background:#101d2df2;border:1px solid #40617d;border-radius:12px;color:#e7eef7;padding:18px;box-shadow:0 12px 32px #0009;backdrop-filter:blur(6px)}
+#commune-panel h2{margin:0 34px 2px 0;font-size:25px}#commune-panel h3{margin:16px 0 5px;font-size:13px;text-transform:uppercase;color:#91abc2;letter-spacing:.08em}.cp-kicker{font-size:11px;color:#d3a44c;letter-spacing:.15em}.cp-sub,.cp-note{color:#9fb2c5;font-size:12px}.cp-close{position:absolute;right:10px;top:8px;background:none;border:0;color:#b9c8d7;font-size:25px;cursor:pointer}.cp-grid{margin-top:14px;border-top:1px solid #2d455b}.cp-row{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid #2d455b;font-size:13px}.cp-row span{color:#9fb2c5}
+
+@media (max-width: 700px) {
+  #commune-panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 55vh; max-height: 55dvh; border-radius: 14px 14px 0 0; }
+}
