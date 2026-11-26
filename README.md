@@ -52,7 +52,7 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ```bash
 uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
 uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
-uv run python -m pipeline build world france_core resources infrastructure wonders trade catalog
+uv run python -m pipeline build world france_core resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
