@@ -17,6 +17,7 @@ export function formatLensValue(lens, v) {
   switch (lens.format) {
     case "category": return lens.categories?.[Math.round(v)]?.name ?? "no data";
     case "usd": return "$" + compact(v);
+    case "eur": return "€" + compact(v);
     case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0) + "%";
     case "int": return intish(v) + (lens.unit?.startsWith("people") ? " /km²" : lens.unit ? " " + lens.unit : "");
     case "minutes": return v.toFixed(0) + " min";

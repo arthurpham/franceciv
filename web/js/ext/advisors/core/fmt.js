@@ -29,6 +29,7 @@ export function fmtValue(format, v, unit) {
   switch (format) {
     case "int": case "count": return Math.abs(v) >= 1e6 ? count3(v) : int(v);
     case "usd": return Math.abs(v) >= 1e6 ? money(v) : dollars(v);
+    case "eur": return Math.abs(v) >= 1e6 ? money(v) : dollars(v);
     case "money": return money(v);
     case "pct": return pct(v);
     case "signed": return signedPct(v);
@@ -64,7 +65,7 @@ export function fmtCell(format, v, unit) {
 export function fmtShort(format, v) {
   if (!fin(v)) return "–";
   switch (format) {
-    case "usd": case "money": return money(v);
+    case "usd": case "eur": case "money": return money(v);
     case "pct": return `${+(v * 100).toFixed(Math.abs(v) < 0.1 && v !== 0 ? 1 : 0)}%`;
     case "signed": return `${v > 0 ? "+" : v < 0 ? "−" : ""}${+Math.abs(v * 100).toFixed(1)}%`;
     case "lq": case "ratio": return `×${+v.toFixed(1)}`;
