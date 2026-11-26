@@ -677,6 +677,7 @@ including Corsica. Loaded only when the user first focuses or types in the top-b
 ```jsonc
 {"version": 1,
  "sources": ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"],
+ "hazard_years": [2000, 2025],
  "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density",
              "median_income", "growth", "owner_share", "second_home_share", "vacancy_share",
              "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant"],
@@ -688,7 +689,7 @@ Rows are compact positional arrays in `columns` order, sorted by descending popu
 for the commune centroid; they are display/search anchors, not exact municipal seat coordinates. Selecting a commune
 flies the camera there and opens a small commune card. Densities are residents per km²; `growth` is the compound
 2017–2023 population change rate; housing and election fields are shares; election shares use valid votes except
-`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions since 2000, not damage. GASPAR records under predecessor or delegated commune codes are attributed to the current whole commune through
+`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions in the `hazard_years` range, not damage. GASPAR records under predecessor or delegated commune codes are attributed to the current whole commune through
 INSEE COG movements. Recently merged communes can lack a 2022 election row; median income is suppressed by
 statistical confidentiality in some small communes.
 

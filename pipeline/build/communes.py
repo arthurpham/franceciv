@@ -14,7 +14,8 @@ def build():
     counties = {c["geoid"]: c for c in bounds["counties"]}
     stats = load_interim("fr_insee_stats")["comparateur"]["COM"]
     elections = load_interim("fr_elections")["communes"]
-    hazards = load_interim("fr_hazards")["communes"]
+    hazard_payload = load_interim("fr_hazards")
+    hazards = hazard_payload["communes"]
     rows = []
     for c in bounds["communes"]:
         if c.get("lon") is None or c.get("lat") is None:
@@ -48,7 +49,8 @@ def build():
         "version": 1,
         "columns": ["code", "name", "department", "population", "x", "y", "state_fips", "density", "median_income", "growth", "owner_share", "second_home_share", "vacancy_share", "macron_share", "lepen_share", "abstention_share", "hazard_events", "hazard_dominant"],
         "sources": ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"],
+        "hazard_years": hazard_payload["years"],
         "communes": rows,
-        "vintage": {"population": "INSEE comparateur 2023", "election": "2022 presidential second round", "hazards": "GASPAR recognitions 2000-2025"},
+        "vintage": {"population": "INSEE comparateur 2023", "election": "2022 presidential second round", "hazards": "GASPAR recognitions"},
     })
     print(f"    {len(rows)} communes")
