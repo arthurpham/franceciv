@@ -26,8 +26,9 @@ class FrenchCulture(Source):
         homepage="https://www.data.gouv.fr/datasets/frequentation-des-musees-de-france-1",
         license="Licence Ouverte / Open Licence 2.0",
         description="Annual visitor counts for Musées de France, the Muséofile museum directory and SISE enrolment "
-        "by public higher-education establishment. University geography is the administrative headquarters commune, "
-        "not the footprint of every campus.",
+        "by public higher-education establishment. Multi-site museum attendance rows are summed for their shared Muséofile "
+        "identifier after deduplicating repeated site rows. University geography is the administrative headquarters "
+        "commune, not the footprint of every campus.",
         used_for=["Museum and university wonders"],
     )
 
@@ -52,19 +53,35 @@ class FrenchCulture(Source):
                     "city": row.get("Ville"), "lat": lat, "lon": lon, "domain": row.get("Domaine_thematique"),
                     "url": row.get("URL"),
                 }
-        latest = {}
+        # The attendance file is keyed by physical site (`IDPatrimostat`), while several physical
+        # sites can share one museum institution (`IDMuseofile`). Aggregate distinct sites for the
+        # institution's latest year. A very small number of corrected extracts repeat the same
+        # institution/year/site row; keep the larger value instead of double-counting it.
+        site_rows = {}
         years = set()
         with open(self.raw_dir / "museum-attendance.csv", encoding="utf-8") as f:
             for row in csv.DictReader(f, delimiter=";"):
                 year, total = integer(row.get("annee")), integer(row.get("total"))
-                mid = row.get("IDMuseofile")
-                if not year or total is None or not mid:
+                mid, site = row.get("IDMuseofile"), row.get("IDPatrimostat")
+                if not year or total is None or not mid or not site:
                     continue
                 years.add(year)
-                if year >= latest.get(mid, {}).get("year", 0):
-                    latest[mid] = {"visits": total, "year": year, "closed": row.get("ferme") == "OUI"}
+                key = (mid, year, site)
+                if total >= site_rows.get(key, {}).get("visits", -1):
+                    site_rows[key] = {"visits": total, "closed": row.get("ferme") == "OUI"}
+        by_museum_year = {}
+        for (mid, year, _site), row in site_rows.items():
+            by_museum_year.setdefault(mid, {}).setdefault(year, []).append(row)
         rows = []
-        for mid, stats in latest.items():
+        for mid, annual in by_museum_year.items():
+            year = max(annual)
+            entries = annual[year]
+            stats = {
+                "visits": sum(row["visits"] for row in entries),
+                "year": year,
+                "closed": all(row["closed"] for row in entries),
+                "sites": len(entries),
+            }
             d = directory.get(mid)
             if d and not stats["closed"] and stats["visits"] > 0:
                 rows.append({**d, **stats})
