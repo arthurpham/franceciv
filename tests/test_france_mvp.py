@@ -145,4 +145,10 @@ def test_commune_search_index_contract():
     assert paris[cols["name"]] == "Paris"
     assert paris[cols["population"]] > 2_000_000
     assert all(len(r) == len(data["columns"]) for r in rows[:100])
+    assert paris[cols["median_income"]] > 20_000
+    assert 0 < paris[cols["macron_share"]] < 1
+    assert paris[cols["density"]] > 10_000
     assert rows == sorted(rows, key=lambda r: (-r[cols["population"]], r[cols["name"]], r[cols["code"]]))
+    assert data["sources"] == ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"]
+    assert 0 < paris[cols["owner_share"]] < 1
+    assert paris[cols["hazard_events"]] >= 0
