@@ -62,11 +62,13 @@ export function barList(host, opts) {
     const neg = fin(r.value) && r.value < 0;
     const style = opts.diverging ? `${neg ? "right:50%" : "left:50%"};width:${wv.toFixed(2)}%` : `width:${wv.toFixed(2)}%`;
     const color = r.color ? `background:${esc(r.color)}` : "";
-    return `<button type="button" role="listitem" class="adv-bar${r.key === opts.selected ? " sel" : ""}" data-key="${esc(r.key)}" title="${esc([r.full || r.label, r.sub, r.text].filter(Boolean).join(" · "))}">
+    const tag = opts.onClick ? "button" : "div";
+    const type = opts.onClick ? ` type="button"` : "";
+    return `<${tag}${type} role="listitem" class="adv-bar${r.key === opts.selected ? " sel" : ""}" data-key="${esc(r.key)}" title="${esc([r.full || r.label, r.sub, r.text].filter(Boolean).join(" · "))}">
       ${opts.rank ? `<span class="rk">${i + 1}</span>` : ""}${r.icon ? `<span class="ic" aria-hidden="true">${r.icon}</span>` : ""}
       <span class="lb">${esc(r.label)}${r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}</span>
       <span class="vl${r.tone ? " " + r.tone : ""}">${esc(r.text ?? "")}</span>
-      <span class="tr"><i class="${neg ? "neg" : ""}${r.tone ? " " + r.tone : ""}" style="${style};${color}"></i></span></button>`;
+      <span class="tr"><i class="${neg ? "neg" : ""}${r.tone ? " " + r.tone : ""}" style="${style};${color}"></i></span></${tag}>`;
   }).join("") : `<p class="adv-empty">No data.</p>`;
   host.appendChild(root);
   const byKey = new Map(rows.map((r) => [String(r.key), r]));

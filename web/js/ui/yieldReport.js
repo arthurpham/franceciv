@@ -220,17 +220,18 @@ function reportGold(rep, nation, n, st, metros) {
   const popYear = fin(nation.year) ? nation.year : null;
   const years = n.gdp_year && popYear && n.gdp_year !== popYear ? `${n.gdp_year} GDP ÷ ${popYear} residents` : "GDP ÷ residents";
   if (pp != null) rep.context.push(`${money(pp)} per person (${years})`);
-  if (n.gdp_year) rep.context.push(`Year ${n.gdp_year}, current dollars`);
+  if (n.gdp_year) rep.context.push(`Year ${n.gdp_year}, current euros`);
 
-  const rows = Object.entries(n.gdp_by_industry || {})
-    .filter(([, v]) => fin(v))
+  const gvaEntries = Object.entries(n.gdp_by_industry || {}).filter(([, v]) => fin(v));
+  const gvaTotal = gvaEntries.reduce((a, [, v]) => a + v, 0);
+  const rows = gvaEntries
     .sort((a, b) => b[1] - a[1])
     .map(([k, v]) => {
       const { label, full } = industryLabel(nation, k, true);
-      const s = ratio(v, rep.total);
+      const s = ratio(v, gvaTotal);
       return { label, full, iconId: industryIcon(k), emoji: DISTRICT_ICON[k] || "•", value: v, text: money(v), sub: s != null ? pct(s) : "" };
     });
-  if (rows.length) rep.breakdown = { title: "GDP by industry", groups: [{ rows }], collapseAfter: GDP_ROWS };
+  if (rows.length) rep.breakdown = { title: "Value added by industry", groups: [{ rows }], collapseAfter: GDP_ROWS };
 
   const perPerson = (o) => ratio(gdp(o), o.population);
   rep.boards.modes = [
