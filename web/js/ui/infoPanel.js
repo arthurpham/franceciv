@@ -82,7 +82,7 @@ export const gdpRow = (o) =>
         o.population ? `<span class="cmp">${money(o.gdp / o.population)} per person</span>` : ""}</span></div>`
     : "";
 
-// " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with the U.S. in the tooltip.
+// " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with the national value in the tooltip.
 // Empty when growth is missing (null means "not measured", never zero).
 export function growthSpan(o, n = null) {
   if (!Number.isFinite(o?.growth)) return "";
@@ -90,7 +90,7 @@ export function growthSpan(o, n = null) {
   const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1)}%`;
   const period = yrs ? `${yrs[0]}–${yrs[1]}` : "the last few years";
   const us = Number.isFinite(n?.growth) ? ` (U.S. ${p(n.growth)})` : "";
-  const tip = `Population change ${period}, Census population estimates: ${p(o.growth)}${us}`;
+  const tip = `Population change ${period}, INSEE populations: ${p(o.growth)}${us}`;
   const cls = o.growth >= 0 ? "good" : "bad";
   return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1)}%${
     yrs ? ` <span class="since">since ${yrs[0]}</span>` : ""}</span>`;
