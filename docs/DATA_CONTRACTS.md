@@ -688,8 +688,9 @@ Rows are compact positional arrays in `columns` order, sorted by descending popu
 for the commune centroid; they are display/search anchors, not exact municipal seat coordinates. Selecting a commune
 flies the camera there and opens a small commune card. Densities are residents per km²; `growth` is the compound
 2017–2023 population change rate; housing and election fields are shares; election shares use valid votes except
-`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions since 2000, not damage. Recently merged communes can lack
-a 2022 election row; median income is suppressed by statistical confidentiality in some small communes.
+`abstention_share`, which uses registered voters. `hazard_events` counts GASPAR recognitions since 2000, not damage. GASPAR records under predecessor or delegated commune codes are attributed to the current whole commune through
+INSEE COG movements. Recently merged communes can lack a 2022 election row; median income is suppressed by
+statistical confidentiality in some small communes.
 
 ### disasters.json (lazy)
 

@@ -152,3 +152,5 @@ def test_commune_search_index_contract():
     assert data["sources"] == ["fr_boundaries", "fr_insee_stats", "fr_elections", "fr_hazards"]
     assert 0 < paris[cols["owner_share"]] < 1
     assert paris[cols["hazard_events"]] >= 0
+    terval = next(r for r in rows if r[cols["code"]] == "85289")
+    assert terval[cols["hazard_events"]] >= 6  # includes pre-merger Breuil-Barret recognitions
