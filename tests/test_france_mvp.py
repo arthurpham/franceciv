@@ -93,6 +93,19 @@ def test_connectivity_contracts():
     assert "methodology" in infra["rules"]["stations"]
 
 
+def test_quality_of_life_contracts():
+    quality = web("quality_life.json")
+    assert {l["id"] for l in quality["lenses"]} == {"house_price", "apartment_price", "gp_access", "nurse_access", "dentist_access", "midwife_access"}
+    n = len(web("world.json")["owner"])
+    assert all(len(l["values"]) == n for l in quality["lenses"])
+    by_id = {l["id"]: l for l in quality["lenses"]}
+    houses = [v for v in by_id["house_price"]["values"] if v is not None]
+    gps = [v for v in by_id["gp_access"]["values"] if v is not None]
+    assert len(houses) > 2500 and 500 < sum(houses) / len(houses) < 6000
+    assert len(gps) > 2500 and 1 < sum(gps) / len(gps) < 5
+    assert "Alsace-Moselle" in by_id["house_price"]["description"]
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
