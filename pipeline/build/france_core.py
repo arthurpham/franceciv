@@ -434,11 +434,10 @@ def build():
                 employed += (e.get("employed") or 0) * share
                 gdp += (e.get("gdp") or 0) * share
         city_rows.append((pop, code, area, metro_members, dict(jobs), round(employed), gdp, comp_row, bool(direct)))
-    # Keep every functional area of at least 50k people, plus enough smaller places to reach 160 cities.
+    # Keep every metropolitan functional urban area. Banner de-cluttering is zoom-dependent,
+    # so small aires remain searchable without crowding the national view.
     city_rows.sort(reverse=True, key=lambda x: x[0])
-    selected = [r for r in city_rows if r[0] >= 50000]
-    selected += [r for r in city_rows if r not in selected][: max(0, 160 - len(selected))]
-    selected.sort(reverse=True, key=lambda x: x[0])
+    selected = city_rows
 
     used_cells = set()
     cities = []

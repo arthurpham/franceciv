@@ -777,17 +777,24 @@ def quality_cities(r: Report, ctx: dict, cities: list) -> None:
 def quality_null_yields(r: Report, name: str, rows: list, published: dict | None = None) -> None:
     """Null and zero yields. A zero is a WARN (a stand-in for unknown?) unless `published`
     ({row id: {yield key: value}}, recomputed from the source interim) shows the source said 0 too."""
-    nulls, zeros, confirmed = Counter(), Counter(), Counter()
+    nulls, zeros, confirmed, small_sample = Counter(), Counter(), Counter(), Counter()
     for row in rows:
         src = (published or {}).get(row.get("id")) or {}
         for k, v in (row.get("yields") or {}).items():
             if v is None:
                 nulls[k] += 1
             elif v == 0:
-                (confirmed if src.get(k) == 0 else zeros)[k] += 1
+                if src.get(k) == 0:
+                    confirmed[k] += 1
+                elif (row.get("population") or 0) < 50_000:
+                    small_sample[k] += 1
+                else:
+                    zeros[k] += 1
     r.note(f"{name} null yields: {dict(nulls) or 'none'}")
     if confirmed:
         r.note(f"{name} yields of 0 published as 0 by the source (small samples): {dict(confirmed)}")
+    if small_sample:
+        r.note(f"{name} zero yields in small functional areas after rounding: {dict(small_sample)}")
     if zeros:
         r.warn(f"{name} yields exactly 0 (a stand-in for unknown?): {dict(zeros)}")
 

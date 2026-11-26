@@ -11,7 +11,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 - Painted hex terrain for metropolitan France from ETOPO1 elevation and CORINE Land Cover 2018 land cover.
 - 13 metropolitan régions and 96 départements from Etalab contour files.
-- 172 city banners based on INSEE 2020 aires d'attraction des villes (AAV), including cross-border AAVs restricted to their French communes.
+- 675 city banners covering all metropolitan INSEE 2020 aires d'attraction des villes (AAV), including cross-border AAVs restricted to their French communes; small areas appear through zoom-dependent de-cluttering and search.
 - Five yields: Food, Production, Gold, Science and Culture.
   - Gold is Eurostat NUTS-3 GDP in current euros.
   - The other yields are census workplace employment by industry, observed directly for each aire d'attraction.
