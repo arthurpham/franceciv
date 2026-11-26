@@ -17,6 +17,7 @@ GEO_API = (
     "https://geo.api.gouv.fr/communes?fields=nom,code,codeDepartement,codeRegion,population,centre,surface"
     "&format=json&geometry=centre"
 )
+EPCI_API = "https://geo.api.gouv.fr/epcis?fields=nom,code,population&format=json&geometry=centre"
 
 # Metropolitan France, including Corsica. Overseas regions are deliberately out of the first map.
 METRO_REGIONS = {"11", "24", "27", "28", "32", "44", "52", "53", "75", "76", "84", "93", "94"}
@@ -52,6 +53,7 @@ class FrenchBoundaries(Source):
         for name in FILES.values():
             self.download(f"{BASE}/{name}", name, force=force, expect_binary=True)
         self.download(GEO_API, "communes-reference.json", force=force)
+        self.download(EPCI_API, "epcis-reference.json", force=force)
 
     def process(self):
         regions = []
@@ -113,9 +115,12 @@ class FrenchBoundaries(Source):
         if missing_shape:
             print(f"    ! {missing_shape} geo.api communes without a matching contour")
 
+        with open(self.raw_dir / "epcis-reference.json", encoding="utf-8") as f:
+            epcis = {r["code"]: r for r in json.load(f)}
         return {
             "vintage": "contours administratifs latest; géographie 2026",
-            "_files": [*FILES.values(), "communes-reference.json"],
+            "_files": [*FILES.values(), "communes-reference.json", "epcis-reference.json"],
+            "epcis": epcis,
             "states": sorted(regions, key=lambda s: s["name"]),
             "counties": sorted(departments, key=lambda c: c["geoid"]),
             "communes": sorted(communes, key=lambda c: c["code"]),

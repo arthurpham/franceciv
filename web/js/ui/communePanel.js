@@ -28,9 +28,9 @@ export function initCommunePanel(opts = {}) {
       const hazardStart = c.hazard_start_year || 2000, hazardEnd = c.hazard_end_year || "present";
       const hazard = c.hazard_events ? `${int(c.hazard_events)} recognitions since ${hazardStart} · mostly ${esc(c.hazard_dominant || "other")}` : `No catastrophe-naturelle recognition since ${hazardStart}`;
       el.innerHTML = `<button class="cp-close" aria-label="Close">×</button>
-        <div class="cp-kicker">COMMUNE</div><h2>${esc(c.name)}</h2><div class="cp-sub">${esc(c.department)} · ${int(c.population)} residents</div>
+        <div class="cp-kicker">COMMUNE</div><h2>${esc(c.name)}</h2><div class="cp-sub">${esc(c.department)} · ${int(c.population)} residents${c.epci_name ? ` · ${esc(c.epci_name)}` : ""}</div>
         <div class="cp-grid">${facts}</div><h3>Natural disasters</h3><p>${hazard}</p>
-        <p class="cp-note">INSEE comparateur 2023; official 2022 presidential second-round results; GASPAR recognitions ${hazardStart}–${hazardEnd}. Election shares use valid votes; some recently merged communes lack a 2022 row. Hazards are administrative recognitions, not damage. Median income is suppressed in some small communes.</p>`;
+        <p class="cp-note">INSEE comparateur 2023; EPCI geography from geo.api.gouv.fr; official 2022 presidential second-round results; GASPAR recognitions ${hazardStart}–${hazardEnd}. Election shares use valid votes; some recently merged communes lack a 2022 row. Hazards are administrative recognitions, not damage. Median income is suppressed in some small communes.</p>`;
       el.hidden = false;
       notify();
     },
