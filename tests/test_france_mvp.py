@@ -154,4 +154,25 @@ def test_commune_search_index_contract():
     assert 0 < paris[cols["owner_share"]] < 1
     assert paris[cols["hazard_events"]] >= 0
     terval = next(r for r in rows if r[cols["code"]] == "85289")
-    assert terval[cols["hazard_events"]] >= 6  # includes pre-merger Breuil-Barret recognitions
+    assert terval[cols["hazard_events"]] == 15  # 9 under Terval + 6 under pre-merger Breuil-Barret
+
+
+def test_hazard_commune_resolver_stops_at_current_communes():
+    from pipeline.sources.fr_hazards import commune_resolver
+
+    current = [
+        {"TYPECOM": "COM", "COM": "76095", "COMPARENT": ""},
+        {"TYPECOM": "COM", "COM": "76108", "COMPARENT": ""},
+        {"TYPECOM": "COM", "COM": "12218", "COMPARENT": ""},
+        {"TYPECOM": "COMD", "COM": "12076", "COMPARENT": "12218"},
+    ]
+    movements = [
+        {"DATE_EFF": "2012-01-01", "MOD": "32", "TYPECOM_AP": "COM", "COM_AV": "76095", "COM_AP": "76108"},
+        {"DATE_EFF": "2014-01-01", "MOD": "21", "TYPECOM_AP": "COM", "COM_AV": "76108", "COM_AP": "76095"},
+        {"DATE_EFF": "2014-01-01", "MOD": "21", "TYPECOM_AP": "COM", "COM_AV": "76108", "COM_AP": "76108"},
+        {"DATE_EFF": "2016-01-01", "MOD": "32", "TYPECOM_AP": "COM", "COM_AV": "12114", "COM_AP": "12076"},
+        {"DATE_EFF": "2024-03-04", "MOD": "50", "TYPECOM_AP": "COM", "COM_AV": "12076", "COM_AP": "12218"},
+    ]
+    resolve = commune_resolver(current, movements)
+    assert resolve("76095") == "76095"  # Bihorel is current again; do not follow its obsolete merger
+    assert resolve("12114") == "12218"  # Grand-Vabre reaches current Conques-en-Rouergue without cycling

@@ -28,7 +28,13 @@ def read_cog_csv(path):
 
 
 def commune_resolver(current_rows, movement_rows):
-    """Map historical/delegated commune codes to current whole communes, conservatively."""
+    """Map historical/delegated codes to current whole communes, conservatively.
+
+    A code borne by a current whole commune is terminal even if it appeared in older
+    merger events: codes can survive or be reused, and following those links statically
+    misattributes post-split records. Ambiguous splits are likewise left unmapped.
+    """
+    current_communes = {r["COM"] for r in current_rows if r["TYPECOM"] == "COM"}
     parent = {
         r["COM"]: r["COMPARENT"]
         for r in current_rows
@@ -38,7 +44,7 @@ def commune_resolver(current_rows, movement_rows):
     for r in movement_rows:
         if r["DATE_EFF"] < "2000-01-01":
             continue
-        if r["TYPECOM_AP"] == "COM" and r["COM_AV"] and r["COM_AP"]:
+        if r["TYPECOM_AP"] == "COM" and r["COM_AV"] and r["COM_AP"] and r["COM_AV"] not in current_communes:
             candidates[(r["COM_AV"], r["DATE_EFF"], r["MOD"])].add(r["COM_AP"])
     transitions = {}
     ambiguous = set()
@@ -59,6 +65,8 @@ def commune_resolver(current_rows, movement_rows):
         original, seen = code, set()
         while code not in seen:
             seen.add(code)
+            if code in current_communes and code not in parent:
+                break
             nxt = parent.get(code) or transitions.get(code)
             if not nxt or nxt == code:
                 break
