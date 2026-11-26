@@ -385,16 +385,16 @@ function extendMilitary(data, mil) {
 function extendDistricts(data, d) {
   const { metros, counties } = data.levels;
   const cat = new Map((d.catalog || []).map((c) => [c.id, c]));
-  const vint = d.vintage || "BLS QCEW";
+  const vint = d.vintage || "INSEE census";
   const lb = (x) => (x?.lower_bound ? " (at least)" : "");
   metros.addFields([
-    F4("city_type", "City type", "text", { source: "bls_qcew", group: "Districts", description: `The city's badge: named after its strongest district, by its speciality when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
-    F4("districts", "Districts", "text", { source: "bls_qcew", group: "Districts", description: `Industry districts the metro qualifies for, strongest first. ${d.rule?.text || ""}` }),
-    F4("n_districts", "Number of districts", "int", { source: "bls_qcew", group: "Districts", description: "How many districts pass the rule (up to 5)." }),
-    F4("qcew_jobs", "Jobs (QCEW)", "int", { unit: "covered jobs, where the employer is", source: "bls_qcew", group: "Districts", description: `Annual average covered jobs, all ownerships, summed over member counties (${vint}). Counted where the employer is, unlike the ACS figures (where people live).` }),
-    F4("qcew_pay", "Average pay (QCEW)", "usd", { unit: "$ per job per year", source: "bls_qcew", group: "Districts", description: `Average annual pay per covered job (${vint}).` }),
-    F4("top_industry", "Most specialised industry", "text", { source: "bls_qcew", group: "Districts", description: "The detailed industry (of those this project fetches) with the highest location quotient and at least 1,000 jobs." }),
-    F4("top_lq", "Its location quotient", "lq", { unit: "× the national share of jobs", source: "bls_qcew", group: "Districts", description: "Location quotient of the most specialised industry: its share of the metro's jobs ÷ its share of US jobs. A lower bound where BLS withheld some counties." }),
+    F4("city_type", "City type", "text", { source: "fr_insee_stats", group: "Districts", description: `The city's badge: named after its strongest exceptionally concentrated district when one passes the badge override, otherwise its strongest district; a speciality nickname is used when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
+    F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the metro qualifies for, strongest first. ${d.rule?.text || ""}` }),
+    F4("n_districts", "Number of districts", "int", { source: "fr_insee_stats", group: "Districts", description: "How many districts pass the rule (up to 5)." }),
+    F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}). Counted where the employer is, unlike the ACS figures (where people live).` }),
+    F4("qcew_pay", "Average pay", "usd", { unit: "$ per job per year", source: "fr_insee_stats", group: "Districts", description: `Average annual pay per covered job (${vint}).` }),
+    F4("top_industry", "Most specialised industry", "text", { source: "fr_insee_stats", group: "Districts", description: "The detailed industry (of those this project fetches) with the highest location quotient and at least 1,000 jobs." }),
+    F4("top_lq", "Its location quotient", "lq", { unit: "× the metropolitan-France share of jobs", source: "fr_insee_stats", group: "Districts", description: "Location quotient of the most specialised industry: its share of the metro's jobs ÷ its share of metropolitan-France jobs." }),
   ]);
   for (const r of metros.rows) {
     const c = d.cities?.[r.key];
@@ -410,8 +410,8 @@ function extendDistricts(data, d) {
   }
   if (counties && d.counties) {
     counties.addFields([
-      F4("districts", "Districts", "text", { source: "bls_qcew", group: "Districts", description: `Industry districts the county qualifies for, strongest first (${vint}). ${d.rule?.county_note || ""}` }),
-      F4("qcew_jobs", "Jobs (QCEW)", "int", { unit: "covered jobs, where the employer is", source: "bls_qcew", group: "Districts", description: `Annual average covered jobs, all ownerships (${vint}).` }),
+      F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the county qualifies for, strongest first (${vint}). ${d.rule?.county_note || ""}` }),
+      F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}).` }),
     ]);
     for (const r of counties.rows) {
       const c = d.counties[r.key];

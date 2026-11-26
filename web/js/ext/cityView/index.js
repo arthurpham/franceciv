@@ -5,7 +5,7 @@
 //   * URL: #city=<id>&view=city round-trips (the "view" hash key); Back leaves the view.
 //   * Map: the metro footprint is outlined in its state colour with a glow, the rest is dimmed; each hex shows
 //     estimated residents and its main land use; the metro's resource sites are labelled; its real districts
-//     (districts.json, BLS QCEW, plus military.json's Encampment) stand on nearby hexes at schematic positions.
+//     (districts.json, INSEE census, plus military.json's Encampment) stand on nearby hexes at schematic positions.
 //   * Screen: a right-hand dock (a bottom sheet on phones), see screen.js.
 //   * Banners: zoomed in, the banners that show their yield row also carry the city-type badge (districts.json),
 //     handed to render/banners.js as app.state.cityBadges; districts.json loads the first time the map is zoomed in
@@ -63,14 +63,14 @@ export async function install(app) {
     addDistrictsLink(panel, city);
   }
 
-  // The quick panel's industry list (ACS C24030: where residents work) is not the City View's Districts (BLS QCEW:
+  // The quick panel's industry list (INSEE census: where residents work) is not the City View's Districts (INSEE census:
   // industries concentrated in the metro's own jobs). A line under it says so and opens the Districts tab.
   function addDistrictsLink(panel, city) {
     const sec = [...panel.querySelectorAll(".cp-section")].find((s) => /where (people|residents) work/i.test(s.querySelector("h3")?.textContent || ""));
     if (!sec || sec.querySelector(".cv-plink")) return;
     const p = document.createElement("p");
     p.className = "cv-plink";
-    p.innerHTML = `These are residents' industries (ACS). The metro's specialised districts, from jobs counted at employers (BLS QCEW), are in the City View. <button type="button">Districts ›</button>`;
+    p.innerHTML = `These are workplace-industry jobs in the metro area (INSEE census). The metro's specialised districts, from jobs counted at employers (INSEE census), are in the City View. <button type="button">Districts ›</button>`;
     p.querySelector("button").onclick = () => openCityView(city, { section: "districts" });
     sec.appendChild(p);
   }
@@ -217,7 +217,7 @@ export async function install(app) {
       <div class="cv-ml-body" id="cv-ml-body">
         <div class="cv-ml-r"><span class="cv-ml-pill">${icon("pop", "👥", { size: 11 })}≈</span>residents per hex <small>(density × area)</small></div>
         <div class="cv-ml-r"><span class="cv-ml-pill">${icon("l-developed", "▦", { size: 11 })}%</span>main land use</div>
-        <div class="cv-ml-r"><span class="cv-ml-hex" aria-hidden="true"></span>districts: real specialisations <small>(BLS QCEW)</small></div>
+        <div class="cv-ml-r"><span class="cv-ml-hex" aria-hidden="true"></span>districts: real specialisations <small>(INSEE census)</small></div>
         <p class="cv-ml-n">The districts are real (industries with a high share of the metro's jobs), but their positions are schematic: they are not where the jobs are.</p>
       </div>`;
     setLegendOpen(legendOpen ?? false);

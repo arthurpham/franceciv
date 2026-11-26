@@ -25,7 +25,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 ## Explicitly not in the MVP yet
 
-Citizens now use INSEE census tables, while the original US districts and military layers remain unimplemented rather than shown with invalid American statistics. Infrastructure, wonders, elections and natural hazards use French public data, but some inherited advisor copy and detailed panel assumptions still need France-specific rewriting.
+Citizens now use INSEE census tables, while the original US military layer remains unimplemented rather than shown with invalid American statistics. Infrastructure, wonders, elections and natural hazards use French public data, but some inherited advisor copy and detailed panel assumptions still need France-specific rewriting.
 
 Other known limitations:
 
@@ -35,7 +35,7 @@ Other known limitations:
 - Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
 - UNESCO serial properties are represented by one French component point rather than full site boundaries. Museum attendance sums distinct physical sites sharing one Muséofile institution; universities are mapped at administrative headquarters communes rather than campus footprints.
 - Overseas France is excluded; Corsica is included.
-- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; districts and military layers remain unimplemented.
+- Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; the military layer remains unimplemented.
 
 ## Quick start
 
@@ -52,7 +52,7 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ```bash
 uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
 uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture
-uv run python -m pipeline build world france_core citizens resources infrastructure wonders trade communes catalog
+uv run python -m pipeline build world france_core citizens districts resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
