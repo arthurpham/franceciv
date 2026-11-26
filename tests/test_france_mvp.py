@@ -199,3 +199,24 @@ def test_citizens_contract():
     assert paris["workforce"] is not None
     assert sum(paris["workforce"]["figures"].values()) == 20
     assert paris["specialists"]
+
+
+def test_military_contract():
+    data = web("military.json")
+    rows = data["installations"]
+    assert data["sources"] == ["fr_military"]
+    assert len(rows) == 50
+    assert data["ranges"] == []
+    assert not data["national"]["unmatched_bases"]
+    assert data["national"]["published_total"] == 251_063
+    assert data["national"]["personnel"]["total"] > 250_000
+    toulon = next(r for r in rows if r["id"] == "base-toulon")
+    assert toulon["personnel"] == 23_120 and toulon["tier"] == "major"
+    assert toulon["seat_commune"] == "Toulon" and toulon["cbsa"] == "018"
+    assert all(r["area_km2"] is None and r["cells"] is None for r in rows)
+    assert all(r["component"] == "other" and r["joint"] for r in rows)
+    paris = data["cities"]["001"]
+    assert paris["aggregate_included"] and paris["tier"] == "fortress"
+    assert data["cities"]["018"]["armed_forces"] == 23_120
+    assert data["states"]["IDF"]["ile_de_france_aggregate"] == 20_131
+    assert any(s["id"] == "fr_military" for s in web("sources.json"))

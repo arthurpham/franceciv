@@ -456,82 +456,54 @@ About 25 kB.
 
 ### military.json (eager)
 
-Built by `pipeline/build/military.py` from `mirta` (`sources/mirta.py`), `dmdc_personnel` (`sources/dmdc.py`),
-`oldcc_spending` (`sources/oldcc.py`) and `acs_5yr`. About 280 kB (mostly installations).
+Built by `pipeline/build/military.py` from `fr_military` (`sources/fr_military.py`). About 26 kB.
 
 ```jsonc
 {
   "version": 1,
-  "vintage": {"installations": "DoD MIRTA FY2025 (layer edited …)", "personnel": "DMDC, as of September 30, 2026",
-              "spending": "OLDCC FY2024", "acs": "ACS 2024 5-year"},
-  "sources": ["mirta", "dmdc_personnel", "oldcc_spending", "acs_5yr"],
-  "rule": "A metro gets an Encampment when …",           // the Encampment rule, quotable as is
-  "rules": {"tier": "…", "ranges": "…", "encampment": "…", "installations": "…",   // every selection rule as text
-            "names": "…"},                       // the 2025 Army renames applied to MIRTA names, with the source URL
-  "flagships": ["Naval Station Norfolk", …],             // the curated flagship list (names as in MIRTA)
-  "caveats": "…",                                         // show where installation/personnel numbers appear
-  "components": [{"id": "army", "name": "Army", "codes": ["usa"]}, {"id": "navy"}, {"id": "air_force"}, {"id": "marines"},
-                 {"id": "army_reserve"}, {"id": "navy_reserve"}, {"id": "air_force_reserve"}, {"id": "marine_reserve"},
-                 {"id": "army_guard"}, {"id": "air_guard"}, {"id": "other"}],   // Space Force sites are filed as air_force
-  "installations": [{"id": "fort-bragg-usa", "name": "Fort Bragg", "component": "army", "joint": false,
-                     "name_mirta": "Fort Cavazos",          // optional: only when `name` differs (see rules.names);
-                                                           // ids keep the MIRTA spelling (fort-cavazos-usa = Fort Hood)
-                     "status": "act|semi|care",           // closed (clsd) and excess (excs) sites are left out
-                     "tier": "major|base|site",            // rules.tier: by boundary area / component, never headcount
-                     "curated": false,                     // true: a flagship base made 'major' by the published list
-                     "area_km2": 628.4 | null,             // null: MIRTA has no boundary for the site (incl. folded parts)
-                     "parts": ["NNSY St Helena", …],       // optional: small parcels folded into this installation
-                     "components": ["air_force", "marines"],   // optional: when the folded parts span components
-                     "cells": [..] | null,                 // hexes whose centre the boundary covers (boundaries >= 200 km²)
-                     "x": …, "y": …, "cell": …, "county": "37051" | null, "cbsa": "22180" | null,
-                     "state": "NC",                        // where the point lies (county, else hex owner)
-                     "state_filed": "NC"}],                // the state MIRTA files it under (UTTR: NV)
-                                                           // sorted major → base → site, then by area
-  "ranges": [{"id": "nevada-test-and-training-range-usaf", "name": "Nevada Test and Training Range",
-              "component": "air_force", "area_km2": 11702.8, "cells": [..],   // never empty (see rules.ranges)
-              "state": "NV",                  // its installation's point state when mapped (Fort Bliss: TX), else hex_state
-              "hex_state": "NV",              // the state holding most of its hexes (Fort Bliss: NM)
-              "installation": "…" | null, "name_mirta": "…",   // name_mirta optional, as for installations
-              "components": ["air_force", "marines"]}],   // optional; the 30 largest boundaries: restricted ground
-  "states": {"NC": {                                       // postal abbr; 50 states, DC and PR (no data → null)
-    "personnel": {"active": {"army": …, "navy": …, "marines": …, "air_force": …, "space_force": …, "coast_guard": …, "total": …},
-                  "guard_reserve": {"army_guard": …, "army_reserve": …, "navy_reserve": …, "marine_reserve": …,
-                                    "air_guard": …, "air_force_reserve": …, "coast_guard_reserve": …, "total": …},
-                  "civilian": {"army": …, "navy": …, "marines": …, "air_force": …, "defense_wide": …, "total": …},
-                  "total": …} | null,                     // DMDC, by duty state
-    "spending": {"total": 1.2e10, "contracts": …, "grants": …, "payroll": …,          // OLDCC, US dollars
-                 "payroll_parts": {"civilian": …, "active_duty": …, "guard_reserve": …},
-                 "pct_gdp": 0.021, "per_resident": 1150, "personnel": …,              // OLDCC's own personnel count
-                 "top_counties": [{"name": "Onslow", "county": "37133" | null, "contracts": …}],   // top 10, OLDCC names
-                 "top_vendors": [{"name": "Austal", "contracts": …}]} | null}},       // top 5 contractors
-  "national": {"personnel": {…same shape…}, "personnel_scope": "50 states, DC and US territories …",
-               "spending": {"total": …, "contracts": …, "grants": …, "payroll": …, "pct_gdp": …, "per_resident": …,
-                            "scope": "50 states and DC"},
-               "veterans": 16900000, "armed_forces_resident": 1100000, "acs_scope": "…"},   // ACS 5-year, 50 states + DC
-  "cities": {"22180": {"tier": "garrison|fortress", "armed_forces": 36721, "share": 0.1212, "naval": false,
-                       "installations": ["fort-bragg-usa"],   // up to 8 ids, largest first
-                       "installation_count": 1}}             // only cities that pass the Encampment rule
+  "vintage": {"installations": "Ministry of the Armed Forces defense-base personnel, 2012", "personnel": "Same 2012 file"},
+  "sources": ["fr_military"],
+  "rule": "An AAV appears as a garrison when …",
+  "rules": {"tier": "…", "ranges": "…", "encampment": "…", "installations": "…"},
+  "flagships": [],
+  "caveats": "…",
+  "components": [{"id": "other", "name": "Joint defense base", "codes": ["joint"]}],
+  "installations": [{"id": "base-toulon", "name": "Toulon", "component": "other", "joint": true,
+                     "status": "act", "tier": "major|base|site", "curated": false,
+                     "area_km2": null, "cells": null,                       // no boundary inventory is used
+                     "x": …, "y": …, "cell": …, "county": "83", "cbsa": "018", "state": "PAC",
+                     "state_filed": "PAC", "personnel": 23120, "formations": 48,
+                     "seat_commune": "Toulon", "match": "exact|locality alias|…", "year": 2012}],
+  "ranges": [],
+  "states": {"PAC": {"personnel": {"active": {"total": …}, "guard_reserve": {"total": null},
+                                  "civilian": {"total": null}, "total": …},
+                     "spending": null, "installations": 6, "ile_de_france_aggregate": 20131}},
+  "national": {"personnel": {"active": {"total": 260234}, "total": 260234},
+               "personnel_scope": "…", "published_total": 251063,
+               "spending": null, "veterans": null, "armed_forces_resident": null,
+               "matched_bases": 50, "unmatched_bases": []},
+  "cities": {"018": {"tier": "garrison|fortress", "armed_forces": 23120, "share": 0.039,
+                     "naval": false, "installations": ["base-toulon"], "installation_count": 1,
+                     "aggregate_included": true}}
 }
 ```
 
-* Tiers: `major` = active-duty (or other DoD) boundary ≥ 100 km², or one of the curated `flagships` (large bases on
-  small land: Naval Station Norfolk, Naval Base San Diego, Wright-Patterson …; `curated: true`). Guard and Reserve
-  sites are never `major` (`base` from 10 km², else `site`). Other active-duty sites are `base` from 1 km², else `site`.
-  Parcels under 1 km² sharing a hex and component with a larger installation are folded into the nearest one
-  (`parts`); the two Barry M. Goldwater Range halves (Air Force, Marine Corps) are one installation and one range.
-* Encampment (cities): (a) an active non-Guard installation of tier `major` or `base` in one of the metro's member
-  counties, or a range covering one of its hexes, **and** (b) ACS armed forces (`B23025_006`, by residence, summed over
-  member counties) ≥ 1% of the 16+ population, or ≥ 2,000 **and** ≥ 0.3%: `fortress` at ≥ 3%, else `garrison`.
-  `naval` when the qualifying Navy and Marine installations outweigh the Army and Air Force ones, a `major` counting 4
-  and a `base` 1 (so a cluster of small Navy parcels does not make Washington naval). New York and Detroit do not
-  qualify; the smallest qualifying shares are about 0.3% (Tampa, Kansas City, Providence).
-* Installation-level headcounts are not published; never invent them. Veterans and armed forces by county live in
-  counties.json (`veterans`, `armed_forces`), not here.
-* `top_counties[].county` is null where OLDCC's county name does not match one on the map (Connecticut: OLDCC uses the
-  old counties, the map the 2022 planning regions; Alaska and Hawaii are not on the map). Contract dollars are by place
-  of performance, not where bases are.
-* Not on the map: sites outside the lower 48 and a few island sites with no US land hex within two rings (Key West,
-  San Clemente and San Nicolas Islands).
+* Rows are 2012 **bases de défense**, geocoded at the support group's seat commune. They are not individual barracks,
+  base boundaries, training ranges or a current order of battle. `personnel` means stationed personnel in the historical
+  file, never troops counted by home residence. `formations` is the file's count of formations.
+* Installation tiers are a transparent display convenience: `major` at 5,000+ personnel, `base` at 2,000+, otherwise
+  `site`. They are not official importance tiers. Because the file is joint and does not publish service breakdowns,
+  every row uses component `other`/`joint` rather than guessed Army, Navy or Air Force labels.
+* Detailed rows exclude most of Île-de-France. The one aggregate Île-de-France row is added to Paris AAV city totals and
+  regional personnel, but is not drawn as an installation. Overseas and foreign rows are outside the map.
+* The file's national organisation total is 251,063, the sum of detailed rows outside Île-de-France. The browser
+  drops 10,960 overseas and foreign personnel, then adds the separate 20,131-person Île-de-France aggregate.
+* Encampment: an AAV appears when its geocoded base seats account for at least 1,000 personnel; `fortress` at 5,000+.
+  `share` divides 2012 personnel by the map's current AAV population only as contextual scale; it is not a historical
+  rate and is not used for selection. `armed_forces` is retained as the contract key for compatibility but now means
+  stationed personnel assigned by base seat, not residents in uniform.
+* `ranges`, spending, veterans, reserve and civilian breakdowns are null/empty because no comparable current French
+  public dataset is used. Do not resurrect US MIRTA/DMDC/OLDCC wording for this file.
 
 ### wonders.json (eager)
 

@@ -352,32 +352,24 @@ function extendMilitary(data, mil) {
     return m;
   };
   const byState = instBy("state"), byMetro = instBy("cbsa");
-  const src = { personnel: "dmdc_personnel", spending: "oldcc_spending" };
   states.addFields([
-    F4("mil_active", "Active-duty troops", "int", { unit: "people, by duty state", source: src.personnel, group: "Military", description: `Active-duty personnel of all services incl. Coast Guard, by duty state (${v.personnel || "DMDC"}). Excludes most deployed and temporary-duty personnel.` }),
-    F4("mil_guard_reserve", "Guard & Reserve", "int", { unit: "people", source: src.personnel, group: "Military", description: `National Guard and Reserve members by state (${v.personnel || "DMDC"}).` }),
-    F4("mil_civilian", "DoD civilians", "int", { unit: "people", source: src.personnel, group: "Military", description: `Civilian Defense Department employees by duty state (${v.personnel || "DMDC"}).` }),
-    F4("def_spending", "Defense spending", "money", { unit: "$ per year", source: src.spending, group: "Military", description: `Defense contracts, grants and payroll in the state (${v.spending || "OLDCC"}). Contracts follow the place of performance, not where bases are.` }),
-    F4("def_per_resident", "Defense $ per resident", "usd", { unit: "$ per resident", source: src.spending, group: "Military", description: `Defense spending ÷ residents, as published by OLDCC (${v.spending || "OLDCC"}).` }),
-    F4("def_pct_gdp", "Defense share of GDP", "pct", { unit: "of state GDP", source: src.spending, group: "Military", description: `Defense spending ÷ state GDP, as published by OLDCC (${v.spending || "OLDCC"}).` }),
-    F4("installations", "Installations", "int", { unit: "MIRTA sites", source: "mirta", group: "Military", description: `Active, semi-active and caretaker DoD installations in the state (${v.installations || "MIRTA"}), by the state MIRTA files them under. Sizes are not comparable: a site can be an office or a training range.` }),
+    F4("mil_active", "Stationed military personnel", "int", { unit: "people at base seats", source: "fr_military", group: "Military", description: `Stationed personnel in bases de défense whose support-group seat is in the region (${v.personnel || "2012"}). Includes the one aggregate Île-de-France row there; not troops by home residence or current strength.` }),
+    F4("installations", "Defense bases", "int", { unit: "base seats", source: "fr_military", group: "Military", description: `Geocoded bases de défense in the region (${v.installations || "2012"}). Markers are support-group seats, not boundaries or every barracks.` }),
   ]);
   for (const r of states.rows) {
     const s = mil.states?.[r.key];
-    const p = s?.personnel, sp = s?.spending;
     Object.assign(r.v, {
-      mil_active: p?.active?.total ?? null, mil_guard_reserve: p?.guard_reserve?.total ?? null, mil_civilian: p?.civilian?.total ?? null,
-      def_spending: sp?.total ?? null, def_per_resident: sp?.per_resident ?? null, def_pct_gdp: sp?.pct_gdp ?? null,
+      mil_active: s?.personnel?.total ?? null,
       installations: s ? byState.get(r.key) || 0 : null,
     });
   }
   metros.addFields([
-    F4("encampment", "Garrison", "text", { source: "mirta", group: "Military", description: `Fortress or garrison when the metro passes the Encampment rule; blank otherwise. ${mil.rules?.encampment || mil.rule || ""}` }),
-    F4("installations", "Installations", "int", { unit: "MIRTA sites", source: "mirta", group: "Military", description: `DoD installations (MIRTA) whose point lies in the metro's member counties (${v.installations || "MIRTA"}). Sizes are not comparable.` }),
+    F4("encampment", "Garrison", "text", { source: "fr_military", group: "Military", description: `Fortress or garrison when the AAV passes the stationed-personnel rule; blank otherwise. ${mil.rules?.encampment || mil.rule || ""}` }),
+    F4("installations", "Defense bases", "int", { unit: "base seats", source: "fr_military", group: "Military", description: `Geocoded bases de défense whose support-group seat lies in the AAV (${v.installations || "2012"}).` }),
   ]);
   for (const r of metros.rows) {
     const c = mil.cities?.[r.key];
-    r.v.encampment = c ? (c.tier === "fortress" ? "Fortress" : "Garrison") + (c.naval ? " (naval)" : "") : null;
+    r.v.encampment = c ? (c.tier === "fortress" ? "Fortress" : "Garrison") : null;
     r.v.installations = byMetro.get(r.key) || 0;
   }
 }
