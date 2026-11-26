@@ -195,7 +195,7 @@ Produced by `pipeline/build/lenses.py`.
              {"id": "life", "name": "Daily life"}, {"id": "land", "name": "Land"}],
   "lenses": [{
     "id": "density", "group": "people", "name": "Population", "icon": "l-people", "emoji": "👥",
-    "unit": "people / km²", "format": "int|usd|pct|float|minutes|years",   // pct values are 0..1 fractions
+    "unit": "people / km²", "format": "int|usd|eur|pct|signed|float|minutes|years",   // pct values are 0..1 fractions; signed is a signed fractional change
     "scale": "log|linear", "domain": [1, 2000],   // 2nd-98th percentile of the hex values, computed at build time "ramp": ["#..", "..."], "higher_is": "good|bad|neutral",
     "source": "acs_5yr", "description": "...",
     "values": [number|null],       // per cell; null on non-US cells

@@ -274,7 +274,7 @@ function resources(m) {
     <h3 id="cv-h-resources">${icon("resources", "⛏️", { size: 15 })}Resources</h3>
     ${summary}
     <div class="cv-sites">${list}</div>
-    ${m.sites.length ? `<p class="cv-note">Sites whose hex centre lies in one of the metro's counties. Mapped sites only, not the metro's full capacity.</p>` : ""}
+    ${m.sites.length ? `<p class="cv-note">Sites whose source commune belongs to this metro area. Mapped sites only, not the metro's full capacity.</p>` : ""}
   </section>`;
 }
 

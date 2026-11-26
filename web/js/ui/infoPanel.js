@@ -44,7 +44,7 @@ export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
 export function amenities(o, n) {
   return `
     ${statRow("unemployment", "😐", "Unemployment", o.unemployment, n.unemployment, (x) => pct(x), false)}
-    ${statRow("l-income", "💵", "Median household income", o.median_income, n.median_income, dollars, true)}
+    ${statRow("l-income", "💵", "Median standard of living", o.median_income, n.median_income, dollars, true)}
     ${statRow("l-home", "🏠", "Median home value", o.home_value, n.home_value, dollars, null)}
     ${statRow("l-homeownership", "🔑", "Median gross rent / mo", o.median_rent, n.median_rent, dollars, false)}
     ${statRow(null, "⚖️", "Rent ÷ income", o.rent_burden, n.rent_burden, (x) => pct(x), false)}`;

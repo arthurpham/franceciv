@@ -13,7 +13,7 @@ from ..core.geo import MapProjection, Shape, ShapeIndex
 from ..core.hexgrid import SQRT3, HexGrid
 from ..core.store import load_interim, save_interim, write_web
 
-REQUIRES = ["fr_boundaries", "natural_earth", "etopo", "fr_worldcover"]
+REQUIRES = ["fr_boundaries", "natural_earth", "etopo", "fr_corine"]
 PRODUCES = ["_world", "world.json"]
 
 HEX_RADIUS_KM = 8.0
@@ -72,7 +72,7 @@ COVER = [
     (11, "ice", "Ice & snow", "#e8eef2", [12], "Perennial ice/snow (12) is the largest group."),
 ]
 COVER_NOTE = (
-    "From ESA WorldCover 2021 reduced to ~670 m pixels, sampled on a 1 km lattice inside each French hex. Open water (11) "
+    "From CORINE Land Cover 2018 read through the IGN WMS at ~380 m pixels, sampled on a 1 km lattice inside each French hex. Open water (11) "
     "and no-data pixels are ignored; shares are of the remaining land points, rounded to whole percent, and the urban "
     "threshold is applied to the rounded developed share. Foreign hexes have cover 0 (none) in this France build."
 )
@@ -112,7 +112,7 @@ def is_valley_floor(samples: list) -> bool:
 
 
 def dominant_cover(counts: Counter, land: int) -> int:
-    """Cover id for a hex from its WorldCover class counts (land = points that are not water or no-data)."""
+    """Cover id for a hex from its land-cover class counts (land = points that are not water or no-data)."""
     if not land:
         return 0
     if round(100 * sum(counts[c] for c in (22, 23, 24)) / land) >= URBAN_MIN_PCT:  # same rounding as pct.developed
@@ -248,7 +248,7 @@ def build() -> None:
     bounds = load_interim("fr_boundaries")
     ne = load_interim("natural_earth")
     etopo = load_interim("etopo")
-    worldcover = load_interim("fr_worldcover")
+    worldcover = load_interim("fr_corine")
 
     states = sorted(bounds["states"], key=lambda s: s["name"])
     counties = sorted(bounds["counties"], key=lambda c: c["geoid"])
@@ -461,7 +461,7 @@ def build() -> None:
             continue
         for k, codes in PCT.items():
             pct[k][i] = round(100 * sum(counts[c] for c in codes) / land)
-    print(f"    {len(lattice)} WorldCover points per hex; {no_cover} French hexes without land-cover samples")
+    print(f"    {len(lattice)} CORINE raster points per hex; {no_cover} French hexes without land-cover samples")
 
     # --- rivers ----------------------------------------------------------------------------------
     # Lake centerlines are kept only where they cross land hexes (reservoirs narrower than half a hex,

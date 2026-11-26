@@ -47,7 +47,7 @@ COVER_KEYS = [
 ]
 PCT_KEYS = ["forest", "crop", "pasture", "grass", "shrub", "wetland", "developed"]
 YIELD_KEYS = ["food", "production", "gold", "science", "culture"]
-LENS_FORMATS = {"int", "usd", "eur", "pct", "float", "minutes", "years", "category"}
+LENS_FORMATS = {"int", "usd", "eur", "pct", "signed", "float", "minutes", "years", "category"}
 LENS_SCALES = {"log", "linear"}
 HIGHER_IS = {"good", "bad", "neutral"}
 RESOURCE_CATEGORIES = {"energy", "mineral", "agri"}

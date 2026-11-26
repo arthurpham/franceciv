@@ -9,7 +9,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 ## What works in the MVP
 
-- Painted hex terrain for metropolitan France from ETOPO1 elevation and ESA WorldCover 2021 land cover.
+- Painted hex terrain for metropolitan France from ETOPO1 elevation and CORINE Land Cover 2018 land cover.
 - 13 metropolitan régions and 96 départements from Etalab contour files.
 - 172 city banners based on INSEE 2020 aires d'attraction des villes (AAV), including cross-border AAVs restricted to their French communes.
 - Five yields: Food, Production, Gold, Science and Culture.
@@ -17,11 +17,12 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - The other yields are Eurostat employment by high-level NACE industry.
   - Because Eurostat data is département-level, AAV values are allocated in proportion to commune population and should be read as estimates.
 - Population density, GDP per capita, employment density, industry, forest, farmland and built-up lenses.
+- Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, gas/coal, wind, solar and batteries.
 - The original interactive map, city panels, minimap, search, sharing and lens histogram UI.
 
 ## Explicitly not in the MVP yet
 
-The original US layers for citizens, districts, resources, infrastructure, military sites, wonders, trade routes and disasters have been removed rather than shown with invalid American coordinates or statistics. The UI still contains some inherited US-oriented explanatory copy and advisor assumptions; those panels are best treated as scaffolding until the corresponding French datasets are implemented.
+The original US layers for citizens, districts, infrastructure, military sites, wonders, trade routes and disasters are not yet implemented rather than shown with invalid American coordinates or statistics. The UI still contains some inherited US-oriented explanatory copy and advisor assumptions; those panels are best treated as scaffolding until the corresponding French datasets are implemented.
 
 Other known limitations:
 
@@ -44,9 +45,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_worldcover fr_eurostat
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_worldcover fr_eurostat
-uv run python -m pipeline build world france_core catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_insee_stats
+uv run python -m pipeline build world france_core resources catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.
@@ -56,7 +57,8 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - Etalab / geo.api.gouv.fr: current région, département and commune boundaries, commune populations and centroids.
 - INSEE: 2020 aires d'attraction des villes, 2026 vintage geography.
 - Eurostat regional accounts: `nama_10r_3gdp`, `nama_10r_3gva`, `nama_10r_3empers` for 2023.
-- ESA WorldCover 2021 (`v200`) land cover.
+- CORINE Land Cover 2018, served through the IGN Géoplateforme WMS.
+- ODRÉ national registry of electricity generation and storage installations.
 - NOAA ETOPO1 elevation and bathymetry.
 - Natural Earth 1:50m neighbouring countries, lakes and rivers.
 
