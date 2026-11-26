@@ -189,3 +189,68 @@ def build():
         "cities": cities,
     })
     print(f"    {len(cities)} cities")
+
+
+def check(web_dir):
+    path = web_dir / "citizens.json"
+    if not path.exists():
+        return [("FAIL", "citizens.json missing")]
+    data = json.loads(path.read_text())
+    errors = []
+    groups = data.get("groups") or {}
+    figures = data.get("figures") or {}
+    if set(groups) != set(FIGURES):
+        errors.append("group rows do not match the expected five rows")
+    for row_id, n in FIGURES.items():
+        if figures.get(row_id) != n:
+            errors.append(f"{row_id}: figure count is {figures.get(row_id)!r}, expected {n}")
+
+    def validate_row(city_id, row, row_id):
+        keys = [g["key"] for g in groups.get(row_id, [])]
+        prefix = f"{city_id}/{row_id}"
+        if row is None:
+            errors.append(f"{prefix}: missing row")
+            return
+        counts, shares, figs = row.get("counts"), row.get("shares"), row.get("figures")
+        if not isinstance(counts, dict) or set(counts) != set(keys):
+            errors.append(f"{prefix}: count keys differ from groups")
+            return
+        if not all(isinstance(v, int) and v >= 0 for v in counts.values()):
+            errors.append(f"{prefix}: counts must be non-negative integers")
+        if row.get("total") != sum(counts.values()):
+            errors.append(f"{prefix}: total does not equal the sum of counts")
+        if not isinstance(figs, dict) or set(figs) != set(keys) or sum(figs.values()) != FIGURES[row_id]:
+            errors.append(f"{prefix}: figures do not sum to {FIGURES[row_id]}")
+        if not isinstance(shares, dict) or set(shares) != set(keys) or not all(0 <= v <= 1 for v in shares.values()):
+            errors.append(f"{prefix}: shares missing, out of range or keyed incorrectly")
+        elif abs(sum(shares.values()) - 1) > 0.01:
+            errors.append(f"{prefix}: shares do not sum to 1")
+
+    national = data.get("national")
+    if not isinstance(national, dict):
+        errors.append("national row missing")
+    else:
+        for row_id in FIGURES:
+            validate_row("national", national.get(row_id), row_id)
+
+    city_ids = [c["id"] for c in json.loads((web_dir / "cities.json").read_text())]
+    cities = data.get("cities") or {}
+    missing_files = [c for c in city_ids if c not in cities]
+    if missing_files:
+        errors.append(f"cities missing entries: {', '.join(missing_files[:5])}")
+    present = 0
+    for city_id in city_ids:
+        row = cities.get(city_id)
+        if row is None:
+            continue
+        present += 1
+        for row_id in FIGURES:
+            validate_row(city_id, row.get(row_id), row_id)
+        for sp in row.get("specialists") or []:
+            if sp.get("row") not in groups or sp.get("key") not in {g["key"] for g in groups.get(sp.get("row"), [])}:
+                errors.append(f"{city_id}: specialist references an unknown row/key")
+    if present < len(city_ids) * 0.95:
+        errors.append(f"only {present}/{len(city_ids)} cities have census rows")
+    if errors:
+        return [("FAIL", "; ".join(errors[:4]) + (f" … (+{len(errors) - 4})" if len(errors) > 4 else ""))]
+    return [("PASS", f"citizens.json: {present}/{len(city_ids)} cities, 5 rows each, counts and figures consistent")]
