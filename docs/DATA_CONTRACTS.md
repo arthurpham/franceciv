@@ -496,8 +496,8 @@ Built by `pipeline/build/military.py` from `fr_military` (`sources/fr_military.p
   every row uses component `other`/`joint` rather than guessed Army, Navy or Air Force labels.
 * Detailed rows exclude most of Île-de-France. The one aggregate Île-de-France row is added to Paris AAV city totals and
   regional personnel, but is not drawn as an installation. Overseas and foreign rows are outside the map.
-* The file's separate national organisation total is 251,063; its scope is not documented enough to reconcile exactly
-  with the detailed rows. Browser totals are explicitly sums of the row-level metropolitan records.
+* The file's national organisation total is 251,063, the sum of detailed rows outside Île-de-France. The browser
+  drops 10,960 overseas and foreign personnel, then adds the separate 20,131-person Île-de-France aggregate.
 * Encampment: an AAV appears when its geocoded base seats account for at least 1,000 personnel or 0.3% of population;
   `fortress` at 5,000+ personnel or 3% share. `armed_forces` is retained as the contract key for compatibility but now
   means stationed personnel assigned by base seat, not residents in uniform.
