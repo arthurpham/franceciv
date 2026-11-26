@@ -66,16 +66,17 @@ class FrenchCorine(Source):
             strips=[]
             for ix in range(TILES):
                 fn=f"clc_{iy}_{ix}.png"; files.append(fn)
-                im=Image.open(self.raw_dir/fn).convert('RGB').resize((PX,PX))
+                im=Image.open(self.raw_dir/fn).convert('RGBA').resize((PX,PX))
                 strips.append(im)
             for y in range(PX):
                 chars=[]
                 for im in strips:
                     pix=im.load()
                     for x in range(PX):
-                        chars.append(NLCD_CHAR[COLOR_TO_NLCD[nearest(pix[x,y])]])
+                        rgba=pix[x,y]
+                        chars.append(NLCD_CHAR[COLOR_TO_NLCD[nearest(rgba)]] if rgba[3] >= 128 else ".")
                 rows.append(''.join(chars))
         width=TILES*PX
         return {"vintage":f"CORINE Land Cover {YEAR}, WMS raster ~380 m","_files":files,"crs":"EPSG:4326",
-                "x0":LON0+dlo/width/2,"dx":dlo/PX,"y0":LAT1-dla/PX/2,"dy":-dla/PX,"cols":width,"rows_n":len(rows),
+                "x0":LON0+dlo/PX/2,"dx":dlo/PX,"y0":LAT1-dla/PX/2,"dy":-dla/PX,"cols":width,"rows_n":len(rows),
                 "legend":{ch:code for code,ch in NLCD_CHAR.items()},"classes":{},"rows":rows}

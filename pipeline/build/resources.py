@@ -10,7 +10,7 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_energy", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json"]
 PRODUCES = ["resources.json"]
 
 TYPES = [
@@ -63,10 +63,13 @@ def build():
     world = load_interim("_world")
     bounds = load_interim("fr_boundaries")
     energy = load_interim("fr_energy")
+    aav = load_interim("fr_aav")
     cities = json.loads((WEB_DATA / "cities.json").read_text())
     grid = HexGrid(**world["grid"])
     communes = {c["code"]: c for c in bounds["communes"]}
     state_abbr = {s["fips"]: s["abbr"] for s in bounds["states"]}
+    city_ids = {city["id"] for city in cities}
+    commune_aav = {r["commune"]: r["aav"] for r in aav["composition"] if r["aav"] in city_ids}
 
     groups = {}
     for r in energy["rows"]:
@@ -102,11 +105,7 @@ def build():
         dep = c.get("department")
         state = state_abbr.get(c.get("region"))
         county = dep
-        cbsa = None
-        for city in cities:
-            if county in (city.get("counties") or []):
-                cbsa = city["id"]
-                break
+        cbsa = commune_aav.get(code)
         raw_name = max(set(g["names"]), key=g["names"].count) if g["names"] else c["name"]
         plant_name = raw_name
         upper = raw_name.upper()
@@ -139,3 +138,10 @@ def build():
             "states": dict(states),
         },
     })
+    states_doc = json.loads((WEB_DATA / "states.json").read_text())
+    for st in states_doc:
+        summary = states.get(st["abbr"], {})
+        by_type = {k: v["value"] for k, v in summary.items()}
+        sites = {k: v["count"] for k, v in summary.items()}
+        st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; not complete regional capacity."} if by_type else None
+    write_web("states.json", states_doc)

@@ -42,7 +42,7 @@ YIELDS = [
 A38_INDUSTRY = {
     "AZ": ("agriculture", 1), "BZ": ("mining", 1),
     **{c: ("manufacturing", 1) for c in ["CA","CB","CC","CD","CE","CF","CG","CH","CI","CJ","CK","CL","CM"]},
-    "DZ": ("utilities", .5), "EZ": ("utilities", .5), "FZ": ("construction", 1),
+    "DZ": ("utilities", 1), "EZ": ("utilities", 1), "FZ": ("construction", 1),
     "GZ": ("retail", .65), "HZ": ("transportation", 1), "IZ": ("accommodation", 1),
     "JA": ("information", 1), "JB": ("information", 1), "JC": ("information", 1),
     "KZ": ("finance", 1), "LZ": ("real_estate", 1), "MA": ("professional", 1), "MB": ("professional", 1), "MC": ("professional", 1),
@@ -147,6 +147,7 @@ def build():
     comp_stats = stats.get("comparateur", {})
     activity_stats = stats["datasets"].get("activity", {})
     aav_employment = employment_stats.get("AAV2020", {})
+    commune_employment = employment_stats.get("COM", {})
     dep_employment = employment_stats.get("DEP", {})
     reg_employment = employment_stats.get("REG", {})
     fr_employment = employment_stats.get("FRANCE", {})
@@ -294,15 +295,19 @@ def build():
             # GDP is still departmental. Allocate it by the AAV's share of workplace employment;
             # for multi-department aires, population weights split the AAV total between departments.
             gdp = 0.0
-            dep_city_pop = Counter(c["department"] for c in metro_members for _ in range(0))
-            dep_city_pop = Counter()
+            dep_city_jobs = Counter()
             for c in metro_members:
-                dep_city_pop[c["department"]] += c.get("population") or 0
-            commune_pop_total = sum(dep_city_pop.values()) or pop or 1
-            for dep, dp in dep_city_pop.items():
+                row = commune_employment.get(c["code"], {})
+                dep_city_jobs[c["department"]] += sum(row.get(code0, 0) for code0 in A38_INDUSTRY)
+            if sum(dep_city_jobs.values()) <= 0:
+                dep_city_pop = Counter()
+                for c in metro_members:
+                    dep_city_pop[c["department"]] += c.get("population") or 0
+                commune_pop_total = sum(dep_city_pop.values()) or pop or 1
+                dep_city_jobs = Counter({dep: employed * (dp / commune_pop_total) for dep, dp in dep_city_pop.items()})
+            for dep, jobs_in_dep in dep_city_jobs.items():
                 e = dep_econ.get(dep, {})
-                est_jobs_in_dep = employed * (dp / commune_pop_total)
-                share = est_jobs_in_dep / (e.get("employed") or 1)
+                share = jobs_in_dep / (e.get("employed") or 1)
                 gdp += (e.get("gdp") or 0) * share
         else:
             jobs = Counter()
@@ -415,7 +420,8 @@ def build():
         ("homeownership", "Owner-occupied", "pct", "share of main homes"), ("second_homes", "Second homes", "pct", "share of dwellings"),
         ("vacancy", "Vacant homes", "pct", "share of dwellings"), ("cbsa", "Main AAV", "text", None), ("cell", "Map cell", "int", None),
     ]
-    fields = [{"key": k, "label": lab, "format": fmt, "unit": unit, "higher_is": "neutral", "source": "fr_eurostat", "description": ""} for k, lab, fmt, unit in fields_def]
+    insee_fields = {"population", "land_km2", "density", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy"}
+    fields = [{"key": k, "label": lab, "format": fmt, "unit": unit, "higher_is": "neutral", "source": "fr_insee_stats" if k in insee_fields else "fr_eurostat", "description": ""} for k, lab, fmt, unit in fields_def]
     rows = []
     for idx, dep in enumerate(county_ids):
         meta = counties_meta[dep]
@@ -484,6 +490,8 @@ def build():
     ramps={"people":["#1b1035","#4b2377","#9a3b8a","#e0645e","#f9b24a","#fff3a8"],"prosperity":["#152238","#274b73","#3d8395","#72ba8c","#d6ec91"],"land":["#27351f","#476c35","#7f9d4b","#c5bd69","#eee4a1"]}
     for lid,group,name,emoji,unit,fmt,scale,vals,desc in defs:
       lo,hi=percentile(vals,2),percentile(vals,98)
+      if lo is None or hi is None:
+        continue
       lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else ("fr_corine" if lid in {"forest","farmland","developed"} else "fr_insee_stats"),"description":desc,"values":vals})
     lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land and housing"}],"lenses":lenses}
 

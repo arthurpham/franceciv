@@ -12,9 +12,9 @@ URL = (
     f"{DATASET}/exports/json?select=nominstallation,codeinseecommune,codeinseecommuneimplantation,"
     "codefiliere,filiere,codetechnologie,technologie,combustible,typestockage,puismaxinstallee,"
     "puismaxinstalleedischarge,regime,datemiseenservice_date,nbgroupes,codedepartement"
-    "&where=puismaxinstallee%3E%3D5000%20or%20puismaxinstalleedischarge%3E%3D5000"
+    "&where=puismaxinstallee%3E%3D500%20or%20puismaxinstalleedischarge%3E%3D500"
 )
-FILE = "odre-installations-ge5000kw.json"
+FILE = "odre-installations-ge500kw.json"
 
 
 class FrenchEnergyRegistry(Source):

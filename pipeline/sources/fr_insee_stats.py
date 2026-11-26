@@ -91,12 +91,17 @@ def resumable_download(source, url, rel_path, force=False):
                     with open(tmp, mode) as out:
                         while chunk := resp.read(1 << 20):
                             out.write(chunk)
+                cr = resp.headers.get("Content-Range")
+                total = int(cr.rsplit("/", 1)[1]) if cr and "/" in cr and cr.rsplit("/", 1)[1].isdigit() else None
+                if total is not None and tmp.stat().st_size != total:
+                    continue
                 break
             except (urllib.error.URLError, TimeoutError, ConnectionError, EOFError):
-                if not tmp.exists() or tmp.stat().st_size == have:
-                    continue
+                continue
         else:
             raise ConnectionError(f"could not complete resumable download: {url}")
+        if not zipfile.is_zipfile(tmp):
+            raise ConnectionError(f"incomplete or invalid zip downloaded from {url}")
         data = tmp.read_bytes()
         return hashlib.sha256(data).hexdigest(), len(data)
 
@@ -191,7 +196,7 @@ class FrenchInseeStats(Source):
                 continue
             files.append(fn)
             mode = "employment" if key == "employment" else "dims"
-            datasets[key] = compact_melodi(self.raw_dir / fn, key_mode=mode)
+            datasets[key] = compact_melodi(self.raw_dir / fn, levels=LEVELS + (("COM",) if key == "employment" else ()), key_mode=mode)
             print(f"    {key}: " + ", ".join(f"{lv} {len(g)}" for lv, g in datasets[key].items()))
         geo_ref, comp = compact_comparator(self.raw_dir / COMPARATOR_FILE)
         files.append(COMPARATOR_FILE)
