@@ -117,10 +117,11 @@ export async function mount(ctx) {
     title: "Natural hazards", kicker: "GASPAR catastrophe-naturelle recognitions",
     note: "Recognitions since 2000 are administrative declarations aggregated to departments and normalised by today's commune count. They measure recognition frequency, not physical exposure or damage.",
   });
+  let hazardTable = null;
   if (counties) {
     const rows = counties.rows.filter((r) => fin(r.v.disasters));
     dSec.insertAdjacentHTML("beforeend", `<p class="adv-note">Use the Map colour control above to draw the recognition-frequency lens. Flood and drought columns are shares of each department's recognitions; other hazard types make up the remainder.</p>`);
-    createTable(dSec, {
+    hazardTable = createTable(dSec, {
       caption: "Natural-hazard recognitions by department", rank: true, maxHeight: 260, search: "Search departments",
       rows,
       columns: [
@@ -152,6 +153,7 @@ export async function mount(ctx) {
       const owner = h.cell >= 0 ? app.w.raw.owner[h.cell] : -1;
       const sr = owner >= 0 ? stLevel.rows[owner] : null;
       const c = h.cell >= 0 && counties ? counties.rowAtCell(h.cell) : null;
+      hazardTable?.setHot(c ? c.key : null, false);
       if (h.item?.kind === "wonder") for (const w of wonderBars) w.setHot(h.item.data?.id ?? null);
     },
     onMapClick(ev) {

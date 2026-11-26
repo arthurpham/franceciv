@@ -78,7 +78,7 @@ export function mount(ctx) {
   dCtl.className = "adv-row";
   dBody.appendChild(dCtl);
   let level = "counties";
-  segmented(dCtl, { label: "Places", value: level, options: [{ value: "counties", label: "Departments" }, { value: "metros", label: "Urban areas" }], onChange: (v) => { level = v; drawDeg(); } });
+  segmented(dCtl, { label: "Places", value: level, options: [{ value: "counties", label: "Departments" }], onChange: (v) => { level = v; drawDeg(); } });
   const lv = () => data.levels[level];
   const inc = (r) => (level === "counties" ? r.v.income : r.v.median_income);
   const unempDom = robustDomain(counties.rows.map((r) => r.v.unemployment), 0.02) || [0.06, 0.15];
@@ -115,7 +115,7 @@ export function mount(ctx) {
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_insee_stats", "fr_eurostat"], [
     "Science workers are workplace jobs in information/communication plus professional, scientific and technical activities; they cover whole industries, not only researchers.",
-    `Department education, income and unemployment figures are ${esc(data.countyVintage)}; urban-area education values are population-weighted roll-ups of their departments.`,
+    `Department education, income and unemployment figures are ${esc(data.countyVintage)}; urban-area incomes are modelled area values; education is department-level.`,
     "INSEE education here means the share of adults whose highest diploma is Bac+2 or higher; it is not the same as the original US bachelor's-degree measure.",
     ...(data.countiesOffMap ? [`${int(data.countiesOffMap)} of the smallest departments are smaller than one hex, so selecting them outlines nothing on the map.`] : []),
   ]));

@@ -246,7 +246,7 @@ function workforce(m) {
     <h3 id="cv-h-workforce">${icon("y-production", "⚙️", { size: 15 })}Workforce</h3>
     <p class="cv-lead">Where the metro's ${int(m.city.employed)} workplace jobs work, by industry. <span class="cv-lq hi">×N</span> compares an industry's share of jobs with its national share.</p>
     <div class="cv-blds">${cards || `<p class="muted cv-note">No industry data.</p>`}</div>
-    <p class="cv-note">${esc(m.nation.vintage)}, table C24030 (counted at employers). The map's districts come from jobs counted where the employers are (INSEE census): see Districts.</p>
+    <p class="cv-note">${esc(m.nation.vintage)}, workplace-employment tables (counted at employers). The map's districts come from jobs counted where the employers are (INSEE census): see Districts.</p>
   </section>`;
 }
 
@@ -326,8 +326,7 @@ function compare(m) {
 
 function footer(m) {
   const nat = m.nation;
-  return `<div class="cv-foot">Sources: ${esc(nat.vintage)}${nat.gdp_vintage ? `; GDP: ${esc(nat.gdp_vintage)}` : ""}; Census population
-    estimates; INSEE department census tables; EIA, MSHA and USGS sites. Ranks are among all ${m.cityList.length} urban areas on the map.
+  return `<div class="cv-foot">Sources: ${esc(nat.vintage)}${nat.gdp_vintage ? `; GDP: ${esc(nat.gdp_vintage)}` : ""}; INSEE populations; INSEE department census tables; ODRÉ and public resource registries. Ranks are among all ${m.cityList.length} urban areas on the map.
     <a href="#" data-pedia>Almanac ›</a></div>`;
 }
 

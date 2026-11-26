@@ -47,7 +47,7 @@ export function count3(n) {
 // Formats a value of a stat ("usd" → $, "rate" → %, anything else → compact count).
 export function fmtStat(def, v) {
   if (!fin(v)) return "–";
-  if (def.unit === "usd") return money(v);
+  if (def.unit === "usd" || def.unit === "eur") return money(v);
   if (def.unit === "rate") return pct(v);
   return compact(v);
 }
@@ -151,7 +151,7 @@ export function buildReport(key, { nation, states, cities, lenses, lensVintage }
 
   if (key === "population") reportPopulation(rep, n, st, metros);
   else if (key === "unemployment") reportUnemployment(rep, n, st, metros);
-  else if (def.unit === "usd") reportGold(rep, nation, n, st, metros);
+  else if (def.unit === "usd" || def.unit === "eur") reportGold(rep, nation, n, st, metros);
   else reportJobs(rep, def, nation, n, st, metros);
   return rep;
 }

@@ -15,7 +15,7 @@ const COUNTY_LENS = {
   macron_2022: "macron_2022", lepen_2022: "lepen_2022", abstention_2022: "abstention_2022", forest: "forest", crop: "farmland", developed: "developed",
 };
 // County measures we can roll up to states and metros as population-weighted means.
-const ROLLUP = ["density", "income", "poverty", "unemployment", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "homeownership", "second_homes", "vacancy", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
+const ROLLUP = ["density", "income", "poverty", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "homeownership", "second_homes", "vacancy", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
 // Rolled-up means that only approximate the area's true value (a median or an index whose denominator is not population).
 const APPROX = new Set(["income", "disasters"]);
 // No count/share pairs are currently rolled up from counties.

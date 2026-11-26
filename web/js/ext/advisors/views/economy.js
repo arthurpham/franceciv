@@ -45,7 +45,6 @@ export function mount(ctx) {
       const top = states.map((s, i) => ({ i, v: ratio(s.gdp_by_industry?.[r.key], s.gdp) })).filter((x) => fin(x.v)).sort((a, b) => b.v - a.v).slice(0, 8);
       link.hover({ states: new Set(top.map((x) => x.i)), dimOthers: true });
     },
-    onClick: (r) => { setIndustry(r.key === "government" ? "public_admin" : r.key); specBody.scrollIntoView({ behavior: "smooth", block: "start" }); },
   });
 
   // --- map: metro GDP circles -----------------------------------------------------------------------------------
