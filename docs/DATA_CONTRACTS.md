@@ -658,9 +658,10 @@ Built by `pipeline/build/wonders.py` from `fr_unesco` (`sources/fr_unesco.py`) a
 * UNESCO metrics: `{designated, criteria, url, transnational}`. Natural and mixed properties use kind `natural`;
   cultural properties use `landmark`. Serial properties are represented by one French component point, not full
   boundaries.
-* Museum metrics: `{visits, year, domain, url}`. The source row is each museum's latest available annual total;
-  combined attendance reported for a multi-museum site is not split.
-* University metrics: `{students, year, seat, type}`. Students include principal and secondary enrolments and CPGE
+* Museum metrics: `{visits, year, sites, domain, url}`. The value is each museum institution's latest available
+  annual total, summed across distinct physical sites sharing its Muséofile identifier. Repeated correction rows for
+  the same institution/year/site are deduplicated by keeping the largest total.
+* University metrics: `{students, year, academic_year, seat, type}`. Students include principal and secondary enrolments and CPGE
   double enrolments. SISE gives only the administrative headquarters commune, so positions are not full campus
   footprints. Universities sharing a parent commune may be offset slightly for marker visibility; those offsets are
   display geometry, not source geography.

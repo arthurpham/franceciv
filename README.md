@@ -33,7 +33,7 @@ Other known limitations:
 - Road and rail geometry is schematic Natural Earth cartography, not an exhaustive network inventory.
 - Election and hazard lenses are currently aggregated from communes to departments because the browser contract does not yet carry a commune hex index.
 - Catastrophe-naturelle counts are administrative recognition frequency, not direct damage or physical hazard exposure.
-- UNESCO serial properties are represented by one French component point rather than full site boundaries.
+- UNESCO serial properties are represented by one French component point rather than full site boundaries. Museum attendance sums distinct physical sites sharing one Muséofile institution; universities are mapped at administrative headquarters communes rather than campus footprints.
 - Overseas France is excluded; Corsica is included.
 - Freight is inter-regional only, non-directional, excludes foreign trade and has suppressed rail cells; commune search/cards, citizens and districts remain unimplemented.
 

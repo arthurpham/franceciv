@@ -193,7 +193,7 @@ export async function mount(ctx) {
   const drawSources = (dis) => {
     srcEl.innerHTML = sourcesHtml(data, [...(won?.sources || []), ...(dis?.sources || [])], [
       "UNESCO serial properties are represented by one French component point rather than their full boundaries.",
-      "Museum attendance uses each museum's latest annual total. Some sites report combined attendance for several museums and are not split by the source.",
+      "Museum attendance uses each museum's latest annual total, summing distinct physical sites that share one Muséofile institution. Repeated correction rows for the same site are not double-counted.",
       "University enrolment includes principal and secondary enrolments and CPGE double enrolments. SISE places institutions at their administrative headquarters commune, not across every campus.",
       "France has no census religion question comparable to the original US faith lens, so that layer is intentionally absent.",
     ]);

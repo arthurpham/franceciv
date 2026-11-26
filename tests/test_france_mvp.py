@@ -101,8 +101,12 @@ def test_culture_wonders_contract():
     assert len(museums) == len(universities) == 12
     assert museums[0]["name"] == "musée du Louvre"
     assert museums[0]["metrics"]["visits"] > 8_000_000
+    carnavalet = next(w for w in museums if "Carnavalet" in w["name"])
+    assert carnavalet["metrics"]["visits"] == 1_624_576
+    assert carnavalet["metrics"]["sites"] == 3
     assert universities[0]["name"] == "Université de Lille"
     assert universities[0]["metrics"]["students"] > 80_000
+    assert {w["name"] for w in universities} >= {"Université de Lorraine", "Université Grenoble Alpes"}
     assert all(w["cell"] is not None and w["state"] for w in museums + universities)
     assert [w["metrics"]["visits"] for w in museums] == sorted((w["metrics"]["visits"] for w in museums), reverse=True)
     assert [w["metrics"]["students"] for w in universities] == sorted((w["metrics"]["students"] for w in universities), reverse=True)
