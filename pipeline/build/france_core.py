@@ -209,7 +209,6 @@ def build():
 
     dep_hazard = {}
     hazard_acc = {}
-    hazard_years = max(1, hazards["years"][1] - hazards["years"][0] + 1)
     commune_counts = Counter(c["department"] for c in bounds["communes"])
     for commune_code, row in hazards["communes"].items():
         dep = commune_code[:2]
@@ -220,7 +219,7 @@ def build():
         for key in ["events", "flood", "drought", "storm", "ground"]:
             acc[key] += row.get(key, 0)
     for dep, acc in hazard_acc.items():
-        denom = max(1, acc["communes"] * hazard_years)
+        denom = max(1, acc["communes"])
         events = max(1, acc["events"])
         dep_hazard[dep] = {
             "frequency": acc["events"] / denom,
@@ -529,7 +528,7 @@ def build():
       ("lepen_2022","politics","Le Pen vote 2022","🗳️","share of valid votes","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("le_pen") if "_dep" in e else None,4),"Marine Le Pen's share of valid second-round votes in the 2022 presidential election, aggregated from commune results to departments."),
       ("macron_2022","politics","Macron vote 2022","🗳️","share of valid votes","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("macron") if "_dep" in e else None,4),"Emmanuel Macron's share of valid second-round votes in the 2022 presidential election, aggregated from commune results to departments."),
       ("abstention_2022","politics","Abstention 2022","🗳️","share of registered voters","pct","linear",dep_lens(lambda e: dep_election.get(e["_dep"],{}).get("abstention") if "_dep" in e else None,4),"Abstentions as a share of registered voters in the 2022 presidential second round."),
-      ("disasters","hazards","Natural disasters","🌊","recognitions / commune-year","float","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("frequency") if "_dep" in e else None,4),"Catastrophe-naturelle recognitions since 2000 per commune per year. Administrative recognition frequency, not measured damage."),
+      ("disasters","hazards","Natural disasters","🌊","recognitions / current commune since 2000","float","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("frequency") if "_dep" in e else None,4),"Catastrophe-naturelle recognitions since 2000, normalized by today's commune count. Retired-commune recognitions remain attributed to their department; this is administrative recognition frequency, not measured damage."),
       ("flood_events","hazards","Flood events","💧","share of recognitions","pct","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("flood") if "_dep" in e else None,4),"Flood, mudflow, wave and groundwater-rise recognitions as a share of local catastrophe-naturelle recognitions since 2000."),
       ("drought_events","hazards","Drought events","🏜️","share of recognitions","pct","linear",dep_lens(lambda e: dep_hazard.get(e["_dep"],{}).get("drought") if "_dep" in e else None,4),"Drought recognitions as a share of local catastrophe-naturelle recognitions since 2000."),
     ]
