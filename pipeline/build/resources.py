@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
@@ -106,7 +106,7 @@ def build():
         state = state_abbr.get(c.get("region"))
         county = dep
         cbsa = commune_aav.get(code)
-        raw_name = max(set(g["names"]), key=g["names"].count) if g["names"] else c["name"]
+        raw_name = sorted(Counter(g["names"]).items(), key=lambda kv: (-kv[1], kv[0]))[0][0] if g["names"] else c["name"]
         plant_name = raw_name
         upper = raw_name.upper()
         if "CENTRALE NUCLEAIRE DE " in upper:
