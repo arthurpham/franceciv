@@ -673,7 +673,7 @@ def build():
 
     defs=[
       ("density","people","Population","👥","people / km²","int","log",allocated_density("population",1),"Residents per km² of department land."),
-      ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. Unlike the original US map, this is not household income."),
+      ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. This is output per resident, not household earnings."),
       ("employment_rate","people","Employment density","💼","workers / km²","int","log",allocated_density("employed",1),"Employment by workplace per km² of department land."),
       ("industry","prosperity","Industry","⚙️","share of employment","pct","linear",dep_lens(lambda e: (e["jobs"].get("manufacturing",0)+e["jobs"].get("construction",0)+e["jobs"].get("mining",0))/e["employed"] if e["employed"] else None,4),"Industry and construction employment as a share of all employment."),
       ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by CORINE Land Cover."),

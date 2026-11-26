@@ -27,9 +27,9 @@ Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-c
 
 ### world.json
 
-`{"version":2,"grid":{cols,rows,radius},"states":[...],"counties":[...],"owner":[],"county":[],"water":[],"cover":[],"pct":{...},"rivers":[]}`.
+`{"version":2,"grid":{cols,rows,radius},"states":[...],"counties":[...],"owner":[],"county":[],"france_share":[],"water":[],"cover":[],"pct":{...},"rivers":[]}`.
 
-* `owner`, `county`, `water` and `cover` are per-cell arrays.
+* `owner`, `county`, `france_share`, `water` and `cover` are per-cell arrays. `france_share` is the approximate 0..1 share of the hex inside French departmental territory (seven-sample estimate); it is used for population-density integration and partial-hex estimates, not as a land-cover class.
 * `states` rows have `fips` (INSEE region code), `abbr`, `name`, `color`, `label` anchor and yield metadata added by builders.
 * `counties` rows have `geoid`, `name`, `state_fips` and area/population metadata. These are departments.
 * `pct` values are whole-percent shares (0–100) of each hex's classified land samples, excluding water/no-data samples. They are grouped from CORINE Land Cover for the renderer. Renderer keys such as `cropland` are visual categories, not claims that the source is US NLCD.
@@ -80,7 +80,7 @@ Energy and agricultural resource sites. Items have `type`, `name`, `x`, `y`, `ce
 
 ### infrastructure.json
 
-Airports and ports. Airport passengers come from Eurostat `avia_paoa`, coordinates from OurAirports. Port tonnage comes from Eurostat maritime statistics with Natural Earth fallback positions. Labels are French display buckets, not FAA hub categories. `aav` is the containing AAV inferred from the point.
+Airports and ports. Airport passengers come from Eurostat `avia_paoa`, coordinates from OurAirports. Port tonnage comes from Eurostat maritime statistics with Natural Earth fallback positions. Labels are local French display-size buckets. `aav` is the containing AAV inferred from the point.
 
 ### trade.json
 
@@ -100,7 +100,7 @@ INSEE census-derived citizen mixes by AAV: broad socio-professional categories, 
 
 ### districts.json (lazy)
 
-INSEE workplace-employment specialization by AAV and department. Internal industry keys are inherited compatibility keys, but their labels and definitions are broad NACE sections. There is no QCEW/BLS pay, annual-change, suppression, or county-series equivalent; those fields must be absent or null rather than fabricated.
+INSEE workplace-employment specialization by AAV and department. Internal industry keys are inherited compatibility keys, but their labels and definitions are broad NACE sections. There is no equivalent public pay, annual-change, suppression, or county-series dataset in the chosen French source; those fields must be absent or null rather than fabricated.
 
 ### communes.json (lazy)
 
@@ -112,4 +112,4 @@ Commune-level GASPAR detail. Recognitions are administrative catastrophe-naturel
 
 ## Browser boundaries
 
-`web/js` renders the contracts above; it must not hard-code replacement statistics. User-facing geography labels are Region, Department, Urban area/AAV and Commune. Internal variables named `state`, `county` or `metro` may remain only because they implement the inherited schema. User-facing text, source notes, tooltips and caveats must describe French geography, French/European sources, euros and metric units. US-only concepts that have no French public equivalent (for example census religion, health-insurance coverage, veteran status, FEMA disaster assistance, QCEW pay) are intentionally absent rather than approximated.
+`web/js` renders the contracts above; it must not hard-code replacement statistics. User-facing geography labels are Region, Department, Urban area/AAV and Commune. Internal variables named `state`, `county` or `metro` may remain only because they implement the inherited schema. User-facing text, source notes, tooltips and caveats must describe French geography, French/European sources, euros and metric units. Concepts that have no comparable French public dataset (for example census religion, health-insurance coverage, veteran status, disaster-assistance geography, or employer pay microdata) are intentionally absent rather than approximated.

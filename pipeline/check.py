@@ -160,7 +160,7 @@ def check_world(r: Report, w) -> dict | None:
         r.fail(f"world.json grid: bad values {g}")
         return None
     n = g["cols"] * g["rows"]
-    need_keys(r, "world.json", w, ["width", "height", "margin", "owner", "county", "elev", "water", "relief", "cover", "pct", "tables", "states", "counties", "rivers"])
+    need_keys(r, "world.json", w, ["width", "height", "margin", "owner", "county", "france_share", "elev", "water", "relief", "cover", "pct", "tables", "states", "counties", "rivers"])
     for k in ("width", "height", "margin"):
         if k in w and not is_num(w[k]):
             r.fail(f"world.json {k}: not a number ({w[k]!r})")
@@ -202,6 +202,9 @@ def check_world(r: Report, w) -> dict | None:
             if high:
                 r.fail(f"world.json elev: {len(high)} water cells have elev > 0 (water elev is mean depth, <= 0; cells {_sample(high)})")
 
+    if "france_share" in w:
+        ok &= check_cells(r, "world.json france_share", w["france_share"], n, 0, 1, kind="number")
+
     pct = w.get("pct")
     if "pct" in w:
         if need_keys(r, "world.json pct", pct, PCT_KEYS):
@@ -213,7 +216,7 @@ def check_world(r: Report, w) -> dict | None:
                 if over:
                     r.fail(f"world.json pct: {len(over)} cells sum above 100% (cells {_sample(over)})")
                 if outside:
-                    r.fail(f"world.json pct: {len(outside)} non-US cells have non-zero land-cover shares (must be 0)")
+                    r.fail(f"world.json pct: {len(outside)} non-French cells have non-zero land-cover shares (must be 0)")
 
     tables = w.get("tables")
     if "tables" in w and need_keys(r, "world.json tables", tables, ["water", "relief", "cover"]):
@@ -236,7 +239,7 @@ def check_world(r: Report, w) -> dict | None:
         r.ok(f"world.json: {g['cols']}×{g['rows']} grid, {len(states)} states, {len(counties)} counties, {len(rivers)} rivers")
     return {
         "n": n, "grid": g, "owner": owner if owner_ok else None, "states": states, "counties": counties,
-        "width": w.get("width"), "height": w.get("height"), "rivers": rivers,
+        "width": w.get("width"), "height": w.get("height"), "rivers": rivers, "france_share": w.get("france_share") or [],
     }
 
 
@@ -715,10 +718,10 @@ def _interim(interim_dir: Path, name: str):
     return json.loads(p.read_text()) if p.exists() else None
 
 
-def county_population(acs5: dict, geoids) -> dict[str, float]:
+def county_population(counties_doc: dict, geoids) -> dict[str, float]:
     """Department populations from counties.json for the given geoids, where known."""
-    rows = acs5.get("rows", []) if acs5 else []
-    cols = acs5.get("columns", []) if acs5 else []
+    rows = counties_doc.get("rows", []) if counties_doc else []
+    cols = counties_doc.get("columns", []) if counties_doc else []
     try:
         gi, pi = cols.index("geoid"), cols.index("population")
     except ValueError:
@@ -736,17 +739,24 @@ def quality_density(r: Report, ctx: dict, lenses: dict, samples, county_pop: dic
         r.note("density conservation: no department populations (counties.json missing)")
         return None
     hex_area = 1.5 * math.sqrt(3) * ctx["grid"]["radius"] ** 2
+    published_share = ctx.get("france_share") or []
+    share_source = "_world samples" if samples else "committed france_share" if published_share else "assumed 1"
     total = 0.0
     for i, v in enumerate(dens["values"]):
         if v is None or ctx["owner"][i] < 0:
             continue
         s = samples[i] if samples and i < len(samples) else None
-        land = sum(1 for k in s if k >= 0) / len(s) if s else 1.0
+        if s:
+            land = sum(1 for k in s if k >= 0) / len(s)
+        elif i < len(published_share) and is_num(published_share[i]):
+            land = published_share[i]
+        else:
+            land = 1.0
         total += v * hex_area * land
     acs_total = sum(county_pop.values())
     ratio = total / acs_total
     msg = (f"density conservation: Σ density × land area = {total / 1e6:.1f}M vs department total {acs_total / 1e6:.1f}M "
-           f"({ratio:.2%}; tolerance ±{CONSERVATION_TOLERANCE:.1%}; land share {'from _world samples' if samples else 'assumed 1'})")
+           f"({ratio:.2%}; tolerance ±{CONSERVATION_TOLERANCE:.1%}; land share {share_source})")
     (r.ok if abs(ratio - 1) <= CONSERVATION_TOLERANCE else r.warn)(msg)
     return ratio
 
@@ -780,15 +790,6 @@ def quality_null_yields(r: Report, name: str, rows: list, published: dict | None
         r.note(f"{name} yields of 0 published as 0 by the source (small samples): {dict(confirmed)}")
     if zeros:
         r.warn(f"{name} yields exactly 0 (a stand-in for unknown?): {dict(zeros)}")
-
-
-def published_city_yields(acs1: dict | None) -> dict:
-    """Deprecated upstream helper; French city yields are built from INSEE/Eurostat and are not recomputed here."""
-    if not acs1:
-        return {}
-    from .build.yields import economy
-
-    return {code: economy(rec)["yields"] for code, rec in (acs1.get("data", {}).get("aav") or {}).items()}
 
 
 def quality_growth(r: Report, name: str, rows: list) -> None:
@@ -991,11 +992,11 @@ def run(web_dir: Path = WEB_DATA, interim_dir: Path = INTERIM, quiet: bool = Fal
         return r
     wi = _interim(interim_dir, "_world")
     world_interim = wi.get("data") if wi else None
-    acs5 = docs.get("counties.json")
+    counties_doc = docs.get("counties.json")
     gaz = None
     geoids = [c.get("geoid") for c in ctx["counties"] if isinstance(c, dict)]
     geoids = [g for g in geoids if isinstance(g, str)]
-    county_pop = county_population(acs5, geoids) if acs5 else {}
+    county_pop = county_population(counties_doc, geoids) if counties_doc else {}
     samples = world_interim.get("county_samples") if world_interim else None
     ratio = None
     if isinstance(docs["lenses.json"], dict):

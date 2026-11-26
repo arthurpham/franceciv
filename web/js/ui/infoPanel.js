@@ -89,7 +89,7 @@ export function growthSpan(o, n = null) {
   const yrs = Array.isArray(o.growth_years) && o.growth_years.length === 2 ? o.growth_years : null;
   const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1)}%`;
   const period = yrs ? `${yrs[0]}–${yrs[1]}` : "the last few years";
-  const us = Number.isFinite(n?.growth) ? ` (U.S. ${p(n.growth)})` : "";
+  const us = Number.isFinite(n?.growth) ? ` (France ${p(n.growth)})` : "";
   const tip = `Population change ${period}, INSEE populations: ${p(o.growth)}${us}`;
   const cls = o.growth >= 0 ? "good" : "bad";
   return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1)}%${

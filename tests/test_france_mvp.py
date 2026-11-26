@@ -22,7 +22,9 @@ def test_projection_round_trip():
 def test_committed_world_contract():
     w = web("world.json")
     n = w["grid"]["cols"] * w["grid"]["rows"]
-    assert len(w["owner"]) == len(w["county"]) == len(w["water"]) == n
+    assert len(w["owner"]) == len(w["county"]) == len(w["water"]) == len(w["france_share"]) == n
+    assert all(0 <= x <= 1 for x in w["france_share"])
+    assert any(0 < x < 1 for x in w["france_share"])
     assert len(w["states"]) == 13
     assert len(w["counties"]) == 96
     assert 9000 < n < 12000
@@ -38,6 +40,7 @@ def test_committed_france_core_contract():
     assert paris["population"] > 10_000_000
     assert paris["gdp"] > 500e9
     assert nation["nation"]["gdp"] > 2e12
+    assert all(c["homeownership"] is not None and c["second_homes"] is not None and c["vacancy"] is not None for c in cities)
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
     assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     assert len(lenses["lenses"][0]["values"]) == len(web("world.json")["owner"])

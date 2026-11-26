@@ -132,12 +132,12 @@ def build():
 
     states = {}
     for f in installations:
-        st = states.setdefault(f["state"], {"personnel": {"active": {"total": 0}, "guard_reserve": {"total": None}, "civilian": {"total": None}, "total": 0}, "spending": None, "installations": 0})
+        st = states.setdefault(f["state"], {"personnel": {"active": {"total": 0}, "total": 0}, "installations": 0})
         st["personnel"]["active"]["total"] += f["personnel"]
         st["personnel"]["total"] += f["personnel"]
         st["installations"] += 1
     if idf and "IDF" in {s["abbr"] for s in bounds["states"]}:
-        st = states.setdefault("IDF", {"personnel": {"active": {"total": 0}, "guard_reserve": {"total": None}, "civilian": {"total": None}, "total": 0}, "spending": None, "installations": 0})
+        st = states.setdefault("IDF", {"personnel": {"active": {"total": 0}, "total": 0}, "installations": 0})
         st["personnel"]["active"]["total"] += idf["personnel"]
         st["personnel"]["total"] += idf["personnel"]
         st["ile_de_france_aggregate"] = idf["personnel"]
@@ -160,10 +160,9 @@ def build():
         "ranges": [],
         "states": states,
         "national": {
-            "personnel": {"active": {"total": metro_stationed}, "guard_reserve": {"total": None}, "civilian": {"total": None}, "total": metro_stationed},
+            "personnel": {"active": {"total": metro_stationed}, "total": metro_stationed},
             "personnel_scope": "Sum of metropolitan detailed rows plus the separate aggregate Île-de-France row; stationed personnel in 2012, not current strength.",
             "published_total": mil.get("published_total"),
-            "spending": None, "veterans": None, "armed_forces_resident": None,
             "matched_bases": len(installations), "unmatched_bases": unmatched,
         },
         "cities": city_rows,

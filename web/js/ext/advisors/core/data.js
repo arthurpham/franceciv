@@ -15,7 +15,7 @@ const COUNTY_LENS = {
   macron_2022: "macron_2022", lepen_2022: "lepen_2022", abstention_2022: "abstention_2022", forest: "forest", crop: "farmland", developed: "developed",
 };
 // Department measures we can roll up to states and metros as population-weighted means.
-const ROLLUP = ["density", "income", "poverty", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "homeownership", "second_homes", "vacancy", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
+const ROLLUP = ["density", "income", "poverty", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
 // Rolled-up means that only approximate the area's true value (a median or an index whose denominator is not population).
 const APPROX = new Set(["income", "disasters"]);
 // No count/share pairs are currently rolled up from departments.
@@ -156,6 +156,9 @@ export function buildData(app) {
     gdp: o.gdp ?? o.yields?.gold ?? null,
     gdp_pc: ratio(o.gdp ?? o.yields?.gold, o.population),
     median_income: o.median_income ?? null,
+    homeownership: o.homeownership ?? null,
+    second_homes: o.second_homes ?? null,
+    vacancy: o.vacancy ?? null,
     median_rent: o.median_rent ?? null,
     home_value: o.home_value ?? null,
     affordability: ratio(o.home_value, o.median_income),
@@ -289,7 +292,7 @@ function groupOf(k) {
   if (["name", "state", "metro"].includes(k)) return "Name";
   if (["macron_2022", "lepen_2022", "abstention_2022"].includes(k)) return "Elections";
   if (["disasters", "flood_events", "drought_events"].includes(k)) return "Hazards";
-  if (["veterans", "veterans_pct", "armed_forces", "armed_forces_pct"].includes(k)) return "Military";
+  if (k === "mil_active" || k === "installations" || k === "encampment") return "Military";
   return "Other";
 }
 

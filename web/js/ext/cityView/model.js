@@ -105,7 +105,7 @@ function landOf(w, cell) {
 
 /**
  * Everything the City View shows for one city.
- * Per footprint hex: estimated residents (lens "density" value × hex area: an estimate, not a count) and the
+ * Per footprint hex: estimated residents (lens "density" value × hex area × French-territory share: an estimate, not a count) and the
  * dominant land-use group with its share of the hex's land.
  */
 export function buildModel(app, city) {
@@ -143,9 +143,10 @@ export function buildModel(app, city) {
   const area = HEX_AREA(grid.R);
   const tiles = footprint.map((cell) => {
     const d = density?.values?.[cell];
+    const franceShare = w.raw.france_share?.[cell] ?? 1;
     return {
       cell, x: grid.cx(cell), y: grid.cy(cell),
-      residents: Number.isFinite(d) ? d * area : null,
+      residents: Number.isFinite(d) ? d * area * franceShare : null,
       land: landOf(w, cell),
       isCity: cell === city.cell,
     };
