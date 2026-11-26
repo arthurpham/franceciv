@@ -534,7 +534,7 @@ About 25 kB.
              "totals_mtkm": {"within": null, "other_zones": …, "import": null, "export": null}}],
   "routes": [{"a": "ARA", "b": "PAC", "rank": 1, "volume_mtkm": 5348.1, "tons_k": 29358.0,
               "tmiles_m": 5348.1, "modes": {"truck": 0.7044, "rail": 0.1346, "water": 0.161},
-              "top_mode": "truck", "top_commodity": "all", "rail_suppressed": false, "dist_km": 209, "path": [5939, 5940, "…"]}]
+              "top_mode": "truck", "top_commodity": "all", "rail_suppressed": true, "dist_km": 209, "path": [5939, 5940, "…"]}]
 }
 ```
 
