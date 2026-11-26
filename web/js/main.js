@@ -52,11 +52,17 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData] = await Promise.all([
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
-    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true),
+    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true),
   ]);
+  if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
+  if (climate?.lenses?.length) {
+    if (climate.group && !lensFile.groups.some((g) => g.id === climate.group.id)) lensFile.groups.push(climate.group);
+    const known = new Set(lensFile.lenses.map((l) => l.id));
+    lensFile.lenses.push(...climate.lenses.filter((l) => !known.has(l.id)));
+  }
   const w = prepareWorld(world, cities, { resources });
   const state = {
     cities, lens: null, band: null, hoverCell: -1, selectedCity: null, selectedState: null, showResources: !!w.resources,

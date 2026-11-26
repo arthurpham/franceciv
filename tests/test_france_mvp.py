@@ -62,6 +62,22 @@ def test_committed_france_core_contract():
         assert all(abs(by_id[lid]["values"][i] - want) < 0.00005 for i in paris_cells), lid
 
 
+def test_climate_and_hydrography_contracts():
+    climate = web("climate.json")
+    assert climate["covered_cells"] > 2500
+    assert {l["id"] for l in climate["lenses"]} == {"temperature", "warming", "rainfall", "rainfall_change"}
+    n = len(web("world.json")["owner"])
+    for lens in climate["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(lens["values"]) == n
+        assert len(vals) > 2500
+    warming = next(l for l in climate["lenses"] if l["id"] == "warming")
+    assert sum(v for v in warming["values"] if v is not None) / len([v for v in warming["values"] if v is not None]) > 0.5
+    hydro = web("hydrography.json")
+    assert len(hydro["rivers"]) > 1000
+    assert any(r["name"] == "la Seine" for r in hydro["rivers"])
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
