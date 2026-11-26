@@ -111,3 +111,25 @@ def test_culture_wonders_contract():
     assert [w["metrics"]["visits"] for w in museums] == sorted((w["metrics"]["visits"] for w in museums), reverse=True)
     assert [w["metrics"]["students"] for w in universities] == sorted((w["metrics"]["students"] for w in universities), reverse=True)
     assert any(s["id"] == "fr_culture" for s in web("sources.json"))
+
+
+def test_museum_attendance_parser_deduplicates_sites(tmp_path, monkeypatch):
+    from pipeline.sources.fr_culture import FrenchCulture
+
+    (tmp_path / "museofile.csv").write_text(
+        "Identifiant|Nom_officiel|AUTNOM|Ville|Coordonnees|Domaine_thematique|URL\n"
+        "M1|Test museum||Paris|48.8,2.3|History|example.fr\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "museum-attendance.csv").write_text(
+        "IDPatrimostat;IDMuseofile;ferme;annee;total\n"
+        "S1;M1;NON;2024;100\n"
+        "S1;M1;NON;2024;120\n"
+        "S2;M1;NON;2024;30\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(FrenchCulture, "raw_dir", property(lambda self: tmp_path))
+    rows, year = FrenchCulture().museums()
+    assert year == 2024
+    assert rows[0]["visits"] == 150
+    assert rows[0]["sites"] == 2
