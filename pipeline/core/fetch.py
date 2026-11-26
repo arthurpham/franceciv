@@ -21,6 +21,7 @@ import hashlib
 import http.client
 import itertools
 import json
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -33,6 +34,7 @@ from .store import atomic_write_text
 
 USER_AGENT = "civ-usa-visualizer/0.1 (open data pipeline)"
 OFFLINE = False  # set by the CLI's --offline flag
+MANIFEST_LOCK = threading.Lock()
 RETRIES = 3  # total attempts per download
 BACKOFF = 2.0  # seconds before the 2nd attempt; doubles each time
 
@@ -135,15 +137,16 @@ def _download_with(
             time.sleep(wait)
     tmp.replace(dest)
 
-    manifest = read_manifest(source_id)
-    manifest[rel_path] = {
-        "url": url,
-        "sha256": sha,
-        "bytes": size,
-        "retrieved": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        **(extra or {}),
-    }
-    atomic_write_text(manifest_path(source_id), json.dumps(manifest, indent=2, sort_keys=True))
+    with MANIFEST_LOCK:
+        manifest = read_manifest(source_id)
+        manifest[rel_path] = {
+            "url": url,
+            "sha256": sha,
+            "bytes": size,
+            "retrieved": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            **(extra or {}),
+        }
+        atomic_write_text(manifest_path(source_id), json.dumps(manifest, indent=2, sort_keys=True))
     print(f"      {size / 1e6:.1f} MB")
     return dest
 

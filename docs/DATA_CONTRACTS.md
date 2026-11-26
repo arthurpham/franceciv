@@ -60,7 +60,7 @@ One object per metropolitan région, using the same economic shape as cities plu
 
 `{"version":1,"source":"...","groups":[...],"lenses":[...]}`. Each lens has `id`, `group`, `name`, `icon`, `unit`, `format`, `scale`, `higher_is`, `description`, and a per-cell `values` array of world-grid length. `pct` and `signed` values are 0..1 fractions. Values must be null off French land.
 
-Current lenses are French population/economy, housing, education, age, immigration, commuting, 2022 presidential election results, GASPAR hazard recognitions, and CORINE land-cover shares. Department-level density and employment lenses are area-weighted across hexes using `_world.county_samples`; this preserves departmental totals rather than duplicating population in border hexes.
+Current lenses cover French population/economy, housing, education, age, immigration, commuting, elections, hazard recognitions, climate, connectivity, healthcare, agriculture, tourism, electricity use, public services, protected nature, physical flood exposure, and CORINE land-cover shares. Department-level density and employment lenses are area-weighted across hexes using `_world.county_samples`; this preserves departmental totals rather than duplicating population in border hexes.
 
 ### counties.json
 
@@ -85,6 +85,10 @@ Airports and ports. Airport passengers come from Eurostat `avia_paoa`, coordinat
 ### trade.json
 
 SDES 2019 interregional freight flows. Routes are schematic arcs between regional anchors: tonne-kilometres and tonnes are real aggregate statistics, but paths are not physical truck/rail routes. Rail suppression is represented explicitly. Fields use metric units; obsolete `value_musd` must not be emitted.
+
+### flood.json
+
+Physical river-flood exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow WMS rasters. They are not parcel-level risk determinations, damage estimates, or a substitute for regulatory hazard maps.
 
 ### military.json
 
