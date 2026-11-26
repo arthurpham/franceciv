@@ -12,12 +12,13 @@ const rows = [
   ["abstention_share", "Abstention 2022", pct],
 ];
 
-export function initCommunePanel() {
+export function initCommunePanel(opts = {}) {
   const el = document.createElement("aside");
   el.id = "commune-panel";
   el.hidden = true;
   document.body.appendChild(el);
-  const close = () => { el.hidden = true; };
+  const notify = () => opts.onVisibility?.(!el.hidden);
+  const close = () => { if (el.hidden) return; el.hidden = true; notify(); };
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.hidden) close(); });
   el.addEventListener("click", (e) => { if (e.target.closest(".cp-close")) close(); });
   return {
@@ -30,6 +31,7 @@ export function initCommunePanel() {
         <div class="cp-grid">${facts}</div><h3>Natural disasters</h3><p>${hazard}</p>
         <p class="cp-note">INSEE comparateur 2023; official 2022 presidential second-round results; GASPAR recognitions 2000–2025. Election shares use valid votes; some recently merged communes lack a 2022 row. Hazards are administrative recognitions, not damage. Median income is suppressed in some small communes.</p>`;
       el.hidden = false;
+      notify();
     },
   };
 }

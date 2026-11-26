@@ -49,6 +49,7 @@ const PAN_LEAD = 0.6; // a pan that runs off the cache re-renders it shifted thi
 const DOUBLE_MS = 260;
 const SELECT_ANIM_MS = 33; // ~30 fps while a state's border highlight animates
 const isMobile = () => matchMedia("(max-width: 700px)").matches;
+let communeCardOpen = false;
 
 async function main() {
   const [world, cities, nation, lenses, sources, resources, statesData] = await Promise.all([
@@ -419,11 +420,11 @@ async function main() {
   function visibleArea(panelOpen = panelShown(), docks = true) {
     const d = docks === true ? dockState() : docks || NO_DOCKS;
     if (isMobile()) {
-      const sheet = panelOpen || d.open;
+      const sheet = panelOpen || d.open || communeCardOpen;
       return { x0: 0, y0: TOPBAR_H, x1: cam.w, y1: sheet ? cam.h * 0.45 : cam.h - 56 };
     }
     const dl = d.l, dr = d.r;
-    const x1 = cam.w - dr - (panelOpen && cam.w > 760 ? PANEL_W : 0);
+    const x1 = cam.w - dr - ((panelOpen || communeCardOpen) && cam.w > 760 ? PANEL_W : 0);
     return { x0: Math.min(dl, x1 - 100), y0: TOPBAR_H, x1, y1: cam.h };
   }
 
@@ -668,7 +669,7 @@ async function main() {
   if (searchIc) searchIc.innerHTML = icon("search", "🔍", { size: 14 });
   document.querySelector(".search-kbd")?.setAttribute("title", "Press / or Ctrl K to search");
 
-  const communePanel = initCommunePanel();
+  const communePanel = initCommunePanel({ onVisibility: (open) => { communeCardOpen = open; } });
   events.on("select", (sel) => { if (sel) communePanel.close(); });
   const search = initSearch({
     loadCommunes: () => loadData("communes"),
