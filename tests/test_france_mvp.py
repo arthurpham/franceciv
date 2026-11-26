@@ -34,7 +34,7 @@ def test_committed_france_core_contract():
     cities = web("cities.json")
     nation = web("nation.json")
     lenses = web("lenses.json")
-    assert len(cities) >= 150
+    assert len(cities) >= 650
     paris = next(c for c in cities if c["id"] == "001")
     assert paris["name"] == "Paris"
     assert paris["population"] > 10_000_000
