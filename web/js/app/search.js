@@ -157,7 +157,7 @@ export function initSearch(opts) {
         entries.push({ kind: "commune", commune, name: commune.name, n: norm(commune.name), full: norm(`${commune.name} ${commune.department}`),
           pop: commune.population || 0, popText: int(commune.population || 0), sub: `${commune.department} · commune`, label: commune.name });
       }
-      if (input.value.trim()) {
+      if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
         results = query(input.value);
         sel = results.length ? 0 : -1;
         render();
