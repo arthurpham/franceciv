@@ -16,7 +16,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - Gold is Eurostat NUTS-3 GDP in current euros.
   - The other yields are Eurostat employment by high-level NACE industry.
   - Because Eurostat data is département-level, AAV values are allocated in proportion to commune population and should be read as estimates.
-- Population, prosperity, housing, election and natural-hazard lenses, including income, poverty, unemployment, growth, homeownership, vacancy, 2022 presidential results and GASPAR catastrophe recognitions.
+- Population, prosperity, housing, election and natural-hazard lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results and GASPAR catastrophe recognitions.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, gas/coal, wind, solar and batteries.
 - Schematic road and rail links plus real airports and ports from Natural Earth, OurAirports and Eurostat traffic series.
 - UNESCO World Heritage wonders from the official UNESCO XML export.

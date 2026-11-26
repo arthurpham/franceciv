@@ -39,7 +39,7 @@ def test_committed_france_core_contract():
     assert paris["gdp"] > 500e9
     assert nation["nation"]["gdp"] > 2e12
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
-    assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed"}
+    assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     assert len(lenses["lenses"][0]["values"]) == len(web("world.json")["owner"])
 
 
