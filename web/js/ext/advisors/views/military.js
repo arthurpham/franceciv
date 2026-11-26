@@ -55,7 +55,7 @@ export async function mount(ctx) {
   });
   const table = createTable(iBody, {
     caption: "French defense bases", search: "Search bases, seats, regions", rank: true, maxHeight: 320,
-    searchText: (r) => `${r.name} ${r.seat_commune} ${r.state}`,
+    searchText: (r) => `${r.name} ${r.seat_commune} ${r.state} ${stLevel.byKey.get(r.state)?.name || ""}`,
     columns: [
       { key: "name", label: "Base", align: "l", width: "minmax(0,1.8fr)", value: (r) => r.name, html: (r) => `<i class="dot" style="background:${COLOR}"></i>${esc(r.name)}${r.joint ? ` <span class="sub">joint</span>` : ""}`, tip: (r) => `${r.name}: support-group seat ${r.seat_commune}; geocoding method: ${r.match}` },
       { key: "personnel", label: "Personnel", value: (r) => r.personnel, text: (r) => count3(r.personnel), bar: { max: Math.max(...insts.map((r) => r.personnel || 0), 1), color: "rgba(135,150,171,.35)" }, title: "Stationed personnel in 2012" },
