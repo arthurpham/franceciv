@@ -1100,6 +1100,7 @@ async function main() {
     if (pedia.isOpen) return pedia.close();
     if (modes.escape()) return; // the active mode (e.g. the City view) goes before the panels
     if (events.emit("escape", {})) return;
+    if (communePanel.isOpen) return communePanel.close();
     if (state.selectedCity || state.selectedState != null) return clearSelection();
   }
 

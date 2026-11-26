@@ -19,10 +19,10 @@ export function initCommunePanel(opts = {}) {
   document.body.appendChild(el);
   const notify = () => opts.onVisibility?.(!el.hidden);
   const close = () => { if (el.hidden) return; el.hidden = true; notify(); };
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !el.hidden) close(); });
   el.addEventListener("click", (e) => { if (e.target.closest(".cp-close")) close(); });
   return {
     close,
+    get isOpen() { return !el.hidden; },
     open(c) {
       const facts = rows.map(([k, label, fmt]) => c[k] == null ? "" : `<div class="cp-row"><span>${label}</span><b>${fmt(c[k])}</b></div>`).join("");
       const hazard = c.hazard_events ? `${int(c.hazard_events)} recognitions since 2000 · mostly ${esc(c.hazard_dominant || "other")}` : "No catastrophe-naturelle recognition since 2000";
