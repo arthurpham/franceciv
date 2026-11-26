@@ -46,7 +46,7 @@ export function mount(ctx) {
   ]));
 
   // --- composition ----------------------------------------------------------------------------------------------
-  const cBody = section(el, { title: "What covers the country", kicker: "Lower 48", note: "Share of the land in each cover type (NLCD 2021, averaged over every hex). Hover a type to light up the hexes where it is the largest cover; click to keep them lit." });
+  const cBody = section(el, { title: "What covers the country", kicker: "Metropolitan France", note: "Share of the land in each cover type (CORINE Land Cover 2018, averaged over every hex). Hover a type to light up the hexes where it is the largest cover; click to keep them lit." });
   let pinned = null;
   const parts = [...LAND_KEYS.map((k) => ({ key: k, label: LAND_LABEL[k], value: share[k], color: LAND_COLOR[k], text: pct(share[k]) })), { key: "other", label: "Other (barren rock, sand, ice)", value: other, color: "#6c6358", text: pct(other) }].sort((a, b) => (a.key === "other") - (b.key === "other") || b.value - a.value);
   const domHighlight = (k, dim = true) => (dominant.has(k) ? { cells: new Set(dominant.get(k)), dimOthers: dim, color: LAND_COLOR[k] } : null);
@@ -81,8 +81,8 @@ export function mount(ctx) {
     if (l) app.setLens(l);
   });
 
-  // --- per state ------------------------------------------------------------------------------------------------
-  const sBody = section(el, { title: "The states' make-up", note: "Each state's land by cover type. Sort by any cover; hover a state to outline it, click to open it." });
+  // --- per region ------------------------------------------------------------------------------------------------
+  const sBody = section(el, { title: "The regions' make-up", note: "Each region's land by cover type. Sort by any cover; hover a region to outline it, click to open it." });
   const stRows = states.rows.filter((r) => LAND_KEYS.some((k) => fin(r.v[`land_${k}`])));
   const comp = (r) => `<span class="adv-minibar">${LAND_KEYS.map((k) => {
     const v = r.v[`land_${k}`];
@@ -91,7 +91,7 @@ export function mount(ctx) {
   const domOf = (r) => LAND_KEYS.reduce((b, k) => ((r.v[`land_${k}`] ?? -1) > (r.v[`land_${b}`] ?? -1) ? k : b), LAND_KEYS[0]);
   let sortKey = "forest";
   const colsFor = (k) => [
-    { key: "name", label: "State", align: "l", width: "minmax(0,1.1fr)", value: (r) => r.name, text: (r) => r.name },
+    { key: "name", label: "Region", align: "l", width: "minmax(0,1.1fr)", value: (r) => r.name, text: (r) => r.name },
     { key: "comp", label: "Land", align: "l", width: "minmax(0,1.6fr)", value: (r) => r.v[`land_${k}`], html: comp, title: `Sort by ${LAND_LABEL[k].toLowerCase()}` },
     { key: "share", label: LAND_LABEL[k], value: (r) => r.v[`land_${k}`], html: (r) => `<span class="dot" style="background:${LAND_COLOR[k]}"></span>${pct(r.v[`land_${k}`], 0)}` },
     { key: "dom", label: "Largest", align: "l", width: "minmax(0,.9fr)", value: (r) => LAND_LABEL[domOf(r)], text: (r) => LAND_LABEL[domOf(r)] },
@@ -110,7 +110,7 @@ export function mount(ctx) {
   const gridHost = document.createElement("div");
   sBody.append(tableHost, gridHost);
   const table = createTable(tableHost, {
-    caption: "Land cover by state", rank: true, maxHeight: 320, rows: stRows, columns: colsFor(sortKey), sort: { key: "share", dir: "desc" },
+    caption: "Land cover by region", rank: true, maxHeight: 320, rows: stRows, columns: colsFor(sortKey), sort: { key: "share", dir: "desc" },
     onHover: (r) => link.hover(r ? rowsHighlight(states, [r]) : null),
     onClick: (r) => states.focus(r),
   });
@@ -142,7 +142,7 @@ export function mount(ctx) {
   const fBody = section(el, { title: "Who works the land", note: `${esc(food?.description || "Workers in agriculture, forestry, fishing & hunting.")} Ranked by share of the employed.` });
   const fHost = document.createElement("div");
   let fLevel = "states";
-  segmented(fBody, { label: "Areas", value: fLevel, options: [{ value: "states", label: "States" }, { value: "metros", label: "Metros" }], onChange: (v) => { fLevel = v; drawFood(); } });
+  segmented(fBody, { label: "Areas", value: fLevel, options: [{ value: "states", label: "Regions" }, { value: "metros", label: "Urban areas" }], onChange: (v) => { fLevel = v; drawFood(); } });
   fBody.appendChild(fHost);
   function drawFood() {
     fHost.innerHTML = "";
@@ -154,14 +154,14 @@ export function mount(ctx) {
       onHover: (r) => link.hover(r ? rowsHighlight(lv, [r.row]) : null),
       onClick: (r) => lv.focus(r.row),
     });
-    if (fLevel === "metros") fHost.insertAdjacentHTML("beforeend", `<p class="adv-note">Metros of 100K+ people.</p>`);
+    if (fLevel === "metros") fHost.insertAdjacentHTML("beforeend", `<p class="adv-note">Urban areas of 100K+ people.</p>`);
   }
   drawFood();
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["nlcd", "acs_1yr"], [
-    "Land cover is NLCD 2021 resampled to about 2 km, so small features (a river valley's farms, a small town) blur into their surroundings.",
-    "Grassland includes lawns and parks (NLCD developed open space); built-up counts only low to high-intensity development.",
-    "Farm workers are counted where they live (ACS) and include forestry and fishing.",
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_corine", "fr_insee_stats"], [
+    "Land cover is CORINE 2018 resampled to hexes, so small features blur into their surroundings.",
+    "CORINE classes are grouped into the map's broad cover types; vineyards, orchards and other agricultural detail are simplified.",
+    "Farm workers are workplace jobs in agriculture, forestry and fishing from the INSEE/Eurostat industry tables.",
   ]));
 
   return {

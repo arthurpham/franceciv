@@ -9,19 +9,17 @@ import { fin, ratio } from "./util.js";
 import { frameBox } from "./frame.js";
 
 const COUNTY_LENS = {
-  density: "density", income: "income", home_value: "home", poverty: "poverty", median_age: "age", foreign_born: "foreign_born",
-  bachelors: "bachelors", broadband: "broadband", commute: "commute", homeownership: "homeownership", uninsured: "uninsured",
-  forest: "forest", developed: "developed",
-  // county lenses: Religion Census, CDC PLACES wellbeing (id amenities), FEMA disasters, ACS veterans
-  faith: "faith", faith_tradition: "faith_tradition", amenities: "amenities", disasters: "disasters", veterans_pct: "veterans",
+  density: "density", income: "income", poverty: "poverty", homeownership: "homeownership", second_homes: "second_homes", vacancy: "vacancy",
+  unemployment: "unemployment", higher_education: "higher_education", seniors: "seniors", immigration: "immigration",
+  public_transit: "public_transit", car_commuting: "car_commuting", disasters: "disasters", flood_events: "flood_events", drought_events: "drought_events",
+  macron_2022: "macron_2022", lepen_2022: "lepen_2022", abstention_2022: "abstention_2022", forest: "forest", crop: "farmland", developed: "developed",
 };
 // County measures we can roll up to states and metros as population-weighted means.
-const ROLLUP = ["density", "poverty", "median_age", "foreign_born", "bachelors", "broadband", "commute", "homeownership", "uninsured", "faith", "amenities"];
-// Rolled-up means that only approximate the area's true value (a median, a mean of rates or of an index).
-const APPROX = new Set(["median_age", "commute", "faith", "amenities"]);
-// County counts summed to states and metros, with their share recomputed from the implied denominators
-// (count ÷ share = the county's base population), so the area's share is exact, not a mean of county shares.
-const SUMS = [["veterans", "veterans_pct"], ["armed_forces", "armed_forces_pct"]];
+const ROLLUP = ["density", "income", "poverty", "higher_education", "seniors", "immigration", "public_transit", "car_commuting", "homeownership", "second_homes", "vacancy", "disasters", "flood_events", "drought_events", "macron_2022", "lepen_2022", "abstention_2022"];
+// Rolled-up means that only approximate the area's true value (a median or an index whose denominator is not population).
+const APPROX = new Set(["income", "disasters"]);
+// No count/share pairs are currently rolled up from counties.
+const SUMS = [];
 const LAND_KEYS = ["forest", "crop", "pasture", "grass", "shrub", "wetland", "developed"];
 export const LAND_LABEL = {
   forest: "Forest", crop: "Cropland", pasture: "Pasture & hay", grass: "Grassland", shrub: "Scrub & desert", wetland: "Wetland", developed: "Built-up",
@@ -60,23 +58,23 @@ export function buildData(app) {
 
   const srcTitle = new Map(sources.map((s) => [s.id, s]));
   const nat = nation.nation || {};
-  const vintage = nation.vintage || "ACS 1-year";
-  const countyVintage = counties?.vintage || "ACS 5-year";
+  const vintage = nation.vintage || "INSEE census";
+  const countyVintage = counties?.vintage || "INSEE / Eurostat";
 
   // --- fields ---------------------------------------------------------------------------------------------------
   const F = (key, label, format, o = {}) => ({ key, label, format, unit: o.unit || null, higher_is: o.higher_is || "neutral", source: o.source || "", description: o.description || "", lens: o.lens || null, group: o.group || "Economy", derived: !!o.derived });
   const econFields = (src) => [
-    F("population", "Population", "int", { unit: "people", source: src, group: "People", description: `Residents (${vintage}, B01003).`, lens: "density" }),
-    F("growth", "Growth", "signed", { unit: "population change", higher_is: "neutral", source: "pep_population", group: "People", description: `Population change ${(nat.growth_years || []).join("–")} (Census population estimates, same borders both years).` }),
-    F("gdp", "GDP", "money", { unit: "$ per year", source: "bea_gdp", description: `${nation.gdp_vintage || "BEA"}: GDP in current dollars, counted where the work is done.` }),
-    F("gdp_pc", "GDP per person", "usd", { unit: "$ per resident", higher_is: "good", source: "bea_gdp", description: "GDP ÷ residents (BEA GDP year ÷ ACS population year)." }),
-    F("median_income", "Income", "usd", { unit: "median household income", higher_is: "good", source: src, group: "Prosperity", description: `Median household income (${vintage}).`, lens: "income" }),
+    F("population", "Population", "int", { unit: "people", source: src, group: "People", description: `Residents (${vintage}).`, lens: "density" }),
+    F("growth", "Growth", "signed", { unit: "population change", higher_is: "neutral", source: "fr_insee_stats", group: "People", description: `Population change ${(nat.growth_years || []).join("–")} in INSEE comparateur-de-territoires populations, on current borders.` }),
+    F("gdp", "GDP", "money", { unit: "euros per year", source: "fr_eurostat", description: `${nation.gdp_vintage || "Eurostat regional accounts"}: GDP in current euros, counted where the work is done.` }),
+    F("gdp_pc", "GDP per person", "usd", { unit: "euros per resident", higher_is: "good", source: "fr_eurostat", description: "GDP ÷ residents. Regional GDP and population can come from different statistical years." }),
+    F("median_income", "Standard of living", "eur", { unit: "median standard of living", higher_is: "good", source: src, group: "Prosperity", description: `Median standard of living (${vintage}).`, lens: "income" }),
     F("median_rent", "Rent", "usd", { unit: "median gross rent / month", source: src, group: "Prosperity", description: `Median gross rent per month (${vintage}).` }),
     F("home_value", "Home value", "usd", { unit: "median home value", source: src, group: "Prosperity", description: `Median value of owner-occupied homes (${vintage}).`, lens: "home" }),
     F("affordability", "Home value ÷ income", "ratio", { unit: "years of income", higher_is: "bad", group: "Prosperity", description: "Median home value ÷ median household income: how many years of income a typical home costs.", derived: true }),
     F("rent_burden", "Rent ÷ income", "pct", { unit: "median rent × 12 ÷ median income", higher_is: "bad", source: src, group: "Prosperity", description: "Median rent × 12 ÷ median household income (a ratio of medians, not the share of renters who are burdened)." }),
-    F("unemployment", "Unemployment", "pct", { unit: "unemployed ÷ labour force", higher_is: "bad", source: src, group: "Prosperity", description: `Unemployed ÷ civilian labour force (${vintage}, B23025).` }),
-    F("employed", "Employed", "int", { unit: "employed residents", source: src, description: `Employed residents, where they live (${vintage}).` }),
+    F("unemployment", "Unemployment", "pct", { unit: "unemployed ÷ labour force", higher_is: "bad", source: src, group: "Prosperity", description: `Unemployed ÷ labour force (${vintage}).` }),
+    F("employed", "Workplace employment", "int", { unit: "jobs", source: src, description: `Jobs counted at employers/workplaces in the area (${vintage}).` }),
     ...(nation.yields || []).filter((y) => y.unit !== "usd").map((y) => F(`y_${y.key}`, `${y.label} workers`, "int", { unit: "workers", source: src, group: "Yields", description: y.description })),
   ];
   const rollupFields = () => counties ? [...ROLLUP.map((k) => {
@@ -84,9 +82,9 @@ export function buildData(app) {
     if (!f) return null;
     const approx = APPROX.has(k);
     return F(k, f.label + (approx ? " ≈" : ""), f.format, {
-      unit: f.unit, higher_is: f.higher_is, source: f.source || "acs_5yr", group: groupOf(k), lens: COUNTY_LENS[k],
+      unit: f.unit, higher_is: f.higher_is, source: f.source || "fr_insee_stats", group: groupOf(k), lens: COUNTY_LENS[k],
       description: k === "density" ? `Residents ÷ land area, summed over member counties (${countyVintage}).`
-        : `${f.description} Rolled up from counties as a population-weighted mean${approx ? " (an approximation: not the area's own figure)" : ""}${f.source === "acs_5yr" || !f.source ? ` (${countyVintage})` : ""}.`,
+        : `${f.description} Rolled up from counties as a population-weighted mean${approx ? " (an approximation: not the area's own figure)" : ""}${!f.source ? ` (${countyVintage})` : ""}.`,
       derived: true,
     });
   }), ...SUMS.flatMap(([n, p]) => {
@@ -186,12 +184,12 @@ export function buildData(app) {
       energy_mw: s.energy ? s.energy.total : null,
     },
   }));
-  const landFields = LAND_KEYS.map((k) => F(`land_${k}`, LAND_LABEL[k], "pct", { unit: "share of land", source: "nlcd", group: "Land", description: `Share of the land in ${LAND_LABEL[k].toLowerCase()} (NLCD, mean over the area's hexes).`, lens: k === "forest" ? "forest" : k === "developed" ? "developed" : null }));
-  const energyField = F("energy_mw", "Mapped power", "mw", { unit: "MW of mapped sites", source: "eia_860m", group: "Energy", description: "Capacity of the power sites mapped as resources (each type above its size threshold): not the total generating capacity." });
+  const landFields = LAND_KEYS.map((k) => F(`land_${k}`, LAND_LABEL[k], "pct", { unit: "share of land", source: "fr_corine", group: "Land", description: `Share of the land in ${LAND_LABEL[k].toLowerCase()} (CORINE Land Cover, mean over the area's hexes).`, lens: k === "forest" ? "forest" : k === "developed" ? "developed" : null }));
+  const energyField = F("energy_mw", "Mapped power", "mw", { unit: "MW of mapped sites", source: "fr_energy", group: "Energy", description: "Capacity of the power sites mapped as resources (each type above its size threshold): not total generating capacity." });
   const states_ = makeLevel({
-    id: "states", label: "States", noun: "state",
+    id: "states", label: "Regions", noun: "region",
     rows: stateRows,
-    fields: [F("name", "State", "text", { group: "Name" }), ...econFields("acs_1yr"), ...rollupFields(), F("land_km2", "Land area", "km2", { unit: "km²", source: "census_gazetteer", group: "Land", derived: true }), ...landFields, energyField],
+    fields: [F("name", "Region", "text", { group: "Name" }), ...econFields("fr_insee_stats"), ...rollupFields(), F("land_km2", "Land area", "km2", { unit: "km²", source: "fr_insee_stats", group: "Land", derived: true }), ...landFields, energyField],
     highlight: (rows) => ({ states: new Set(rows.map((r) => r.ref)) }),
     rowAtCell: (cell, byKey) => (owner[cell] >= 0 ? stateRows[owner[cell]] || null : null),
     focus: (row) => app.selectState(row.ref, { fly: true }),
@@ -202,15 +200,15 @@ export function buildData(app) {
   const metroRows = cities.map((c) => ({
     key: c.id, name: c.name, sub: (c.states || []).join("–"), level: "metros", ref: c,
     v: {
-      name: c.name, states: (c.states || []).join("–"), kind: c.metro === false ? "Micro" : "Metro",
+      name: c.name, states: (c.states || []).join("–"), kind: "AAV",
       ...econValues(c), ...rolled(roll.metros, c.id), energy_mw: mwByMetro.get(c.id) ?? 0,
     },
   }));
   const metroByCity = new Map(metroRows.map((r) => [r.ref, r]));
   const metros = makeLevel({
-    id: "metros", label: "Metros", noun: "metro",
+    id: "metros", label: "Urban areas", noun: "urban area",
     rows: metroRows,
-    fields: [F("name", "Metro", "text", { group: "Name" }), F("states", "States", "text", { group: "Name" }), F("kind", "Type", "text", { group: "Name", description: "Metropolitan (50,000+ urban core) or micropolitan area (OMB)." }), ...econFields("acs_1yr"), ...rollupFields(), F("land_km2", "Land area", "km2", { unit: "km²", source: "census_gazetteer", group: "Land", derived: true }), energyField],
+    fields: [F("name", "Urban area", "text", { group: "Name" }), F("states", "Regions", "text", { group: "Name" }), F("kind", "Type", "text", { group: "Name", description: "Aire d'attraction des villes (INSEE 2020): a functional urban area, not an administrative metro government." }), ...econFields("fr_insee_stats"), ...rollupFields(), F("land_km2", "Land area", "km2", { unit: "km²", source: "fr_insee_stats", group: "Land", derived: true }), energyField],
     highlight: (rows, o = {}) => {
       const cells = new Set();
       for (const r of rows) for (const c of r.ref.footprint || [r.ref.cell]) cells.add(c);
@@ -226,13 +224,10 @@ export function buildData(app) {
   if (counties) {
     const cols = counties.columns;
     const cityName = new Map(cities.map((c) => [c.id, c.name]));
-    // counties.json carries the faith_tradition category id; tables and filters read better with its name.
-    const tradName = new Map((app.lensById?.get("faith_tradition")?.categories || []).map((c) => [c.id, c.name]));
     const countyRows = cRows.map(({ r, i }) => {
       const v = {};
       cols.forEach((k, j) => (v[k] = r[j]));
       v.metro = v.cbsa ? cityName.get(v.cbsa) || null : null;
-      if (v.faith_tradition != null) v.faith_tradition = tradName.get(v.faith_tradition) || v.faith_tradition;
       return { key: v.geoid, name: shortCounty(v.name), full: v.name, sub: v.state, level: "counties", ref: i, v };
     });
     // counties.json rows follow world.json counties; map by geoid anyway in case they ever diverge.
@@ -242,11 +237,11 @@ export function buildData(app) {
     // Counties smaller than a hex own no cell: counties.json `cell` (the hex nearest the county's centre) stands in.
     const cellsOfRow = (r) => countyCells.get(r.ref) || (Number.isInteger(r.v.cell) ? [r.v.cell] : []);
     const fields = counties.fields.filter((f) => f.key !== "cbsa" && f.key !== "geoid" && f.key !== "cell").map((f) => ({
-      ...F(f.key, f.key === "name" ? "County" : f.label, f.format, { unit: f.unit, higher_is: f.higher_is, source: f.source, description: f.description, lens: COUNTY_LENS[f.key], group: groupOf(f.key) }),
+      ...F(f.key, f.key === "name" ? "Department" : f.label, f.format, { unit: f.unit, higher_is: f.higher_is, source: f.source, description: f.description, lens: COUNTY_LENS[f.key], group: groupOf(f.key) }),
     }));
-    fields.splice(2, 0, F("metro", "Metro", "text", { group: "Name", description: "The metro or micro area the county belongs to (OMB), if it is on the map." }));
+    fields.splice(2, 0, F("metro", "Main urban area", "text", { group: "Name", description: "The largest aire d'attraction des villes touching the department, if it is on the map." }));
     counties_ = makeLevel({
-      id: "counties", label: "Counties", noun: "county",
+      id: "counties", label: "Departments", noun: "department",
       rows: countyRows, fields,
       highlight: (rows) => {
         const cells = new Set();
@@ -281,21 +276,20 @@ export function buildData(app) {
   };
 }
 
-/** "Los Angeles County" → "Los Angeles Co.", "Orleans Parish" → "Orleans Par." (tables and chart labels). */
+/** French department names are already compact; keep the hook for table labels. */
 export function shortCounty(name) {
-  return String(name || "").replace(/ County$/, " Co.").replace(/ Parish$/, " Par.");
+  return String(name || "");
 }
 
 function groupOf(k) {
-  if (["population", "density", "median_age", "foreign_born", "growth"].includes(k)) return "People";
-  if (["income", "home_value", "poverty", "homeownership", "uninsured"].includes(k)) return "Prosperity";
-  if (["bachelors", "broadband"].includes(k)) return "Knowledge";
-  if (["commute"].includes(k)) return "Daily life";
+  if (["population", "density", "seniors", "immigration", "growth"].includes(k)) return "People";
+  if (["income", "poverty", "homeownership", "second_homes", "vacancy", "unemployment"].includes(k)) return "Prosperity";
+  if (["higher_education"].includes(k)) return "Knowledge";
+  if (["public_transit", "car_commuting"].includes(k)) return "Daily life";
   if (["forest", "crop", "pasture", "developed", "land_km2"].includes(k)) return "Land";
   if (["name", "state", "metro"].includes(k)) return "Name";
-  if (["faith", "faith_tradition"].includes(k)) return "Faith";
-  if (["amenities", "mhlth", "loneliness"].includes(k)) return "Wellbeing";
-  if (["disasters"].includes(k)) return "Hazards";
+  if (["macron_2022", "lepen_2022", "abstention_2022"].includes(k)) return "Elections";
+  if (["disasters", "flood_events", "drought_events"].includes(k)) return "Hazards";
   if (["veterans", "veterans_pct", "armed_forces", "armed_forces_pct"].includes(k)) return "Military";
   return "Other";
 }
@@ -383,7 +377,7 @@ function extendDistricts(data, d) {
     F4("city_type", "City type", "text", { source: "fr_insee_stats", group: "Districts", description: `The city's badge: named after its strongest exceptionally concentrated district when one passes the badge override, otherwise its strongest district; a speciality nickname is used when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
     F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the metro qualifies for, strongest first. ${d.rule?.text || ""}` }),
     F4("n_districts", "Number of districts", "int", { source: "fr_insee_stats", group: "Districts", description: "How many districts pass the rule (up to 5)." }),
-    F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}). Counted where the employer is, unlike the ACS figures (where people live).` }),
+    F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}). Counted where the employer is, not where workers live.` }),
     F4("qcew_pay", "Average pay", "usd", { unit: "$ per job per year", source: "fr_insee_stats", group: "Districts", description: `Average annual pay per covered job (${vint}).` }),
     F4("top_industry", "Most specialised industry", "text", { source: "fr_insee_stats", group: "Districts", description: "The detailed industry (of those this project fetches) with the highest location quotient and at least 1,000 jobs." }),
     F4("top_lq", "Its location quotient", "lq", { unit: "× the metropolitan-France share of jobs", source: "fr_insee_stats", group: "Districts", description: "Location quotient of the most specialised industry: its share of the metro's jobs ÷ its share of metropolitan-France jobs." }),

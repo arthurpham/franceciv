@@ -24,14 +24,13 @@ export function initPedia(data) {
   const pages = {
     "About this map": () => `
       ${h2("pedia", "📖", "About this map")}
-      <p>This is the real United States, drawn like a strategy game. Nothing is invented: every tile, city and
+      <p>This is real metropolitan France, drawn like a strategy game. Nothing is invented: every tile, city and
       number comes from public data, listed under <i>Sources</i>.</p>
       <h4>How it's built</h4>
-      <p>The lower 48 states are projected (Albers equal-area) and cut into ${data.world.grid.cols}×${data.world.grid.rows}
-      hexes, each ${data.world.grid.radius * 2} km corner to corner. Each hex belongs to the state and county under its centre.
+      <p>Metropolitan France and Corsica are projected (Albers equal-area) and cut into ${data.world.grid.cols}×${data.world.grid.rows}
+      hexes, each ${data.world.grid.radius * 2} km corner to corner. Each hex belongs to the region and department under its centre.
       Terrain comes from elevation samples inside each hex.</p>
-      <p><b>Cities</b> are the metropolitan and micropolitan areas published in the ACS 1-year estimates (the Census Bureau
-      includes areas of roughly 65,000+ people, so a few now fall slightly below that), placed at their principal city. Their numbers cover the whole metro area, not just the city proper.</p>
+      <p><b>Cities</b> are INSEE aires d'attraction des villes (functional urban areas), placed at their principal city. Their numbers cover the whole urban area, not just the city proper.</p>
       <h4>Controls</h4>
       <p>Drag or arrow keys / WASD to pan · scroll, +/– or double-click to zoom · click a city or a state to open it ·
       / or ⌘K to search · L to cycle lenses · R to show or hide resources · ? for all shortcuts · Esc to close.</p>
@@ -39,22 +38,18 @@ export function initPedia(data) {
       or to download a picture.</p>`,
     Yields: () => `
       ${h2("y-production", "⚙️", "Yields")}
-      <p>Civilization's yields mapped onto real measures. Job-based yields count <i>residents</i> employed in an industry
-      (where workers live, not where they work). <b>Gold is GDP</b>: output per year, counted where the work is done.</p>
+      <p>Civilization's yields mapped onto real measures. Job-based yields count workplace employment by industry (where jobs are located). <b>Gold is GDP</b>: output per year, counted where the work is done.</p>
       <table>${data.nation.yields.map((y) => `<tr><td class="ic" style="color:${esc(y.color)}">${glyph(y, 26)}</td><td><b style="color:${esc(y.color)}">${esc(y.label)}${y.key === "gold" ? " (GDP)" : ""}</b><br>${esc(y.description)}</td></tr>`).join("")}</table>
       <h4>Amenities &amp; housing</h4>
-      <p>Unemployment = unemployed ÷ civilian labour force (B23025). Rent ÷ income = median gross rent × 12 ÷ median household
-      income: a rough affordability signal, not a household-level burden rate.</p>`,
-    States: () => `
-      ${h2("terrain", "🗺️", "States")}
-      <p>Click any land hex without a city to open its state. A state's numbers are the state totals and medians from the
+      <p>Unemployment = unemployed ÷ labour force in INSEE census tables. French public rent and home-value medians comparable to the US version are not used.</p>`,
+    Regions: () => `
+      ${h2("terrain", "🗺️", "Regions")}
+      <p>Click any land hex without a city to open its region. A region's numbers are regional aggregates from the
       same tables as the cities (${esc(data.nation.vintage)}${data.nation.gdp_vintage ? `; GDP from ${esc(data.nation.gdp_vintage)}` : ""}),
       not the sum of its cities, so rural areas count too.</p>
-      <p><b>Ranks</b> ("#3 of 49") compare the 48 contiguous states and the District of Columbia; 1 is the largest. Alaska,
-      Hawaii and the territories are not mapped yet, so they are not ranked.</p>
-      <p>Metro areas that cross state lines (New York–Newark, Kansas City, Philadelphia…) are listed under every state they
-      touch, with their whole-metro numbers.</p>
-      ${data.states ? "" : `<p class="muted">This data build has no states.json, so state panels show names and cities only.</p>`}`,
+      <p><b>Ranks</b> compare the 13 metropolitan French regions; 1 is the largest. Overseas France is not mapped.</p>
+      <p>Urban areas that cross regional boundaries are listed under every region they touch, with their whole-area numbers.</p>
+      ${data.states ? "" : `<p class="muted">This data build has no states.json, so region panels show names and cities only.</p>`}`,
     Terrain: () => {
       const t = data.w?.tables || resolveTables(data.world.tables);
       const hasCover = Array.isArray(data.world.cover);

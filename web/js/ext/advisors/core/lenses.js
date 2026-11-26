@@ -44,18 +44,18 @@ export function growthLens(data, by = "metros") {
       vals = data.levels.metros.rows.map((r) => r.v.growth);
     }
     return {
-      id: `adv-growth-${by}`, group: "people", name: by === "states" ? "Growth by state" : "Growth by metro",
+      id: `adv-growth-${by}`, group: "people", name: by === "states" ? "Growth by region" : "Growth by urban area",
       icon: "l-people", emoji: "📈", unit: "population change", format: "pct", scale: "linear",
-      domain: symDomain(vals), ramp: GROWTH_RAMP, higher_is: "neutral", source: "pep_population",
+      domain: symDomain(vals), ramp: GROWTH_RAMP, higher_is: "neutral", source: "fr_insee_stats",
       description: by === "states"
-        ? `Population change ${yrs} by state (Census population estimates).`
-        : `Population change ${yrs} by metro and micro area (Census population estimates). Grey hexes lie outside them.`,
+        ? `Population change ${yrs} by region (INSEE populations).`
+        : `Population change ${yrs} by aire d'attraction des villes (INSEE populations). Grey hexes lie outside them.`,
       values,
     };
   });
 }
 
-/** Science-yield workers as a share of employed residents, per metro / micro area (other hexes grey). */
+/** Science-yield workers as a share of workplace employment, per urban area (other hexes grey). */
 export function scienceLens(data) {
   return memo(data, "science", () => {
     const { app, cellMetro } = data;
@@ -66,9 +66,9 @@ export function scienceLens(data) {
     const sci = app.data.nation?.yields?.find((y) => y.key === "science");
     return {
       id: "adv-science-share", group: "knowledge", name: "Science jobs",
-      icon: "l-degrees", emoji: "🔬", unit: "of employed residents", format: "pct", scale: "linear",
-      domain: robust(data.levels.metros.rows.map((r) => share(r.ref))), ramp: SCIENCE_RAMP, higher_is: "neutral", source: "acs_1yr",
-      description: `${sci?.label || "Science"} workers as a share of employed residents, by metro and micro area (counted where they live). Grey hexes lie outside them.`,
+      icon: "l-degrees", emoji: "🔬", unit: "of workplace employment", format: "pct", scale: "linear",
+      domain: robust(data.levels.metros.rows.map((r) => share(r.ref))), ramp: SCIENCE_RAMP, higher_is: "neutral", source: "fr_insee_stats",
+      description: `${sci?.label || "Science"} workers as a share of workplace employment, by aire d'attraction des villes. Grey hexes lie outside them.`,
       values,
     };
   });

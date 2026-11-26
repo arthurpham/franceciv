@@ -18,11 +18,11 @@ export const ADVISORS = [
   { id: "economy", name: "Economy", role: "Treasurer", color: "#c9a43a", dark: "#3a2c08", blurb: "Who makes what: GDP by industry and the metros that lead it.", load: () => import("./views/economy.js") },
   { id: "people", name: "People", role: "Keeper of the Census", color: "#c46a4f", dark: "#3a140c", blurb: "Where people live, where they are moving, how old and how new.", load: () => import("./views/people.js") },
   { id: "prosperity", name: "Prosperity & Housing", role: "Steward of the Hearth", color: "#3f9c82", dark: "#082a22", blurb: "Incomes, home prices, rents and who is being left behind.", load: () => import("./views/prosperity.js") },
-  { id: "knowledge", name: "Knowledge", role: "Royal Scholar", color: "#4a86d6", dark: "#0a1c3a", blurb: "Degrees, broadband and the science workforce.", load: () => import("./views/knowledge.js") },
+  { id: "knowledge", name: "Knowledge", role: "Royal Scholar", color: "#4a86d6", dark: "#0a1c3a", blurb: "Education and the science workforce.", load: () => import("./views/knowledge.js") },
   { id: "land", name: "Land", role: "Surveyor General", color: "#6e9a3c", dark: "#18280a", blurb: "Forest, farmland, desert and city: what covers the country.", load: () => import("./views/land.js") },
   { id: "military", name: "Military", role: "General", color: "#8796ab", dark: "#141b26", blurb: "Historical defense bases, stationed personnel and garrison cities.", load: () => import("./views/military.js") },
   { id: "commerce", name: "Commerce", role: "Master of Trade", color: "#2fa4b8", dark: "#062630", blurb: "The great freight routes between metros, and the busiest ports and airports.", load: () => import("./views/commerce.js") },
-  { id: "culture", name: "Culture", role: "Keeper of Wonders", color: "#c25b9a", dark: "#2e0c22", blurb: "Wonders of the land, faith and wellbeing, and the disasters places endure.", load: () => import("./views/culture.js") },
+  { id: "culture", name: "Culture", role: "Keeper of Wonders", color: "#c25b9a", dark: "#2e0c22", blurb: "Wonders of the land and the natural hazards places endure.", load: () => import("./views/culture.js") },
   { id: "explorer", name: "Explorer", role: "Cartographer", color: "#9a7bc9", dark: "#1e1236", blurb: "Slice and dice every number: any level, any columns, any chart.", load: () => import("./views/explorer.js") },
 ];
 const byId = new Map(ADVISORS.map((a) => [a.id, a]));
@@ -248,7 +248,7 @@ export function install(app) {
       <p>Each advisor opens a dashboard on one part of the real economy. Hover anything to see it on the map; hover the map to find it in the charts; click to drill in.</p></div></div>
       ${COUNCIL.map((g) => `<h4 class="adv-council-h">${esc(g.label)}</h4><div class="adv-council">${g.ids.map((id) => byId.get(id)).filter(Boolean).map((a) => `<button type="button" class="adv-card" data-adv="${a.id}" style="--adv:${a.color}">
         ${emblem(a, 48)}<span class="t"><span class="r">${esc(a.role)}</span><b>${esc(a.name)}</b><span class="d">${esc(a.blurb)}</span></span></button>`).join("")}</div>`).join("")}
-      <p class="adv-note pad">All figures are public data: Census ACS and population estimates, BEA GDP, BLS QCEW, EIA and MSHA site lists, USGS land cover, DoD installation and spending files, FHWA freight flows, USACE and FAA traffic, NPS visits, NSF research spending, the U.S. Religion Census, CDC PLACES, FEMA and NOAA. Each dashboard lists its sources and caveats at the bottom.</p>`;
+      <p class="adv-note pad">All figures are public data: INSEE census and territory tables, Eurostat regional accounts and transport series, CORINE Land Cover, ODRÉ energy installations, ministry culture/education/defense files, SDES freight, GASPAR hazards and official election results. Each dashboard lists its sources and caveats at the bottom.</p>`;
   }
 
   // --- map → dashboard --------------------------------------------------------------------------------------------

@@ -35,7 +35,7 @@ export function openCityPanel(city, ctx) {
       { title: "Districts · where people work", html: industries(city, nation) },
     ],
     foot: `Source: ${esc(nation.vintage)} (tables C24030, B19025, B19013, B25064, B25077, B23025)${nation.gdp_vintage ? `; GDP: ${esc(nation.gdp_vintage)}` : ""}.
-      Green ×N = this industry's share of jobs is N× the U.S. share.`,
+      Green ×N = this industry's share of jobs is N× the national share.`,
     onClose: ctx.onClose,
     onPedia: ctx.onPedia,
     wire(panel) {

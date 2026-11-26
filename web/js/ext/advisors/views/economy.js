@@ -21,20 +21,21 @@ export function mount(ctx) {
   const rows = metros.rows;
   const gdpInd = n.gdp_by_industry || {};
   const jobInd = Object.keys(nation.industries || {});
+  const gvaTotal = Object.values(gdpInd).filter(fin).reduce((a, v) => a + v, 0);
 
   // --- headline -------------------------------------------------------------------------------------------------
   const topInd = Object.entries(gdpInd).filter(([, v]) => fin(v)).sort((a, b) => b[1] - a[1])[0];
   el.insertAdjacentHTML("beforeend", tiles([
-    { label: `GDP ${n.gdp_year || ""}`, value: money(n.gdp), sub: "current dollars" },
+    { label: `GDP ${n.gdp_year || ""}`, value: money(n.gdp), sub: "current euros" },
     { label: "Per person", value: money(ratio(n.gdp, n.population)), sub: "GDP ÷ residents" },
-    { label: "Top industry", value: topInd ? short(nation.gdp_industries?.[topInd[0]] || topInd[0]) : "–", sub: topInd ? `${pct(topInd[1] / n.gdp)} of GDP` : "" },
+    { label: "Top industry", value: topInd ? short(nation.gdp_industries?.[topInd[0]] || topInd[0]) : "–", sub: topInd ? `${pct(topInd[1] / gvaTotal)} of value added` : "" },
   ]));
 
   // --- GDP by industry ------------------------------------------------------------------------------------------
   const stRows = data.levels.states.rows;
-  const indBody = section(el, { title: "GDP by industry", kicker: "United States", note: "Value added by each industry, where the work is done. Hover an industry to light up the states where it is the biggest share of the economy; click it to rank the metros that specialise in it." });
+  const indBody = section(el, { title: "Value added by industry", kicker: "Metropolitan France", note: "Gross value added by broad non-overlapping industry group, where the work is done. Hover an industry to light up the regions where it is the biggest share of the economy." });
   const indRows = Object.entries(gdpInd).filter(([, v]) => fin(v)).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({
-    key: k, label: short(nation.gdp_industries?.[k] || k), full: nation.gdp_industries?.[k], value: v, text: money(v), sub: pct(v / n.gdp), icon: indIcon(k),
+    key: k, label: short(nation.gdp_industries?.[k] || k), full: nation.gdp_industries?.[k], value: v, text: money(v), sub: pct(v / gvaTotal), icon: indIcon(k),
   }));
   const states = app.data.states || [];
   const indBars = barList(indBody, {
@@ -44,11 +45,10 @@ export function mount(ctx) {
       const top = states.map((s, i) => ({ i, v: ratio(s.gdp_by_industry?.[r.key], s.gdp) })).filter((x) => fin(x.v)).sort((a, b) => b.v - a.v).slice(0, 8);
       link.hover({ states: new Set(top.map((x) => x.i)), dimOthers: true });
     },
-    onClick: (r) => { setIndustry(r.key === "government" ? "public_admin" : r.key); specBody.scrollIntoView({ behavior: "smooth", block: "start" }); },
   });
 
   // --- map: metro GDP circles -----------------------------------------------------------------------------------
-  const mapBody = section(el, { title: "Metro economies on the map", note: "Each circle is a metro area: its area is the metro's GDP, its colour GDP per person. Hover a circle for numbers; click to open the metro." });
+  const mapBody = section(el, { title: "Urban economies on the map", note: "Each circle is an aire d'attraction des villes: its area is estimated GDP, its colour GDP per person. Hover a circle for numbers; click to open the urban area." });
   const ppDomain = robustDomain(rows.filter((r) => r.v.population >= 100000).map((r) => r.v.gdp_pc), 0.03, true) || [30000, 120000];
   const ppColor = colorScale({ type: "seq", domain: ppDomain, ramp: RAMPS.gold });
   const gMax = Math.max(...rows.map((r) => r.v.gdp || 0));
@@ -69,7 +69,7 @@ export function mount(ctx) {
     + sizeLegend([1e10, 1e11, 1e12].filter((v) => v <= gMax), (v) => 30 * Math.sqrt(v / gMax) , money, "Circle area = GDP (at the home zoom)"));
 
   // --- leaders --------------------------------------------------------------------------------------------------
-  const lBody = section(el, { title: "Leading metros", note: `GDP per person ranks only metros of ${count3(METRO_MIN)}+ people (small areas with one big plant or mine swing wildly).` });
+  const lBody = section(el, { title: "Leading urban areas", note: `GDP per person ranks only urban areas of ${count3(METRO_MIN)}+ people (small areas with one big plant or mine swing wildly).` });
   const big = rows.filter((r) => (r.v.population || 0) >= METRO_MIN);
   segmented(lBody, {
     label: "Rank by", value: "gdp",
@@ -77,20 +77,20 @@ export function mount(ctx) {
     onChange: (v) => { table.setRows(v === "gdp" ? rows : big); table.setColumns(cols, { key: v, dir: "desc" }); },
   });
   const cols = [
-    { key: "name", label: "Metro", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
+    { key: "name", label: "Urban area", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
     { key: "gdp", label: "GDP", value: (r) => r.v.gdp, text: (r) => money(r.v.gdp), bar: { max: gMax, color: "rgba(224,181,76,.35)" } },
     { key: "gdp_pc", label: "Per person", value: (r) => r.v.gdp_pc, text: (r) => money(r.v.gdp_pc) },
     { key: "growth", label: "Growth", value: (r) => r.v.growth, text: (r) => signedPct(r.v.growth) },
   ];
   const table = createTable(lBody, {
-    caption: "Metros by GDP", columns: cols, rows, sort: { key: "gdp", dir: "desc" }, rank: true, maxHeight: 280,
-    search: "Search metros",
+    caption: "Urban areas by GDP", columns: cols, rows, sort: { key: "gdp", dir: "desc" }, rank: true, maxHeight: 280,
+    search: "Search urban areas",
     onHover: (r) => { link.hover(r ? rowsHighlight(metros, [r]) : null); bubbles.setHot(r ? r.key : null); scatter.setHot(r ? r.key : null); },
     onClick: (r) => app.selectCity(r.ref),
   });
 
   // --- specialisation -------------------------------------------------------------------------------------------
-  const specBody = section(el, { title: "Who specialises in what", note: `Location quotient: the share of a metro's employed residents in the industry ÷ the U.S. share. ×2 means twice as concentrated as the country. Metros of ${count3(METRO_MIN)}+ people; the 15 most specialised are outlined on the map.` });
+  const specBody = section(el, { title: "Who specialises in what", note: `Location quotient: the industry's share of workplace jobs in the urban area ÷ its national share. ×2 means twice as concentrated as France. Urban areas of ${count3(METRO_MIN)}+ people; the 15 most specialised are outlined on the map.` });
   let industry = params.industry && jobInd.includes(params.industry) ? params.industry : "manufacturing";
   const indSel = selectBox(specBody, {
     label: "Industry", value: industry,
@@ -106,9 +106,9 @@ export function mount(ctx) {
     return us ? ratio(ratio(o.jobs?.[k], o.employed), us) : null;
   };
   const specTable = createTable(specBody, {
-    caption: "Most specialised metros", rank: true, maxHeight: 260, rows: [],
+    caption: "Most specialised urban areas", rank: true, maxHeight: 260, rows: [],
     columns: [
-      { key: "name", label: "Metro", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
+      { key: "name", label: "Urban area", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
       { key: "share", label: "Share of jobs", value: (r) => ratio(r.ref.jobs?.[industry], r.ref.employed), text: (r) => pct(ratio(r.ref.jobs?.[industry], r.ref.employed)) },
       { key: "lq", label: "LQ", value: (r) => lq(r), text: (r) => (fin(lq(r)) ? `×${lq(r).toFixed(2)}` : "–"), bar: { max: 1, color: "rgba(74,134,214,.4)" } },
       { key: "workers", label: "Workers", value: (r) => r.ref.jobs?.[industry], text: (r) => count3(r.ref.jobs?.[industry]) },
@@ -119,7 +119,7 @@ export function mount(ctx) {
   });
 
   // --- scatter --------------------------------------------------------------------------------------------------
-  const scBody = section(el, { title: "Growth vs output", note: "Each dot is a metro: GDP per person across, population growth up, size = population. Drag a rectangle to select metros and outline them on the map." });
+  const scBody = section(el, { title: "Growth vs output", note: "Each dot is an urban area: estimated GDP per person across, population growth up, size = population. Drag a rectangle to select urban areas and outline them on the map." });
   const scCtl = document.createElement("div");
   scCtl.className = "adv-row";
   scBody.appendChild(scCtl);
@@ -129,14 +129,14 @@ export function mount(ctx) {
     options: [{ value: "lq", label: "Specialisation (chosen industry)" }, { value: "unemployment", label: "Unemployment" }, { value: "median_income", label: "Income" }, { value: "none", label: "None" }],
     onChange: (v) => { colorBy = v; drawScatter(); },
   });
-  segmented(scCtl, { label: "Metros", value: "big", options: [{ value: "big", label: `${count3(METRO_MIN)}+` }, { value: "all", label: "All" }], onChange: (v) => { allMetros = v === "all"; drawScatter(); } });
+  segmented(scCtl, { label: "Urban areas", value: "big", options: [{ value: "big", label: `${count3(METRO_MIN)}+` }, { value: "all", label: "All" }], onChange: (v) => { allMetros = v === "all"; drawScatter(); } });
   const legendEl = document.createElement("div");
   const scatter = createScatter(scBody, {
     points: [], height: 300,
     x: { label: "GDP per person", fmt: (v) => money(v), log: true },
     y: { label: "Population growth", fmt: (v) => fmtShort("signed", v) },
     size: { label: "Population", fmt: count3, max: 15, min: 2 },
-    refY: [{ v: n.growth ?? 0, label: `U.S. ${signedPct(n.growth)}` }],
+    refY: [{ v: n.growth ?? 0, label: `France ${signedPct(n.growth)}` }],
     onHover: (p) => { link.hover(p ? rowsHighlight(metros, [p.row]) : null); bubbles.setHot(p ? p.key : null); table.setHot(p ? p.key : null, false); },
     onClick: (p) => app.selectCity(p.row.ref),
     onBrush: (set) => {
@@ -153,7 +153,7 @@ export function mount(ctx) {
   function brushSummary(sel) {
     const pop = sel.reduce((a, r) => a + (r.v.population || 0), 0);
     const gdp = sel.reduce((a, r) => a + (r.v.gdp || 0), 0);
-    return `<b>${sel.length}</b> metros selected · ${count3(pop)} people · ${money(gdp)} GDP (${pct(gdp / n.gdp)} of U.S.) ${frameBtn()}<button type="button" class="adv-mini" data-clear>Clear</button>`;
+    return `<b>${sel.length}</b> urban areas selected · ${count3(pop)} people · ${money(gdp)} GDP (${pct(gdp / n.gdp)} of France) ${frameBtn()}<button type="button" class="adv-mini" data-clear>Clear</button>`;
   }
   brushInfo.addEventListener("click", (e) => { if (e.target.closest("[data-clear]")) { scatter.setSelected(null); link.base(specHighlight()); bubbles.setSelected(null); brushInfo.innerHTML = ""; } });
 
@@ -167,7 +167,7 @@ export function mount(ctx) {
       const cs = colorScale(spec);
       color = (c) => cs(c);
       const f = colorBy === "lq" ? (v) => `×${v.toFixed(1)}` : colorBy === "unemployment" ? (v) => pct(v) : money;
-      legend = rampLegend({ ramp: spec.ramp, domain: spec.domain, fmt: f, log: spec.log, label: colorBy === "lq" ? `Specialisation in ${short(nation.industries[industry]).toLowerCase()}` : colorBy === "unemployment" ? "Unemployment" : "Median household income" });
+      legend = rampLegend({ ramp: spec.ramp, domain: spec.domain, fmt: f, log: spec.log, label: colorBy === "lq" ? `Specialisation in ${short(nation.industries[industry]).toLowerCase()}` : colorBy === "unemployment" ? "Unemployment" : "Median standard of living" });
     }
     const labels = [...list].sort((a, b) => (b.v.population || 0) - (a.v.population || 0)).slice(0, 8).map((r) => r.key);
     scatter.update({
@@ -187,24 +187,24 @@ export function mount(ctx) {
     specTop = list.slice(0, 15);
     const maxLq = Math.max(1, ...list.slice(0, 40).map((r) => lq(r)));
     specTable.setColumns([
-      { key: "name", label: "Metro", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
+      { key: "name", label: "Urban area", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
       { key: "share", label: "Share of jobs", value: (r) => ratio(r.ref.jobs?.[industry], r.ref.employed), text: (r) => pct(ratio(r.ref.jobs?.[industry], r.ref.employed)) },
       { key: "lq", label: "LQ", value: (r) => lq(r), text: (r) => (fin(lq(r)) ? `×${lq(r).toFixed(2)}` : "–"), bar: { max: maxLq, color: "rgba(74,134,214,.45)" } },
       { key: "workers", label: "Workers", value: (r) => r.ref.jobs?.[industry], text: (r) => count3(r.ref.jobs?.[industry]) },
     ], { key: "lq", dir: "desc" });
     specTable.setRows(list);
     const us = ratio(n.jobs?.[k], n.employed);
-    specInfo.innerHTML = `U.S.: <b>${pct(us)}</b> of employed residents (${count3(n.jobs?.[k])} people) work in ${esc(short(nation.industries[k]).toLowerCase())}.`;
+    specInfo.innerHTML = `France: <b>${pct(us)}</b> of workplace jobs (${count3(n.jobs?.[k])} people) are in ${esc(short(nation.industries[k]).toLowerCase())}.`;
     if (!scatter.selected) link.base(specHighlight());
     indBars.setSelected(k === "public_admin" ? "government" : k);
     drawScatter();
   }
   setIndustry(industry);
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["bea_gdp", "acs_1yr", "pep_population", "cbsa_delineation"], [
-    "GDP is counted where the work is done (BEA); jobs and specialisation are counted where workers live (ACS), so a commuter suburb's workers count in its own metro.",
-    `GDP is ${esc(nation.gdp_vintage || "BEA")} while population is ${esc(nation.vintage || "ACS")}: per-person figures divide numbers a year apart.`,
-    "Metro GDP sums the member counties of each metro (OMB 2023 delineation); BEA suppresses some industry figures for small areas, so metro industry GDP is incomplete and not used here.",
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_eurostat", "fr_insee_stats"], [
+    "GDP/value added is counted where the work is done (Eurostat); jobs and specialisation are workplace jobs in the INSEE census, not workers counted at home.",
+    `GDP/value added is ${esc(nation.gdp_vintage || "Eurostat")} while population is ${esc(nation.vintage || "INSEE")}: per-person figures divide related but distinct statistical series.`,
+    "Urban-area GDP is estimated by allocating departmental GDP using workplace-employment shares; it is not an official AAV national account. Broad industry value added is shown only nationally and by region, not allocated to urban areas.",
   ]));
 
   return {
