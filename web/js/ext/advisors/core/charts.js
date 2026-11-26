@@ -63,7 +63,7 @@ export function barList(host, opts) {
     const style = opts.diverging ? `${neg ? "right:50%" : "left:50%"};width:${wv.toFixed(2)}%` : `width:${wv.toFixed(2)}%`;
     const color = r.color ? `background:${esc(r.color)}` : "";
     const tag = opts.onClick ? "button" : "div";
-    const type = opts.onClick ? ` type="button"` : "";
+    const type = opts.onClick ? ` type="button"` : (opts.onHover ? ` tabindex="0"` : "");
     return `<${tag}${type} role="listitem" class="adv-bar${r.key === opts.selected ? " sel" : ""}" data-key="${esc(r.key)}" title="${esc([r.full || r.label, r.sub, r.text].filter(Boolean).join(" · "))}">
       ${opts.rank ? `<span class="rk">${i + 1}</span>` : ""}${r.icon ? `<span class="ic" aria-hidden="true">${r.icon}</span>` : ""}
       <span class="lb">${esc(r.label)}${r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}</span>
