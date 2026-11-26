@@ -197,6 +197,7 @@ export function drawStatic(ctx, vp, w, opts) {
   ctx.clip();
   drawRivers(ctx, w, { s, Rpx, lod, lens: !!opts.lens });
   drawBorders(ctx, w, s, Rpx, !!opts.lens);
+  drawInsetFrames(ctx, w, s);
   ctx.restore();
 
   // 6. City tiles.
@@ -316,6 +317,25 @@ function drawEdgeFog(ctx, vp, W, H) {
   edge(0, 0, band, 0, 0, 0, band, H);
   edge(W, 0, W - band, 0, W - band, 0, band, H);
   // No cloud puffs: soft radial blobs read as a rendering glitch; the flat mist bands read as open sea.
+}
+
+
+function drawInsetFrames(ctx, w, s) {
+  if (!w.raw.insets?.length) return;
+  ctx.save();
+  ctx.lineWidth = 1.8 / s;
+  ctx.setLineDash([8 / s, 6 / s]);
+  ctx.strokeStyle = "rgba(255,238,190,.62)";
+  ctx.fillStyle = "rgba(255,238,190,.82)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.font = `${13 / s}px system-ui, sans-serif`;
+  for (const inset of w.raw.insets) {
+    const [x0, y0, x1, y1] = inset.frame;
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.fillText(inset.name, (x0 + x1) / 2, y0 - 5 / s);
+  }
+  ctx.restore();
 }
 
 

@@ -31,7 +31,11 @@ class FrenchElections(Source):
             for vals in csv.reader(f, delimiter=";"):
                 if len(vals) < 33 or vals[0] == "Code du département":
                     continue
-                commune = (vals[0] + vals[2]).zfill(5)
+                overseas = {"ZA": "971", "ZB": "972", "ZC": "973", "ZD": "974", "ZM": "976"}
+                if vals[0] in overseas:
+                    commune = overseas[vals[0]] + vals[2][-2:]
+                else:
+                    commune = (vals[0] + vals[2]).zfill(5)
                 try:
                     rows[commune] = {
                         "registered": int(vals[5]), "abstentions": int(vals[6]), "voters": int(vals[8]),

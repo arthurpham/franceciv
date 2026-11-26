@@ -55,7 +55,7 @@ ECON_NUMBERS = ["population", "employed", "median_income", "median_rent", "home_
 # The economic shape shared by a city, a state and nation.json "nation" (gdp_by_industry is optional).
 ECON_KEYS = ["population", "employed", "yields", "jobs", "median_income", "median_rent", "home_value",
              "unemployment", "rent_burden", "gdp", "gdp_year", "growth", "growth_years"]
-GROWTH_MAX = 0.25  # the pipeline nulls |growth| above this (see pipeline/build/growth.py)
+GROWTH_MAX = 0.35  # fast-growing outermost-region urban areas can exceed 25% over 2017-2023
 CITY_RANK_BASE = ["population", "gdp", "gdp_per_capita", "growth"]
 PEERS = 5
 COUNTY_FORMATS = (LENS_FORMATS - {"category"}) | {"text", "km2"}  # categorical county columns are "text"
@@ -308,9 +308,9 @@ def check_cities(r: Report, cities, ctx: dict | None, yield_keys=YIELD_KEYS) -> 
     dup = [i for i, k in ids.items() if k > 1]
     if dup:
         r.fail(f"cities.json: duplicate ids {_sample(dup)}")
-    bad_id = [c.get("id") for c in cities if not (isinstance(c.get("id"), str) and re.fullmatch(r"\d{3}", c["id"]))]
+    bad_id = [c.get("id") for c in cities if not (isinstance(c.get("id"), str) and re.fullmatch(r"[0-9A-Z]{3}", c["id"]))]
     if bad_id:
-        r.fail(f"cities.json: ids must be 3-digit INSEE AAV strings: {_sample(bad_id)}")
+        r.fail(f"cities.json: ids must be 3-character INSEE AAV strings: {_sample(bad_id)}")
     pops = [c.get("population") for c in cities]
     if any(not is_num(p) or p <= 0 for p in pops):
         r.fail("cities.json: every city needs a positive population")
@@ -356,7 +356,7 @@ def _check_city_view(r: Report, what: str, c: dict, ctx: dict | None, ids: set) 
         if owner and any(not 0 <= v < ctx["n"] or owner[v] < 0 for v in fp):
             r.fail(f"{what}: footprint has cells that are not French land")
     cs = c.get("counties")
-    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"(?:\d{2}|2A|2B)", g) for g in cs)):
+    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"(?:\d{2}|97[1-6]|2A|2B)", g) for g in cs)):
         r.fail(f"{what}: counties must be a list of French department codes")
     ps = c.get("pop_series")
     if ps is not None and not (isinstance(ps, dict) and ps and all(re.fullmatch(r"\d{4}", str(y)) for y in ps)
@@ -672,7 +672,7 @@ def check_counties(r: Report, doc, ctx: dict | None, city_ids: set | None) -> No
                     errs[f"{k} not text"] += 1
             elif not is_num(v) or (fmt[k] == "pct" and not 0 <= v <= 1) or (k in ("population", "land_km2", "density") and v < 0):
                 errs[f"{k} out of range"] += 1
-        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"(?:\d{2}|2A|2B)", rec["geoid"])):
+        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"(?:\d{2}|97[1-6]|2A|2B)", rec["geoid"])):
             errs["geoid not a French department code"] += 1
         if city_ids is not None and rec["aav"] is not None and rec["aav"] not in city_ids:
             errs["aav not a cities.json id"] += 1

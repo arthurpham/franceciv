@@ -46,7 +46,7 @@ class FrenchAAV(Source):
         areas = []
         for r in records(path, "AAV2020"):
             code = r.get("AAV2020")
-            if not code or not code.isdigit():
+            if not code or code == "000":
                 continue
             areas.append({
                 "code": code,

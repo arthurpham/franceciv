@@ -3,15 +3,15 @@
 A French adaptation of Andrej Karpathy's MIT-licensed [`usaciv`](https://karpathy.ai/usaciv/) visualizer.
 The original browser engine, rendering art, interaction model and pipeline architecture are vendored here with attribution; this repository replaces the United States data spine with French public data.
 
-**Current status: metropolitan-France MVP.** It renders France and Corsica at 8 km hex resolution, with régions, départements, INSEE aires d'attraction des villes, terrain, land cover, population, GDP and employment-derived yields.
+**Current status: France MVP.** It renders metropolitan France, Corsica and five overseas department-region insets at 8 km hex resolution, with régions, départements, INSEE aires d'attraction des villes, terrain, land cover, population, GDP and employment-derived yields.
 
 ![France drawn as a 4X strategy map](docs/images/france-mvp.png)
 
 ## What works in the MVP
 
-- Painted hex terrain for metropolitan France from ETOPO1 elevation and CORINE Land Cover 2018 land cover.
-- 13 metropolitan régions and 96 départements from Etalab contour files.
-- 675 city banners covering all metropolitan INSEE 2020 aires d'attraction des villes (AAV), including cross-border AAVs restricted to their French communes; small areas appear through zoom-dependent de-cluttering and search.
+- Painted hex terrain from ETOPO1 elevation and CORINE Land Cover 2018 land cover; overseas elevation is included, while CORINE land-cover lenses remain metropolitan-only.
+- 18 régions and 101 départements from Etalab contour files, with Guadeloupe, Martinique, Guyane, La Réunion and Mayotte affine-placed as cartographic insets.
+- 699 city banners covering INSEE 2020 aires d'attraction des villes (AAV), including overseas AAVs and cross-border AAVs restricted to their French communes; small areas appear through zoom-dependent de-cluttering and search.
 - Five yields: Food, Production, Gold, Science and Culture.
   - Gold is Eurostat NUTS-3 GDP in current euros.
   - The other yields are census workplace employment by industry, observed directly for each aire d'attraction.
@@ -21,7 +21,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 - Detailed named watercourses from IGN BD CARTO, schematic road and rail links, real airports and ports, busy SNCF passenger stations, a commune-derived fiber eligibility lens, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INPN Natura 2000 protected-nature lenses, and a physical river-flood exposure lens.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
-- The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for all metropolitan communes, including EPCI/intercommunality names and populations.
+- The original interactive map, city panels, minimap, sharing and lens histogram UI, plus search and compact public-data cards for metropolitan and overseas communes, including EPCI/intercommunality names and populations.
 
 ## Explicitly not in the MVP yet
 

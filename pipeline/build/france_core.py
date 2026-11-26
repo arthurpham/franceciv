@@ -265,11 +265,14 @@ def build():
         emp = dep_values(emp_ths, dep, "TOTAL")
         return {k: round(v) if v else 0 for k, v in jobs.items()}, round((emp or 0) * 1000) if emp is not None else None
 
+    def commune_department(code):
+        return code[:3] if code.startswith("97") else code[:2]
+
     dep_hazard = {}
     hazard_acc = {}
     commune_counts = Counter(c["department"] for c in bounds["communes"])
     for commune_code, row in hazards["communes"].items():
-        dep = commune_code[:2]
+        dep = commune_department(commune_code)
         if dep not in counties_meta:
             continue
         acc = hazard_acc.setdefault(dep, Counter())
@@ -289,7 +292,7 @@ def build():
     dep_election = {}
     dep_election_acc = {}
     for commune_code, row in elections["communes"].items():
-        dep = commune_code[:2]
+        dep = commune_department(commune_code)
         if dep not in counties_meta:
             continue
         acc = dep_election_acc.setdefault(dep, Counter())
@@ -477,7 +480,7 @@ def build():
             "growth_years": [2017, 2023] if comp_row.get("POP_2023") and comp_row.get("POP_2017") else None,
             "poverty": (comp_row.get("PR_MD60_2023") or 0) / 100 if comp_row.get("PR_MD60_2023") is not None else None,
             **housing_metrics(comp_row),
-            "counties": deps, "pop_series": {str(y): v for y, v in comp_series(comp_row, "POP")}, "footprint": footprint,
+            "counties": deps, "pop_series": ({str(y): v for y, v in comp_series(comp_row, "POP")} or None), "footprint": footprint,
             "ranks": {}, "peers": [],
         })
     # ranks and peers
@@ -495,6 +498,9 @@ def build():
     ranked_growth = sorted((c for c in cities if c.get("growth") is not None), key=lambda c: c["growth"], reverse=True)
     for rank, c in enumerate(ranked_growth, 1):
         c["ranks"]["growth"] = rank
+    for c in cities:
+        for key in ["population", "gdp", "gdp_per_capita", "growth", "food", "production", "gold", "science", "culture"]:
+            c["ranks"].setdefault(key, None)
 
     # Nation.
     nat_jobs = Counter()
@@ -635,7 +641,7 @@ def build():
             v=fn(dep_comp.get(dep, {}))
             vals.append(round(v,digits) if v is not None else None)
         return vals
-    landvals=lambda key: [round(world["pct"][key][i]/100,3) if world["owner"][i]>=0 and world["pct"][key][i] else (0 if world["owner"][i]>=0 else None) for i in range(grid.size)]
+    landvals=lambda key: [round(world["pct"][key][i]/100,3) if world["owner"][i]>=0 and world["cover"][i] else None for i in range(grid.size)]
 
     def allocated_density(key, digits=1):
         """Spread a department total across hexes by the seven-point county mix.
@@ -676,9 +682,9 @@ def build():
       ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. This is output per resident, not household earnings."),
       ("employment_rate","people","Employment density","💼","workers / km²","int","log",allocated_density("employed",1),"Employment by workplace per km² of department land."),
       ("industry","prosperity","Industry","⚙️","share of employment","pct","linear",dep_lens(lambda e: (e["jobs"].get("manufacturing",0)+e["jobs"].get("construction",0)+e["jobs"].get("mining",0))/e["employed"] if e["employed"] else None,4),"Industry and construction employment as a share of all employment."),
-      ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by CORINE Land Cover."),
-      ("farmland","land","Farmland","🌾","share of land","pct","linear",landvals("crop"),"Share of each hex classified as cropland by CORINE Land Cover."),
-      ("developed","land","Built-up","🏙️","share of land","pct","linear",landvals("developed"),"Share of each hex classified as built-up by CORINE Land Cover."),
+      ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by CORINE Land Cover. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them."),
+      ("farmland","land","Farmland","🌾","share of land","pct","linear",landvals("crop"),"Share of each hex classified as cropland by CORINE Land Cover. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them."),
+      ("developed","land","Built-up","🏙️","share of land","pct","linear",landvals("developed"),"Share of each hex classified as built-up by CORINE Land Cover. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them. Null in overseas insets because the metropolitan CORINE extract does not cover them."),
       ("income","prosperity","Median standard of living","💶","euros / year","eur","linear",dep_lens(lambda e: e.get("median_income"),0),"Median standard of living by department (INSEE comparateur de territoires 2023)."),
       ("poverty","prosperity","Poverty","📉","share of residents","pct","linear",dep_lens(lambda e: e.get("poverty"),4),"Share of residents below 60% of median standard of living."),
       ("unemployment","prosperity","Unemployment","🧭","share of labour force","pct","linear",dep_lens(lambda e: e.get("unemployment"),4),"Unemployed census residents aged 15–64 ÷ the active population aged 15–64."),

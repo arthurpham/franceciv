@@ -10,6 +10,7 @@ import math
 from collections import Counter
 
 from ..core.geo import MapProjection, Shape, ShapeIndex
+from ..core.insets import PARAMS, frame_geo, in_inset_area, inverse_point, transform_real_point
 from ..core.hexgrid import SQRT3, HexGrid
 from ..core.store import load_interim, save_interim, write_web
 
@@ -253,7 +254,7 @@ def build() -> None:
     states = sorted(bounds["states"], key=lambda s: s["name"])
     counties = sorted(bounds["counties"], key=lambda c: c["geoid"])
 
-    # Projection: fit metropolitan France with a margin.
+    # Projection: fit the combined mainland and pseudo-placed overseas inset geometry with a margin.
     probe = MapProjection(0, 0, 0)
     xs, ys = [], []
     for s in states:
@@ -283,7 +284,8 @@ def build() -> None:
     below_sea = [0] * grid.size  # ETOPO samples below 0 m ...
     below_sum = [0.0] * grid.size  # ... and their altitude sum
     for lat, lon, alt in zip(etopo["lat"], etopo["lon"], etopo["alt"]):
-        i = grid.cell_at(*proj(lon, lat))
+        map_lon, map_lat = transform_real_point(lon, lat)
+        i = grid.cell_at(*proj(map_lon, map_lat))
         if i < 0:
             continue
         if alt < 0:
@@ -325,7 +327,7 @@ def build() -> None:
                 kinds.append("lake")
             elif (s := state_idx.locate(x, y)) >= 0:
                 kinds.append(s)
-            elif foreign_idx.locate(x, y) >= 0:
+            elif not in_inset_area(*proj.inverse(x, y)) and foreign_idx.locate(x, y) >= 0:
                 kinds.append(FOREIGN)
             else:
                 kinds.append("sea")
@@ -366,6 +368,31 @@ def build() -> None:
     for i, o in slivers:
         owner[i], water[i] = o, LAND
     print(f"    {len(slivers)} sliver water hexes turned into land: {[i for i, _ in slivers]}")
+
+    # Overseas territories are cartographic insets in a continuous projected plane. Real foreign
+    # coastlines can project into the same screen space; clear a padded box around each territory
+    # so every inset sits in clean ocean, like a conventional inset map.
+    inset_boxes = {}
+    state_for_inset = {st.get("inset"): si for si, st in enumerate(states) if st.get("inset")}
+    inset_foreign_removed = 0
+    for dep, state_i in state_for_inset.items():
+        owned = [i for i, o in enumerate(owner) if o == state_i]
+        if not owned:
+            continue
+        pts = [grid.center(*grid.col_row(i)) for i in owned]
+        pad = HEX_RADIUS_KM * 2.2
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        box = (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad)
+        inset_boxes[dep] = box
+        x0, y0, x1, y1 = box
+        for i, o in enumerate(owner):
+            if o != FOREIGN:
+                continue
+            cx, cy = grid.center(*grid.col_row(i))
+            if x0 <= cx <= x1 and y0 <= cy <= y1:
+                owner[i], water[i] = WATER, OCEAN
+                inset_foreign_removed += 1
+    print(f"    {inset_foreign_removed} foreign hexes cleared from overseas inset frames")
 
     # --- counties for French cells -------------------------------------------------------------------
     county = [-1] * grid.size
@@ -449,7 +476,7 @@ def build() -> None:
         cx, cy = grid.center(*grid.col_row(i))
         counts: Counter = Counter()
         for ox, oy in lattice:
-            lon, lat = proj.inverse(cx + ox, cy + oy)
+            lon, lat = inverse_point(*proj.inverse(cx + ox, cy + oy))
             c, r = round((lon - x0) / dx), round((lat - y0) / dy)
             if 0 <= c < ncols and 0 <= r < nrows:
                 counts[rows[r][c]] += 1
@@ -499,7 +526,17 @@ def build() -> None:
         "cover": cover_table,
         "notes": {"water": WATER_NOTE, "relief": RELIEF_NOTE, "cover": COVER_NOTE},
     }
-    states_out = [{"fips": s["fips"], "abbr": s["abbr"], "name": s["name"]} for s in states]
+    states_out = [{"fips": s["fips"], "abbr": s["abbr"], "name": s["name"], **({"inset": s["inset"]} if s.get("inset") else {})} for s in states]
+    insets = []
+    state_index = {s.get("inset"): i for i, s in enumerate(states) if s.get("inset")}
+    for dep, spec in PARAMS.items():
+        if dep in inset_boxes:
+            x0, y0, x1, y1 = inset_boxes[dep]
+        else:
+            pts = [proj(lon, lat) for lon, lat in frame_geo(dep)]
+            xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+            x0, y0, x1, y1 = min(xs), min(ys), max(xs), max(ys)
+        insets.append({"dep": dep, "name": spec["name"], "frame": [round(x0, 1), round(y0, 1), round(x1, 1), round(y1, 1)]})
     # Share of each hex covered by French department samples. The seven samples approximate area;
     # sea and foreign samples both count as outside the French statistical territory.
     france_share = [
@@ -514,6 +551,7 @@ def build() -> None:
             "width": round(width, 1),
             "height": round(height, 1),
             "margin": MARGIN_KM,
+            "insets": insets,
             "owner": owner,
             "county": county,
             "france_share": france_share,
