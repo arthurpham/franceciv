@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 from ..core.geo import MapProjection, Shape, ShapeIndex
+from ..core.insets import transform_real_point
 from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
@@ -32,7 +33,7 @@ def build():
     commune_by_code = {c["code"]: c for c in communes}
 
     def geo(lon, lat):
-        x, y = proj(lon, lat)
+        x, y = proj(*transform_real_point(lon, lat))
         cell = nearest_land(world, grid, x, y)
         idx = spatial.locate(x, y)
         c = communes[idx] if idx >= 0 else None

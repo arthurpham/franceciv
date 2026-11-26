@@ -25,9 +25,11 @@ def test_committed_world_contract():
     assert len(w["owner"]) == len(w["county"]) == len(w["water"]) == len(w["france_share"]) == n
     assert all(0 <= x <= 1 for x in w["france_share"])
     assert any(0 < x < 1 for x in w["france_share"])
-    assert len(w["states"]) == 13
-    assert len(w["counties"]) == 96
-    assert 9000 < n < 12000
+    assert len(w["states"]) == 18
+    assert {s["abbr"] for s in w["states"] if s.get("inset")} == {"GUA", "MTQ", "GUY", "REU", "MAY"}
+    assert len(w["insets"]) == 5
+    assert len(w["counties"]) == 101
+    assert 9000 < n < 18000
 
 
 def test_committed_france_core_contract():
@@ -42,7 +44,8 @@ def test_committed_france_core_contract():
     assert nation["nation"]["gdp"] > 2e12
     assert nation["nation"]["gdp_year"] == 2024
     assert "workplace employment" in next(y for y in nation["yields"] if y["key"] == "gold")["description"]
-    assert all(c["homeownership"] is not None and c["second_homes"] is not None and c["vacancy"] is not None for c in cities)
+    assert all(c["homeownership"] is not None and c["second_homes"] is not None and c["vacancy"] is not None for c in cities if "976" not in c["counties"])
+    assert any("976" in c["counties"] for c in cities)  # Mayotte is mapped; INSEE comparateur housing coverage is absent there.
     assert {x["key"] for x in nation["yields"]} == {"food", "production", "gold", "science", "culture"}
     assert {x["id"] for x in lenses["lenses"]} >= {"density", "gdp_capita", "forest", "farmland", "developed", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     assert len(lenses["lenses"][0]["values"]) == len(web("world.json")["owner"])
@@ -125,7 +128,7 @@ def test_resource_postprocessor_cache_invariants():
     assert src.index('write_web("states.json"') < src.index('write_web("resources.json"')
     states = web("states.json")
     assert states and all(s.get("energy") is not None for s in states)
-    assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 12
+    assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 14
     resources = web("resources.json")
     national = resources["summary"]["national"]
     assert national["tidal"]["count"] == 1 and national["tidal"]["value"] == 240
@@ -139,7 +142,7 @@ def test_freight_trade_contract_uses_french_units():
     assert trade["sources"] == ["fr_freight"]
     assert trade["year"] == 2019
     assert len(trade["routes"]) == 40
-    assert len(trade["zones"]) == 13
+    assert len(trade["zones"]) == 18
     assert all("value_musd" not in r for r in trade["routes"])
     assert all(r["volume_mtkm"] > 0 and len(r["path"]) >= 2 for r in trade["routes"])
     assert trade["routes"] == sorted(trade["routes"], key=lambda r: r["rank"])

@@ -1,6 +1,6 @@
 # Data contracts (v2, France)
 
-The Python pipeline and the browser agree on the JSON files in `web/data/`. All coordinates are **map kilometres** in the Albers equal-area projection fitted to metropolitan France and Corsica, origin top-left, y down. Pointy-top odd-r hex index is `row * cols + col`. `null` means unavailable; `0` is never a stand-in for unknown.
+The Python pipeline and the browser agree on the JSON files in `web/data/`. All coordinates are **map kilometres** in the Albers equal-area projection fitted to the whole map, origin top-left, y down. Overseas departments are first affine-transformed into cartographic inset slots west of the mainland, then projected by the same Albers transform. Pointy-top odd-r hex index is `row * cols + col`. `null` means unavailable; `0` is never a stand-in for unknown.
 
 ## French naming inherited from the original schema
 
@@ -8,12 +8,12 @@ The file and object names `states`, `counties`, and `metros` are retained only a
 
 | Schema name | French geography |
 |---|---|
-| `state`, `state_fips`, region abbreviation | metropolitan région |
+| `state`, `state_fips`, region abbreviation | metropolitan or overseas région |
 | `county`, `geoid` | département (`2A`/`2B` in Corsica) |
 | `metro`, city id, `aav` | INSEE aire d'attraction des villes (AAV), three-digit code |
 | commune | French commune, five-character INSEE code |
 
-Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-compatible formatter alias and must format euros, never dollars. Population values are INSEE municipal/legal populations unless a file says otherwise. “Metropolitan France” means the 13 metropolitan régions including Corsica; overseas collectivities are outside the map.
+Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-compatible formatter alias and must format euros, never dollars. Population values are INSEE municipal/legal populations unless a file says otherwise. “Metropolitan France” means the 13 metropolitan régions including Corsica. The map also includes the five overseas department-region collectivities as insets; other overseas collectivities are outside the map.
 
 ## Pipeline conventions
 
@@ -48,13 +48,13 @@ AAV employment is direct INSEE census workplace employment. Department GDP is Eu
 
 ### states.json
 
-One object per metropolitan région, using the same economic shape as cities plus `abbr`, `color`, ranks, land and energy summary metadata. Regional GDP/employment are direct Eurostat aggregates; census-derived social rates are aggregate or population-weighted as documented in the builder.
+One object per mapped région, using the same economic shape as cities plus `abbr`, `color`, ranks, land and energy summary metadata. Regional GDP/employment are direct Eurostat aggregates; census-derived social rates are aggregate or population-weighted as documented in the builder.
 
 ### nation.json
 
 `{"version":1,"year":2023,"sources":[...],"nation":{...},"yields":[...]}`.
 
-`nation` is the metropolitan-France aggregate with the same economic/housing shape as cities. `yields` describe the five displayed yields; monetary/value-added yield units are `eur`.
+`nation` is the aggregate of the mapped French territory with the same economic/housing shape as cities. `yields` describe the five displayed yields; monetary/value-added yield units are `eur`.
 
 ### lenses.json
 

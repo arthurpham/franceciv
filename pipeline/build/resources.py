@@ -6,6 +6,7 @@ import json
 from collections import Counter, defaultdict
 
 from ..core.hexgrid import HexGrid
+from ..core.geo import MapProjection
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
@@ -90,7 +91,6 @@ def build():
     city_ids = {city["id"] for city in cities}
     commune_aav = {r["commune"]: r["aav"] for r in aav["composition"] if r["aav"] in city_ids}
 
-    from ..core.geo import MapProjection
     proj = MapProjection(**world["projection"])
     commune_xy = {}
     def locate(code):
