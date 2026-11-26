@@ -388,7 +388,7 @@ function extendDistricts(data, d) {
   const vint = d.vintage || "INSEE census";
   const lb = (x) => (x?.lower_bound ? " (at least)" : "");
   metros.addFields([
-    F4("city_type", "City type", "text", { source: "fr_insee_stats", group: "Districts", description: `The city's badge: named after its strongest district, by its speciality when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
+    F4("city_type", "City type", "text", { source: "fr_insee_stats", group: "Districts", description: `The city's badge: named after its strongest exceptionally concentrated district when one passes the badge override, otherwise its strongest district; a speciality nickname is used when one is at least 3× the national share of jobs (${vint}). Blank: no district passes (a diversified economy).` }),
     F4("districts", "Districts", "text", { source: "fr_insee_stats", group: "Districts", description: `Industry districts the metro qualifies for, strongest first. ${d.rule?.text || ""}` }),
     F4("n_districts", "Number of districts", "int", { source: "fr_insee_stats", group: "Districts", description: "How many districts pass the rule (up to 5)." }),
     F4("qcew_jobs", "Jobs (INSEE)", "int", { unit: "covered jobs, where the employer is", source: "fr_insee_stats", group: "Districts", description: `Census workplace jobs (${vint}). Counted where the employer is, unlike the ACS figures (where people live).` }),
