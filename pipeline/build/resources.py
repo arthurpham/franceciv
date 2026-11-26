@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json", "states.json"]
 PRODUCES = ["resources.json"]
 
 TYPES = [
@@ -106,7 +106,7 @@ def build():
         state = state_abbr.get(c.get("region"))
         county = dep
         cbsa = commune_aav.get(code)
-        raw_name = max(set(g["names"]), key=g["names"].count) if g["names"] else c["name"]
+        raw_name = sorted(Counter(g["names"]).items(), key=lambda kv: (-kv[1], kv[0]))[0][0] if g["names"] else c["name"]
         plant_name = raw_name
         upper = raw_name.upper()
         if "CENTRALE NUCLEAIRE DE " in upper:
@@ -129,6 +129,16 @@ def build():
         for st, arr in by_state.items():
             states[st][t["id"]] = {"count": len(arr), "value": round(sum(i["value"] or 0 for i in arr)), "unit": t["unit"]}
 
+    states_doc = json.loads((WEB_DATA / "states.json").read_text())
+    for st in states_doc:
+        summary = states.get(st["abbr"], {})
+        by_type = {k: v["value"] for k, v in summary.items()}
+        sites = {k: v["count"] for k, v in summary.items()}
+        st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; zero means no mapped site, not missing data."}
+    write_web("states.json", states_doc)
+    # resources.json is the declared output and must be written last: states.json is an
+    # input to this postprocessing builder, so writing it after resources.json would make
+    # the builder look permanently stale to the mtime-based build cache.
     write_web("resources.json", {
         "types": TYPES,
         "items": items,
@@ -138,10 +148,3 @@ def build():
             "states": dict(states),
         },
     })
-    states_doc = json.loads((WEB_DATA / "states.json").read_text())
-    for st in states_doc:
-        summary = states.get(st["abbr"], {})
-        by_type = {k: v["value"] for k, v in summary.items()}
-        sites = {k: v["count"] for k, v in summary.items()}
-        st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; zero means no mapped site, not missing data."}
-    write_web("states.json", states_doc)

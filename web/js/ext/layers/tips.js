@@ -26,11 +26,11 @@ export const tips = {
     const yr = p.year ?? "";
     const lines = [
       `<b>${esc(p.name)}</b> ${muted(`${esc(PORT_TYPE[p.type] || "Port")}, ${esc(p.state || "")}`)}`,
-      `#${esc(p.rank)} by tonnage · <b>${num(p.tons)}</b> short tons (${esc(yr)})`,
+      `#${esc(p.rank)} by tonnage · <b>${num(p.tons)}</b> metric tonnes (${esc(yr)})`,
     ];
     if (p.foreign != null || p.domestic != null) lines.push(`Foreign ${num(p.foreign)} · domestic ${num(p.domestic)}`);
     if (p.imports != null || p.exports != null) lines.push(`Imports ${num(p.imports)} · exports ${num(p.exports)}`);
-    lines.push(muted("USACE principal ports; placed at the port area's centre (long river ports are approximate)."));
+    lines.push(muted("Eurostat maritime port tonnage; placed at the port area's centre (long river ports are approximate)."));
     return lines.join("<br>");
   },
   airport(a) {
@@ -42,10 +42,10 @@ export const tips = {
         const r = a.enplanements / a.enplanements_prev - 1;
         ch = ` (${sign(r)}${Math.abs(r * 100).toFixed(1)}% on ${a.year - 1})`;
       }
-      lines.push(`<b>${num(a.enplanements)}</b> boardings in ${esc(a.year)}${ch}`);
+      lines.push(`<b>${num(a.enplanements)}</b> passengers (arrivals + departures) in ${esc(a.year)}${ch}`);
     }
     if (a.cargo_lbs != null) lines.push(`All-cargo landed weight ${num(a.cargo_lbs)} lb`);
-    lines.push(muted("FAA CY enplanements and all-cargo data."));
+    lines.push(muted("Eurostat airport passengers; display size buckets, not FAA hub categories."));
     return lines.join("<br>");
   },
   fort(f, m) {
@@ -82,6 +82,9 @@ export const tips = {
       lines.push(`${esc(k)} · hand-picked (curated, not ranked by data)`);
       if (mt.visits != null) lines.push(`${num(mt.visits)} recreation visits (${esc(mt.year)})`);
       if (mt.designated) lines.push(`National Historic Landmark since ${esc(mt.designated)}`);
+    } else if (mt.designated) {
+      lines.push(`${esc(k)} · UNESCO World Heritage, inscribed ${esc(mt.designated)}`);
+      if (mt.criteria) lines.push(`Criteria: ${esc(mt.criteria)}`);
     } else {
       lines.push(`${esc(k)} · #${esc(x.rank)} by visits${mt.unit_type ? ` among ${esc(mt.unit_type === "National Park" ? "National Parks" : "other park units")}` : ""}`);
       if (mt.visits != null) lines.push(`<b>${num(mt.visits)}</b> recreation visits (${esc(mt.year)})${mt.visits_of ? ` ${muted(`(${esc(mt.visits_of)})`)}` : ""}`);
