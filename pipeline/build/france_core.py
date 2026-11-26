@@ -2,8 +2,8 @@
 
 This first builder intentionally preserves the original usaciv web contracts while using
 French concepts: région→state, département→county, aire d'attraction des villes→city.
-Eurostat employment/GDP are department-level and are allocated across AAVs in proportion
-to commune population; the outputs mark those values as estimates.
+Eurostat GDP is department-level and allocated across AAVs in proportion
+to workplace employment; the outputs mark those values as estimates.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ from collections import Counter, defaultdict
 from ..core.geo import MapProjection
 from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
+from ..sources.fr_eurostat import YEAR as EUROSTAT_YEAR
 
 REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_eurostat", "fr_insee_stats", "fr_elections", "fr_hazards"]
 PRODUCES = ["cities.json", "states.json", "nation.json", "counties.json", "lenses.json"]
@@ -45,9 +46,9 @@ GVA_INDUSTRIES = {
 }
 
 YIELDS = [
-    {"key": "food", "icon": "y-food", "emoji": "🌾", "label": "Food", "color": "#7fbf3f", "unit": "workers", "industries": ["agriculture"], "description": "Employment in agriculture, forestry and fishing (Eurostat NACE A), allocated within departments in proportion to population."},
+    {"key": "food", "icon": "y-food", "emoji": "🌾", "label": "Food", "color": "#7fbf3f", "unit": "workers", "industries": ["agriculture"], "description": "Employment in agriculture, forestry and fishing (NACE A) from the census workplace-employment table."},
     {"key": "production", "icon": "y-production", "emoji": "⚙️", "label": "Production", "color": "#d9823b", "unit": "workers", "industries": ["manufacturing", "construction", "mining"], "description": "Employment in industry (NACE B–E) plus construction (NACE F)."},
-    {"key": "gold", "icon": "y-gold", "emoji": "💰", "label": "Gold", "color": "#f2c94c", "unit": "eur", "industries": [], "description": "Gross domestic product per year in current euros (Eurostat regional accounts). AAV values are department values allocated by population."},
+    {"key": "gold", "icon": "y-gold", "emoji": "💰", "label": "Gold", "color": "#f2c94c", "unit": "eur", "industries": [], "description": "Gross domestic product per year in current euros (Eurostat regional accounts). AAV values are department values allocated by workplace employment."},
     {"key": "science", "icon": "y-science", "emoji": "🔬", "label": "Science", "color": "#4fa3e0", "unit": "workers", "industries": ["professional", "information"], "description": "Employment in information/communication (NACE J) plus professional, scientific and technical activities (NACE M–N)."},
     {"key": "culture", "icon": "y-culture", "emoji": "🎭", "label": "Culture", "color": "#b07ce0", "unit": "workers", "industries": ["arts"], "description": "Employment in arts, entertainment, recreation and other services (NACE R–U)."},
 ]
@@ -351,7 +352,7 @@ def build():
             "fips": s["fips"], "abbr": s["abbr"], "name": s["name"], "population": agg["population"] or None,
             "employed": agg["employed"] or None, "yields": yields, "jobs": jobs, "median_income": None, "median_rent": None,
             "home_value": None, "unemployment": unemployment_rate(reg_activity.get(s["fips"])), "rent_burden": None, "gdp": agg["gdp"] if have_gdp else None,
-            "gdp_year": 2023,
+            "gdp_year": EUROSTAT_YEAR,
             "median_income": rcomp.get("MED_SL_2023"),
             "poverty": (rcomp.get("PR_MD60_2023") or 0) / 100 if rcomp.get("PR_MD60_2023") is not None else None,
             **housing_metrics(rcomp),
@@ -472,7 +473,7 @@ def build():
             "population": pop, "employed": employed, "yields": yields, "jobs": {k: round(jobs.get(k, 0)) for k in INDUSTRIES},
             "median_income": comp_row.get("MED_SL_2023"), "median_rent": None, "home_value": None,
             "unemployment": unemployment_rate(aav_activity.get(code)), "rent_burden": None,
-            "gdp": round(gdp), "gdp_year": 2023, "gdp_by_industry": {}, "gdp_estimated": list(INDUSTRIES), "gdp_undisclosed": None,
+            "gdp": round(gdp), "gdp_year": EUROSTAT_YEAR, "gdp_by_industry": {}, "gdp_estimated": list(INDUSTRIES), "gdp_undisclosed": None,
             "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(comp_row.get("POP_2023"), comp_row.get("POP_2017"))),
             "growth_years": [2017, 2023] if comp_row.get("POP_2023") and comp_row.get("POP_2017") else None,
             "poverty": (comp_row.get("PR_MD60_2023") or 0) / 100 if comp_row.get("PR_MD60_2023") is not None else None,
@@ -517,7 +518,7 @@ def build():
         "unemployment": unemployment_rate(fr_activity.get("FM") or fr_activity.get("F")), "rent_burden": None,
         "poverty": (fr_c.get("PR_MD60_2023") or 0) / 100 if fr_c.get("PR_MD60_2023") is not None else None,
         **housing_metrics(fr_c),
-        "gdp": nat_gdp, "gdp_year": 2023,
+        "gdp": nat_gdp, "gdp_year": EUROSTAT_YEAR,
         "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(fr_c.get("POP_2023"), fr_c.get("POP_2017"))),
         "growth_years": [2017, 2023] if fr_c.get("POP_2023") and fr_c.get("POP_2017") else None,
     }
@@ -525,7 +526,7 @@ def build():
     for dep in counties_meta:
         nat_gva.update({k: v or 0 for k, v in dep_gva(dep).items()})
     nation_obj["gdp_by_industry"] = {k: round(nat_gva.get(k, 0)) for k in GVA_INDUSTRIES}
-    nation = {"vintage": "INSEE populations / Eurostat regional accounts 2023", "year": 2023, "gdp_vintage": "Eurostat nama_10r_3gva/nama_10r_3gdp, 2023", "nation": nation_obj, "yields": YIELDS, "industries": INDUSTRIES, "gdp_industries": {k: label for k, (_nace, label) in GVA_INDUSTRIES.items()}}
+    nation = {"vintage": f"INSEE populations / Eurostat regional accounts {EUROSTAT_YEAR}", "year": 2023, "gdp_vintage": f"Eurostat nama_10r_3gva/nama_10r_3gdp, {EUROSTAT_YEAR}", "nation": nation_obj, "yields": YIELDS, "industries": INDUSTRIES, "gdp_industries": {k: label for k, (_nace, label) in GVA_INDUSTRIES.items()}}
 
     # Departments (counties contract).
     fields_def = [
@@ -615,7 +616,7 @@ def build():
                      round(dep_election.get(dep,{}).get("le_pen"),4) if dep_election.get(dep,{}).get("le_pen") is not None else None,
                      round(dep_election.get(dep,{}).get("abstention"),4) if dep_election.get(dep,{}).get("abstention") is not None else None,
                      aa["id"] if aa else None, cell])
-    counties_out = {"vintage": "geo.api.gouv.fr populations; Eurostat 2023", "fields": fields, "columns": [x[0] for x in fields_def], "rows": rows}
+    counties_out = {"vintage": f"geo.api.gouv.fr populations; Eurostat {EUROSTAT_YEAR}", "fields": fields, "columns": [x[0] for x in fields_def], "rows": rows}
 
     # Lenses: department economics spread over hexes plus direct land-cover shares.
     county_lookup = {i: world["county"][i] for i in range(grid.size)}
@@ -705,7 +706,7 @@ def build():
       if lo is None or hi is None:
         continue
       lenses.append({"id":lid,"group":group,"name":name,"icon":"l-people" if lid=="density" else lid,"emoji":emoji,"unit":unit,"format":fmt,"scale":scale,"domain":[lo,hi],"ramp":ramps[group],"higher_is":"neutral","source":"fr_eurostat" if lid in {"density","gdp_capita","employment_rate","industry"} else ("fr_corine" if lid in {"forest","farmland","developed"} else ("fr_elections" if lid.endswith("_2022") else ("fr_hazards" if lid in {"disasters","flood_events","drought_events"} else "fr_insee_stats"))),"description":desc,"values":vals})
-    lens_out={"vintage":"geo.api.gouv.fr / Eurostat 2023 / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land and housing"},{"id":"politics","name":"Elections"},{"id":"hazards","name":"Natural hazards"}],"lenses":lenses}
+    lens_out={"vintage":f"geo.api.gouv.fr / Eurostat {EUROSTAT_YEAR} / CORINE Land Cover 2018","groups":[{"id":"people","name":"People"},{"id":"prosperity","name":"Prosperity"},{"id":"land","name":"Land and housing"},{"id":"politics","name":"Elections"},{"id":"hazards","name":"Natural hazards"}],"lenses":lenses}
 
     write_web("cities.json", cities)
     write_web("states.json", states)

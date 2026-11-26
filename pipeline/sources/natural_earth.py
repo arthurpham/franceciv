@@ -32,7 +32,7 @@ class NaturalEarth(Source):
         return load_geojson(self.raw_dir / self._path(name))
 
     def process(self):
-        # Every non-US country with land in the window (Canada, Mexico, Cuba, the Bahamas, Bermuda...),
+        # Every foreign country with land in the window around France,
         # keeping only its rings there, so foreign coasts inside the map are land rather than sea.
         countries = []
         for f in self._features("ne_50m_admin_0_countries"):

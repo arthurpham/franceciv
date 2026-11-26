@@ -14,10 +14,10 @@ The original browser engine, rendering art, interaction model and pipeline archi
 - 172 city banners based on INSEE 2020 aires d'attraction des villes (AAV), including cross-border AAVs restricted to their French communes.
 - Five yields: Food, Production, Gold, Science and Culture.
   - Gold is Eurostat NUTS-3 GDP in current euros.
-  - The other yields are Eurostat employment by high-level NACE industry.
-  - Because Eurostat data is département-level, AAV values are allocated in proportion to commune population and should be read as estimates.
+  - The other yields are census workplace employment by industry, observed directly for each aire d'attraction.
+  - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election and natural-hazard lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results and GASPAR catastrophe recognitions.
-- Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, gas/coal, wind, solar and batteries.
+- Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
 - Schematic road and rail links plus real airports and ports from Natural Earth, OurAirports and Eurostat traffic series.
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
@@ -61,7 +61,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 
 - Etalab / geo.api.gouv.fr: current région, département and commune boundaries, commune populations and centroids.
 - INSEE: 2020 aires d'attraction des villes, 2026 vintage geography.
-- Eurostat regional accounts: `nama_10r_3gdp`, `nama_10r_3gva`, `nama_10r_3empers` for 2023.
+- Eurostat regional accounts: `nama_10r_3gdp`, `nama_10r_3gva`, `nama_10r_3empers` for 2024.
 - CORINE Land Cover 2018, served through the IGN Géoplateforme WMS.
 - ODRÉ national registry of electricity generation and storage installations.
 - NOAA ETOPO1 elevation and bathymetry.
