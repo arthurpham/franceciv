@@ -9,7 +9,7 @@ from collections import Counter, defaultdict
 
 from ..core.source import Source, SourceInfo
 
-URL = "http://files.georisques.fr/GASPAR/gaspar.zip"
+URL = "https://files.georisques.fr/GASPAR/gaspar.zip"
 FILE = "gaspar.zip"
 GROUPS = {
     "flood": {"ICB", "IRN", "CMV"},

@@ -210,11 +210,13 @@ def build():
     dep_hazard = {}
     hazard_acc = {}
     hazard_years = max(1, hazards["years"][1] - hazards["years"][0] + 1)
-    for c in bounds["communes"]:
-        dep = c["department"]
+    commune_counts = Counter(c["department"] for c in bounds["communes"])
+    for commune_code, row in hazards["communes"].items():
+        dep = commune_code[:2]
+        if dep not in counties_meta:
+            continue
         acc = hazard_acc.setdefault(dep, Counter())
-        row = hazards["communes"].get(c["code"], {})
-        acc["communes"] += 1
+        acc["communes"] = commune_counts[dep]
         for key in ["events", "flood", "drought", "storm", "ground"]:
             acc[key] += row.get(key, 0)
     for dep, acc in hazard_acc.items():

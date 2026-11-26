@@ -24,7 +24,7 @@ class FrenchUnesco(Source):
     )
 
     def fetch(self, force=False):
-        self.download(URL, FILE, force=force, expect_binary=False)
+        self.download(URL, FILE, force=force, headers={"User-Agent": "Mozilla/5.0 franceciv"}, expect_binary=False)
 
     def process(self):
         root = ET.parse(self.raw_dir / FILE).getroot()

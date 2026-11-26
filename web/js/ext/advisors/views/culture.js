@@ -37,7 +37,7 @@ export async function mount(ctx) {
   el.appendChild(tileEl);
   const drawTiles = (dis) => {
     tileEl.innerHTML = tiles([
-      { label: "Wonders", value: int(wonders.length), sub: (() => { const byRule = (...ids) => wonders.filter((w) => ids.includes(w.rule)).length; return `${byRule("national_park", "park_unit")} park units · ${byRule("research_university")} universities · ${byRule("landmark")} landmarks`; })() },
+      { label: "Wonders", value: int(wonders.length), sub: (() => { const byRule = (...ids) => wonders.filter((w) => ids.includes(w.rule)).length; return `${byRule("national_park", "park_unit", "unesco_natural")} natural properties · ${byRule("research_university")} universities · ${byRule("landmark", "unesco_cultural")} landmarks`; })() },
       { label: "Park visits", value: count3(won?.national?.park_visits), sub: `all NPS units, ${won?.national?.park_visits_year || ""}` },
       dis?.noaa?.national
         ? { label: "$1B+ disasters", value: int(dis.noaa.national.events), sub: `${dis.noaa.years?.join("–") || ""} · ${money(dis.noaa.national.cost_usd)}` }
@@ -69,7 +69,7 @@ export async function mount(ctx) {
     onClick: (b) => flyTo(b.it),
   });
   if (won && wonders.length) {
-    const wBody = section(el, { title: "Wonders", kicker: "Each chosen by a published rule", note: "Hover a wonder to find it on the map; click to fly there. Parks are ranked by recreation visits, universities by research spending; landmarks are a hand-picked list." });
+    const wBody = section(el, { title: "Wonders", kicker: "Each chosen by a published rule", note: "Hover a wonder to find it on the map; click to fly there. UNESCO entries are ranked by inscription year; they are not measures of visits or importance." });
     let kind = "all";
     segmented(wBody, {
       label: "Kind", value: kind,
