@@ -118,7 +118,7 @@ def build():
         "rules": [
             {"id": "unesco_natural", "kind": "natural", "kinds": ["natural"], "text": "Natural and mixed UNESCO World Heritage properties with at least one component point in metropolitan France or Corsica. Ranked by inscription year, not importance or visits."},
             {"id": "unesco_cultural", "kind": "landmark", "kinds": ["landmark"], "text": "Cultural UNESCO World Heritage properties with at least one component point in metropolitan France or Corsica. Serial properties are represented by their first French point; ranking is by inscription year, not importance."},
-            {"id": "museum_attendance", "kind": "landmark", "kinds": ["landmark"], "text": "The 12 most-visited open Musées de France in the ministry's latest annual attendance row for each museum, using total visits. Sites that report combined attendance are not split."},
+            {"id": "museum_attendance", "kind": "landmark", "kinds": ["landmark"], "text": "The 12 most-visited open Musées de France in each institution's latest annual attendance, using total visits summed across distinct physical sites sharing one Muséofile identifier."},
             {"id": "university_enrolment", "kind": "university", "kinds": ["university"], "text": "The 12 largest French universities by total enrolled students in SISE 2024-25, including principal and secondary enrolments and CPGE double enrolments. Locations are administrative headquarters communes, not full campus footprints."},
         ],
         "national": {
