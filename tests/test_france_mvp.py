@@ -90,3 +90,20 @@ def test_freight_trade_contract_uses_french_units():
     assert sum("001" in z["cities"] for z in trade["zones"]) == 1  # Paris belongs to the banner region only
     assert min(sum(r["modes"].values()) for r in trade["routes"]) > 0.999
     assert any(r.get("rail_suppressed") for r in trade["routes"])
+
+
+def test_culture_wonders_contract():
+    wonders = web("wonders.json")
+    rows = wonders["wonders"]
+    assert wonders["sources"] == ["fr_unesco", "fr_culture"]
+    museums = [w for w in rows if w["rule"] == "museum_attendance"]
+    universities = [w for w in rows if w["rule"] == "university_enrolment"]
+    assert len(museums) == len(universities) == 12
+    assert museums[0]["name"] == "musée du Louvre"
+    assert museums[0]["metrics"]["visits"] > 8_000_000
+    assert universities[0]["name"] == "Université de Lille"
+    assert universities[0]["metrics"]["students"] > 80_000
+    assert all(w["cell"] is not None and w["state"] for w in museums + universities)
+    assert [w["metrics"]["visits"] for w in museums] == sorted((w["metrics"]["visits"] for w in museums), reverse=True)
+    assert [w["metrics"]["students"] for w in universities] == sorted((w["metrics"]["students"] for w in universities), reverse=True)
+    assert any(s["id"] == "fr_culture" for s in web("sources.json"))

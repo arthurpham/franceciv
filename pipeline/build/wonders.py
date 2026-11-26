@@ -10,7 +10,7 @@ from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 from .infrastructure import nearest_land
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_unesco", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_unesco", "fr_culture", "cities.json"]
 PRODUCES = ["wonders.json"]
 
 
@@ -19,6 +19,7 @@ def build():
     bounds = load_interim("fr_boundaries")
     aav = load_interim("fr_aav")
     unesco = load_interim("fr_unesco")
+    culture = load_interim("fr_culture")
     cities = json.loads((WEB_DATA / "cities.json").read_text())
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
@@ -28,6 +29,7 @@ def build():
     shapes = [Shape([[proj(lon, lat) for lon, lat in ring] for ring in c["rings"]]) for c in bounds["communes"]]
     spatial = ShapeIndex(shapes, cell_km=40)
     communes = bounds["communes"]
+    commune_by_code = {c["code"]: c for c in communes}
 
     def geo(lon, lat):
         x, y = proj(lon, lat)
@@ -60,8 +62,51 @@ def build():
             "metrics": {"designated": row["year"], "criteria": row["criteria"], "url": row["url"], "transnational": row["transnational"]},
             "cells": None, "curated": False, **geo(point["lon"], point["lat"]),
         })
-    for rule in ("unesco_natural", "unesco_cultural"):
-        subset = sorted((w for w in wonders if w["rule"] == rule), key=lambda w: (w["metrics"]["designated"] or 9999, w["name"]))
+    # Most-visited museums. These are landmarks ranked directly by attendance.
+    for row in culture["museums"][:12]:
+        wonders.append({
+            "id": f"museum-{row['id']}", "name": row["name"], "short": row["name"],
+            "kind": "landmark", "rule": "museum_attendance", "rank": 0,
+            "metrics": {"visits": row["visits"], "year": row["year"], "domain": row.get("domain"), "url": row.get("url")},
+            "cells": None, "curated": False, **geo(row["lon"], row["lat"]),
+        })
+
+    # Largest universities by enrolment. SISE locates institutions at their headquarters commune;
+    # separate institutions sharing Paris/Lyon/Marseille parent communes are offset slightly so
+    # their markers remain independently visible. The offsets are display geometry, not campus data.
+    uni_rows = culture["universities"][:12]
+    by_commune = {}
+    for row in uni_rows:
+        by_commune.setdefault(row["commune"], []).append(row)
+    for row in uni_rows:
+        c = commune_by_code.get(row["commune"])
+        if not c:
+            continue
+        base = geo(c["lon"], c["lat"])
+        group = by_commune[row["commune"]]
+        if len(group) > 1:
+            import math
+            k = group.index(row)
+            angle = 2 * math.pi * k / len(group) + 0.35
+            radius = 7.0 if len(group) > 2 else 4.0
+            base["x"] = round(base["x"] + math.cos(angle) * radius, 1)
+            base["y"] = round(base["y"] + math.sin(angle) * radius, 1)
+            base["cell"] = nearest_land(world, grid, base["x"], base["y"])
+        wonders.append({
+            "id": f"university-{row['id']}", "name": row["name"], "short": row["name"],
+            "kind": "university", "rule": "university_enrolment", "rank": 0,
+            "metrics": {"students": row["students"], "year": row["year"], "seat": row.get("seat"), "type": row.get("type")},
+            "cells": None, "curated": False, **base,
+        })
+
+    for rule in ("unesco_natural", "unesco_cultural", "museum_attendance", "university_enrolment"):
+        if rule == "museum_attendance":
+            keyfn = lambda w: (-(w["metrics"].get("visits") or 0), w["name"])
+        elif rule == "university_enrolment":
+            keyfn = lambda w: (-(w["metrics"].get("students") or 0), w["name"])
+        else:
+            keyfn = lambda w: (w["metrics"]["designated"] or 9999, w["name"])
+        subset = sorted((w for w in wonders if w["rule"] == rule), key=keyfn)
         for rank, w in enumerate(subset, 1):
             w["rank"] = rank
     wonders.sort(key=lambda w: (w["rule"], w["rank"]))
@@ -69,12 +114,18 @@ def build():
     write_web("wonders.json", {
         "version": 1,
         "vintage": {"unesco": "UNESCO World Heritage List, current XML export"},
-        "sources": ["fr_unesco"],
+        "sources": ["fr_unesco", "fr_culture"],
         "rules": [
             {"id": "unesco_natural", "kind": "natural", "kinds": ["natural"], "text": "Natural and mixed UNESCO World Heritage properties with at least one component point in metropolitan France or Corsica. Ranked by inscription year, not importance or visits."},
             {"id": "unesco_cultural", "kind": "landmark", "kinds": ["landmark"], "text": "Cultural UNESCO World Heritage properties with at least one component point in metropolitan France or Corsica. Serial properties are represented by their first French point; ranking is by inscription year, not importance."},
+            {"id": "museum_attendance", "kind": "landmark", "kinds": ["landmark"], "text": "The 12 most-visited open Musées de France in the ministry's latest annual attendance row for each museum, using total visits. Sites that report combined attendance are not split."},
+            {"id": "university_enrolment", "kind": "university", "kinds": ["university"], "text": "The 12 largest French universities by total enrolled students in SISE 2024-25, including principal and secondary enrolments and CPGE double enrolments. Locations are administrative headquarters communes, not full campus footprints."},
         ],
-        "national": {"world_heritage_entries": len(wonders)},
+        "national": {
+            "world_heritage_entries": sum(1 for w in wonders if w["id"].startswith("unesco-")),
+            "museum_visits_top": max((w["metrics"].get("visits") or 0 for w in wonders if w["rule"] == "museum_attendance"), default=None),
+            "museum_year": culture["years"].get("museums"), "university_year": culture["years"].get("universities"),
+        },
         "wonders": wonders,
     })
-    print(f"    {len(wonders)} UNESCO wonders")
+    print(f"    {len(wonders)} wonders")
