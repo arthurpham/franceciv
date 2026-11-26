@@ -1,7 +1,7 @@
 """Small, dependency-free geometry helpers.
 
 Everything on the map lives in "map km": an Albers equal-area projection of the
-contiguous US, shifted so the top-left of the map is (0, 0) and y points *down*
+metropolitan France, shifted so the top-left of the map is (0, 0) and y points *down*
 (like screen coordinates). Both the hex grid and the browser use this space.
 """
 

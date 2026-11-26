@@ -26,7 +26,7 @@ export function initSearch(opts) {
   (opts.states || []).forEach((s, index) => {
     if (!s) return;
     entries.push({ kind: "state", index, name: s.name, n: norm(s.name), full: norm(s.abbr), abbr: (s.abbr || "").toLowerCase(),
-      pop: s.population || 0, sub: "State", label: s.name });
+      pop: s.population || 0, sub: "Region", label: s.name });
   });
 
   let results = [];

@@ -103,6 +103,17 @@ def unemployment_rate(row):
     return unemp / (emp + unemp) if emp is not None and unemp is not None and emp + unemp else None
 
 
+def housing_metrics(row):
+    """INSEE Comparateur housing shares: owner-occupied main homes, second homes and vacant homes."""
+    row = row or {}
+    rp, log = row.get("RP_2023"), row.get("LOG_2023")
+    return {
+        "homeownership": round(row.get("RP_PROP_2023", 0) / rp, 4) if rp else None,
+        "second_homes": round(row.get("RSEC_2023", 0) / log, 4) if log else None,
+        "vacancy": round(row.get("LVAC_2023", 0) / log, 4) if log else None,
+    }
+
+
 def ratio(num, den, digits=4):
     return round(num / den, digits) if num is not None and den else None
 
@@ -123,7 +134,7 @@ def immigration_share(row):
     return ratio((row or {}).get("IMMI=1"), (row or {}).get("_T")) if row else None
 
 
-# NACE aggregate -> original industry keys. Some high-level Eurostat slices are necessarily broader than ACS industries.
+# NACE aggregate -> original industry keys. Some high-level Eurostat slices are necessarily broader than the detailed labels they reuse.
 NACE_JOBS = {
     "A": {"agriculture": 1}, "B-E": {"manufacturing": 0.9, "utilities": 0.07, "mining": 0.03},
     "F": {"construction": 1},
@@ -343,6 +354,7 @@ def build():
             "gdp_year": 2023,
             "median_income": rcomp.get("MED_SL_2023"),
             "poverty": (rcomp.get("PR_MD60_2023") or 0) / 100 if rcomp.get("PR_MD60_2023") is not None else None,
+            **housing_metrics(rcomp),
             "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(rcomp.get("POP_2023"), rcomp.get("POP_2017"))),
             "growth_years": [2017, 2023] if rcomp.get("POP_2023") and rcomp.get("POP_2017") else None,
             "pop_series": {str(y): v for y, v in comp_series(rcomp, "POP")}, "ranks": {}, "label": None,
@@ -464,6 +476,7 @@ def build():
             "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(comp_row.get("POP_2023"), comp_row.get("POP_2017"))),
             "growth_years": [2017, 2023] if comp_row.get("POP_2023") and comp_row.get("POP_2017") else None,
             "poverty": (comp_row.get("PR_MD60_2023") or 0) / 100 if comp_row.get("PR_MD60_2023") is not None else None,
+            **housing_metrics(comp_row),
             "counties": deps, "pop_series": {str(y): v for y, v in comp_series(comp_row, "POP")}, "footprint": footprint,
             "ranks": {}, "peers": [],
         })
@@ -503,6 +516,7 @@ def build():
         "median_income": fr_c.get("MED_SL_2023"), "median_rent": None, "home_value": None,
         "unemployment": unemployment_rate(fr_activity.get("FM") or fr_activity.get("F")), "rent_burden": None,
         "poverty": (fr_c.get("PR_MD60_2023") or 0) / 100 if fr_c.get("PR_MD60_2023") is not None else None,
+        **housing_metrics(fr_c),
         "gdp": nat_gdp, "gdp_year": 2023,
         "growth": (lambda v: round(v, 4) if v is not None else None)(pct_change(fr_c.get("POP_2023"), fr_c.get("POP_2017"))),
         "growth_years": [2017, 2023] if fr_c.get("POP_2023") and fr_c.get("POP_2017") else None,
@@ -530,7 +544,7 @@ def build():
         ("flood_events", "Flood share", "pct", "share of recognitions"), ("drought_events", "Drought share", "pct", "share of recognitions"),
         ("macron_2022", "Macron 2022", "pct", "share of valid ballots"), ("lepen_2022", "Le Pen 2022", "pct", "share of valid ballots"),
         ("abstention_2022", "Abstention 2022", "pct", "share of registered voters"),
-        ("cbsa", "Main AAV", "text", None), ("cell", "Map cell", "int", None),
+        ("aav", "Main AAV", "text", None), ("cell", "Map cell", "int", None),
     ]
     insee_fields = {"population", "land_km2", "density", "income", "poverty", "growth", "homeownership", "second_homes", "vacancy", "unemployment", "higher_education", "seniors", "immigration", "public_transit", "car_commuting"}
     hazard_fields = {"disasters", "flood_events", "drought_events"}
@@ -554,6 +568,25 @@ def build():
             ind = (e["jobs"].get("manufacturing", 0)+e["jobs"].get("construction",0)+e["jobs"].get("mining",0)) / emp
         cells = [i for i, c in enumerate(world["county"]) if c == idx]
         cell = cells[len(cells)//2] if cells else None
+        if cell is None:
+            # Very small or highly fragmented departments can miss every hex-centre sample. Use the
+            # population-weighted centroid of their communes and pick the nearest land hex in the same
+            # region as a display stand-in; it is only for framing/highlighting, not statistical geography.
+            comms = [c for c in dep_comms.get(dep, []) if c.get("population") and c.get("lon") is not None and c.get("lat") is not None]
+            weight = sum(c["population"] for c in comms)
+            if weight:
+                lon = sum(c["lon"] * c["population"] for c in comms) / weight
+                lat = sum(c["lat"] * c["population"] for c in comms) / weight
+                x, y = proj(lon, lat)
+                state_idx = world["states"].index(meta["state_fips"]) if meta["state_fips"] in world["states"] else -1
+                def dist2(i):
+                    ix, iy = grid.center(*grid.col_row(i))
+                    return (ix - x) ** 2 + (iy - y) ** 2
+                candidates = [i for i, o in enumerate(world["owner"]) if o == state_idx]
+                if not candidates:
+                    candidates = [i for i, o in enumerate(world["owner"]) if o >= 0]
+                if candidates:
+                    cell = min(candidates, key=dist2)
         meanpct = {}
         for key in ["forest", "crop", "developed"]:
             vals = [world["pct"][key][i] / 100 for i in cells if world["pct"][key][i]]
@@ -603,10 +636,45 @@ def build():
             vals.append(round(v,digits) if v is not None else None)
         return vals
     landvals=lambda key: [round(world["pct"][key][i]/100,3) if world["owner"][i]>=0 and world["pct"][key][i] else (0 if world["owner"][i]>=0 else None) for i in range(grid.size)]
+
+    def allocated_density(key, digits=1):
+        """Spread a department total across hexes by the seven-point county mix.
+
+        Majority-county assignment badly overstates totals in border hexes. The world builder keeps
+        seven county samples per hex precisely for this area weighting, so distribute each department
+        total over them and divide the resulting hex total by hex area.
+        """
+        hex_area = 1.5 * math.sqrt(3) * grid.radius ** 2
+        weights = {}
+        totals = {}
+        for i in range(grid.size):
+            if world["owner"][i] < 0:
+                continue
+            cnt = Counter(k for k in world["county_samples"][i] if k >= 0)
+            if not cnt:
+                continue
+            weights[i] = cnt
+            for k, n in cnt.items():
+                totals[k] = totals.get(k, 0) + n
+        vals = []
+        for i in range(grid.size):
+            if world["owner"][i] < 0 or i not in weights:
+                vals.append(None)
+                continue
+            amount = 0.0
+            for k, n in weights[i].items():
+                dep = county_ids[k]
+                total = dep_econ[dep].get(key)
+                if total and totals.get(k):
+                    amount += total * n / totals[k]
+            land_share = sum(weights[i].values()) / len(world["county_samples"][i]) if world["county_samples"][i] else 1.0
+            vals.append(round(amount / (hex_area * land_share), digits) if amount else 0)
+        return vals
+
     defs=[
-      ("density","people","Population","👥","people / km²","int","log",dep_lens(lambda e: e["population"]/e["area"] if e["population"] and e["area"] else None,1),"Residents per km² of department land."),
-      ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. Unlike the original US map, this is not household income."),
-      ("employment_rate","people","Employment density","💼","workers / km²","int","log",dep_lens(lambda e: e["employed"]/e["area"] if e["employed"] and e["area"] else None,1),"Employment by workplace per km² of department land."),
+      ("density","people","Population","👥","people / km²","int","log",allocated_density("population",1),"Residents per km² of department land."),
+      ("gdp_capita","prosperity","GDP per capita","💰","euros / resident","eur","linear",dep_lens(lambda e: e["gdp"]/e["population"] if e["gdp"] and e["population"] else None,0),"Department GDP divided by residents. This is output per resident, not household earnings."),
+      ("employment_rate","people","Employment density","💼","workers / km²","int","log",allocated_density("employed",1),"Employment by workplace per km² of department land."),
       ("industry","prosperity","Industry","⚙️","share of employment","pct","linear",dep_lens(lambda e: (e["jobs"].get("manufacturing",0)+e["jobs"].get("construction",0)+e["jobs"].get("mining",0))/e["employed"] if e["employed"] else None,4),"Industry and construction employment as a share of all employment."),
       ("forest","land","Forest","🌲","share of land","pct","linear",landvals("forest"),"Share of each hex classified as tree cover by CORINE Land Cover."),
       ("farmland","land","Farmland","🌾","share of land","pct","linear",landvals("crop"),"Share of each hex classified as cropland by CORINE Land Cover."),

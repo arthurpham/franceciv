@@ -1,5 +1,5 @@
 // Number formatting for the advisor kit, built on web/js/format.js.
-// Formats follow lenses.json / counties.json: int | usd | pct (0..1 fraction) | float | minutes | years | km2 | text,
+// Formats follow lenses.json / counties.json: int | eur | pct (0..1 fraction) | float | minutes | years | km2 | text,
 // plus a few of our own: money (compact $), signed (signed %), lq (×1.23), mw, count, ratio (×4.2).
 import { compact, dollars, int, money, pct } from "../../../format.js";
 import { fin } from "./util.js";
@@ -53,7 +53,7 @@ export function fmtCell(format, v, unit) {
   const a = Math.abs(v);
   switch (format) {
     case "int": case "count": return a >= 1e4 ? count3(v) : int(v);
-    case "usd": return a >= 1e4 ? `$${count3(v)}` : dollars(v);
+    case "usd": return a >= 1e4 ? `€${count3(v)}` : dollars(v);
     case "money": return money(v);
     case "km2": return a >= 1e5 ? `${count3(v)} km²` : `${int(v)} km²`;
     case "float": return a >= 1e4 ? count3(v) : fmtValue(format, v, unit);

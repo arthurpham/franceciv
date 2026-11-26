@@ -68,7 +68,7 @@ class Source:
     def process(self) -> dict:
         """Return processed data.
 
-        May include "vintage" (e.g. "ACS 2025 1-year") and "_files" (raw files actually
+        May include "vintage" (e.g. "INSEE census 2023") and "_files" (raw files actually
         used, relative to data/raw/<id>/; the Almanac cites only those).
         """
         raise NotImplementedError

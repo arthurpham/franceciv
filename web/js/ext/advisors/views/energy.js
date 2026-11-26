@@ -122,7 +122,7 @@ export function mount(ctx) {
     columns: [
       { key: "name", label: "Site", align: "l", width: "minmax(0,1.7fr)", value: (r) => r.name, html: (r) => `<span class="ic">${glyph(typeById.get(r.type), 13)}</span>${esc(r.name)}` },
       { key: "type", label: "Type", align: "l", width: "minmax(0,1fr)", value: (r) => typeById.get(r.type)?.name, text: (r) => typeById.get(r.type)?.name.replace(/ \(shale play\)/, "") || r.type },
-      { key: "state", label: "State", align: "l", width: "46px", value: (r) => r.state, text: (r) => r.state || "–" },
+      { key: "state", label: "Region", align: "l", width: "46px", value: (r) => r.state, text: (r) => r.state || "–" },
       { key: "value", label: "Size", width: "minmax(0,.95fr)", value: sizeSort, text: (r) => sizeText(r), title: "Sort by capacity (MW; other units sort last)" },
     ],
     rows: [],
@@ -223,7 +223,7 @@ export function mount(ctx) {
     const sIdx = st.state ? stateIdx.get(st.state) : null;
     link.base({ dimOthers: true, states: sIdx != null ? new Set([sIdx]) : undefined });
     stateChip.innerHTML = st.state
-      ? `<span class="adv-fchip">State: <b>${esc(states[sIdx]?.name || st.state)}</b> · ${int(vis.length)} sites<button type="button" data-clear-state aria-label="Clear the state filter">✕</button></span>`
+      ? `<span class="adv-fchip">Region: <b>${esc(states[sIdx]?.name || st.state)}</b> · ${int(vis.length)} sites<button type="button" data-clear-state aria-label="Clear the region filter">✕</button></span>`
       : "";
     const r = (v) => 24 * Math.sqrt(v / vMax);
     legendBox.innerHTML = sizeLegend([250, 1000, 4000].filter((v) => v <= vMax * 1.2), r, (v) => `${int(v)} MW`, "Circle area = capacity");

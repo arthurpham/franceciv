@@ -532,7 +532,7 @@ async function main() {
     announceEl.textContent = "";
     setTimeout(() => (announceEl.textContent = text), 30);
   };
-  const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "State";
+  const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "Region";
 
   function describeCanvas() {
     const parts = ["Hex map of metropolitan France", state.lens ? `coloured by the ${state.lens.name} lens` : "showing terrain"];

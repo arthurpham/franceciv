@@ -303,15 +303,6 @@ const RAW = {
       D('M5.6 12.6c2.4 1.4 4.4 2 6.4 2s4-.6 6.4-2', 1),
     ],
   },
-  'l-broadband': {
-    bg: '#2a5a7a',
-    paths: [
-      TS('M2.2 9.2a14 14 0 0 1 19.6 0', 2.4),
-      S('M5.6 12.8a9.2 9.2 0 0 1 12.8 0', 2.4),
-      S('M9 16.3a4.4 4.4 0 0 1 6 0', 2.4),
-      F(circle(12, 19.8, 1.9)),
-    ],
-  },
   'l-commute': {
     bg: '#5a3a6b',
     paths: [
@@ -330,7 +321,7 @@ const RAW = {
       F('M11.2 10.7H22.6V16.6H20.2V13.3H18.8V15.4H16.4V13.3H11.2Z'),
     ],
   },
-  'l-uninsured': {
+  'l-health': {
     bg: '#7a2f2f',
     paths: [
       F('M12 1.6L20.4 4.8v6.4c0 5.2-3.6 9.2-8.4 11.2-4.8-2-8.4-6-8.4-11.2V4.8Z' +
@@ -839,31 +830,6 @@ const RAW = {
   },
 
   // ---- county lenses
-  'l-faith': {
-    bg: '#5a3a7a',
-    paths: [
-      T(circle(12, 7.2, 5.4)),
-      F('M12 1.6c.4 2 3 3.4 3 6.2a3 3 0 0 1-6 0c0-1.8 1-3 1.8-3.8 0 1.2.4 2 1 2.2-.3-1.8.1-3.4.2-4.6Z'),
-      F(rrect(8.4, 11.6, 7.2, 10.8, 1.2)),
-      D('M10.4 12.6v3.4', 1.1),
-    ],
-  },
-  'l-faith-tradition': {
-    bg: '#5a3a7a',
-    paths: [
-      F('M12 12V1.8a10.2 10.2 0 0 1 8.83 15.3Z'),
-      T('M12 12l8.83 5.1A10.2 10.2 0 0 1 3.17 17.1Z'),
-      F('M12 12L3.17 17.1A10.2 10.2 0 0 1 12 1.8Z'),
-      D('M12 12V1.8M12 12l8.83 5.1M12 12L3.17 17.1', 1.4),
-    ],
-  },
-  'l-amenities': {
-    bg: '#8a3a4a',
-    paths: [
-      F('M12 21.4C5 16.6 1.6 12.6 1.6 8.4a5.3 5.3 0 0 1 10.4-1.6 5.3 5.3 0 0 1 10.4 1.6c0 4.2-3.4 8.2-10.4 13Z'),
-      D('M8 11.4q4 3.6 8 0', 1.4), D(circle(8.6, 8, 0.4) + circle(15.4, 8, 0.4), 1.2),
-    ],
-  },
   'l-disasters': {
     bg: '#5a4a6a',
     paths: [
@@ -872,24 +838,7 @@ const RAW = {
       D('M6.2 11.2h11', 1),
     ],
   },
-  'l-veterans': {
-    bg: '#3a4a6a',
-    paths: [
-      T(poly([[6.2, 1.6], [10.6, 1.6], [13.8, 9.6], [10.2, 10.4]])),
-      T(poly([[17.8, 1.6], [13.4, 1.6], [10.2, 9.6], [13.8, 10.4]])),
-      F(circle(12, 15.4, 6.8) + star(12, 15.6, 4, 0.42)),
-    ],
-  },
   // lens groups (ui/lenses.js and ui/pedia.js look up `g-<group id>`)
-  'g-faith': {
-    bg: '#5a3a7a',
-    paths: [
-      // a generic meeting house: steps, a peaked roof, a round window; no single tradition's symbol
-      T(rrect(2.4, 19.6, 19.2, 2.6, 0.6)),
-      F('M3.6 19.6V10.4L12 3l8.4 7.4v9.2h-5.6v-4.8a2.8 2.8 0 0 0-5.6 0v4.8Z' + circle(12, 9.6, 1.7)),
-      D('M12 3V1.2', 1.4),
-    ],
-  },
   'g-hazards': {
     bg: '#5a4a6a',
     paths: [
@@ -937,7 +886,6 @@ export const ALIASES = {
   'm-air_force': 'm-air-force',
   'm-fort': 'm-army',
   'w-natural': 'w-park',
-  'l-faith_tradition': 'l-faith-tradition',
   'd-commercial_hub': 'd-commercial-hub',
   'd-industrial_zone': 'd-industrial-zone',
   'd-theater_square': 'd-theater-square',

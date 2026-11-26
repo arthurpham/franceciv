@@ -106,17 +106,17 @@ function citizens(m) {
         <span class="sv"><b>${v == null ? "–" : fmt(v)}</b>${sub ? `<small>${sub}</small>` : ""}</span></div>
       ${meter(v, tick, max ?? Math.max(v || 0, us || 0) * 1.35, better)}
     </div>`;
-  // Employed residents: no France figure to set beside a count, so the share of residents (and the national share).
+  // Workplace jobs: no France figure to set beside a count, so the share of residents (and the national share).
   const empShare = c.employed != null && c.population > 0 ? c.employed / c.population : null;
   const usEmpShare = n.employed != null && n.population > 0 ? n.employed / n.population : null;
   const empSub = empShare == null ? ""
-    : `${pct(empShare)} of residents${usEmpShare != null ? ` · France ${pct(usEmpShare)}` : ""}`;
+    : `${pct(empShare)} jobs per resident${usEmpShare != null ? ` · France ${pct(usEmpShare)}` : ""}`;
   const multi = m.tiles.length > 1;
   const tilesNote = multi
-    ? `On the map each metro hex shows <b>≈ residents</b> (county population density × hex area, an estimate) and its
+    ? `On the map each urban-area hex shows <b>≈ residents</b> (department population density × hex area × French-territory share, an estimate) and its
        <b>main land use</b> (share of the hex's land)${m.residentsSum > 0
         ? `. Together the ${m.tiles.length} hexes hold about ${compact(m.residentsSum)} people by that estimate` : ""}.`
-    : `This metro fits inside one map hex (about ${compact(m.hexArea)} km²), shown with its city.`;
+    : `This urban area fits inside one map hex (about ${compact(m.hexArea)} km²), shown with its city.`;
   return `
   <section class="cv-sec" id="cv-citizens" data-sec="citizens" aria-labelledby="cv-h-citizens">
     <h3 id="cv-h-citizens">${icon("pop", "👥", { size: 15 })}Citizens</h3>
@@ -126,18 +126,18 @@ function citizens(m) {
       <div class="cv-card-h"><span>Population ${series.length ? `${series[0].year}–${series.at(-1).year}` : ""}</span>${
         ch != null ? `<span class="${ch >= 0 ? "good" : "bad"}">${signed(ch)}</span>` : ""}</div>
       ${sparkline(series, { fmt: (v) => popShort(v), title: `Population of ${c.name} by year` })}
-      <p class="cv-note">INSEE census populations (July 1, today's metro borders). They differ slightly from the INSEE census count above.</p>
+      <p class="cv-note">INSEE populations on current AAV borders. They are annual legal populations, consistent with the count above.</p>
     </div>
     <div class="cv-stats">
-      ${row("pop", "👥", "Employed residents", c.employed, null, int, null, c.population, empSub, usEmpShare != null ? usEmpShare * c.population : null)}
+      ${row("pop", "👥", "Workplace jobs", c.employed, null, int, null, c.population, empSub, usEmpShare != null ? usEmpShare * c.population : null)}
       ${row("unemployment", "😐", "Unemployment", c.unemployment, n.unemployment, (x) => pct(x), "low")}
       ${row("l-income", "💵", "Median standard of living", c.median_income, n.median_income, dollars, "high")}
-      ${row("l-homeownership", "🔑", "Median rent / month", c.median_rent, n.median_rent, dollars, null)}
-      ${row("l-home", "🏠", "Median home value", c.home_value, n.home_value, dollars, null)}
-      ${row(null, "⚖️", "Rent burden (rent ÷ income)", c.rent_burden, n.rent_burden, (x) => pct(x), "low")}
+      ${row("l-homeownership", "🔑", "Owner-occupied homes", c.homeownership, n.homeownership, (x) => pct(x), "high")}
+      ${row("l-home", "🏡", "Second homes", c.second_homes, n.second_homes, (x) => pct(x), null)}
+      ${row(null, "🏚️", "Vacant homes", c.vacancy, n.vacancy, (x) => pct(x), "low")}
     </div>
     <div class="cv-legend-tiles">${tileLegend(m)}<p>${tilesNote}</p></div>
-    <h4 class="cv-h4">Member counties <span class="muted">(${(c.counties || []).length})</span></h4>
+    <h4 class="cv-h4">Member departments <span class="muted">(${(c.counties || []).length})</span></h4>
     <div class="cv-counties" data-counties><p class="muted cv-note">Loading counties…</p></div>
   </section>`;
 }
@@ -151,7 +151,7 @@ function tileLegend(m) {
 
 export function countiesTable(m, data) {
   const c = m.city;
-  if (!data || !Array.isArray(data.rows)) return `<p class="muted cv-note">County table not available.</p>`;
+  if (!data || !Array.isArray(data.rows)) return `<p class="muted cv-note">Department table not available.</p>`;
   const col = Object.fromEntries(data.columns.map((k, j) => [k, j]));
   const want = new Set(c.counties || []);
   const rows = data.rows.filter((r) => want.has(r[col.geoid])).sort((a, b) => (b[col.population] || 0) - (a[col.population] || 0));
@@ -159,8 +159,8 @@ export function countiesTable(m, data) {
   const maxPop = rows[0][col.population] || 1;
   const show = rows.slice(0, 8);
   const vint = data.vintage ? ` (${esc(data.vintage)})` : "";
-  return `<div class="cv-ctable" role="table" aria-label="Member counties">
-    <div class="cv-cr cv-cr-h" role="row"><span role="columnheader">County</span><span role="columnheader">People</span><span role="columnheader">/km²</span><span role="columnheader">Income</span></div>
+  return `<div class="cv-ctable" role="table" aria-label="Member departments">
+    <div class="cv-cr cv-cr-h" role="row"><span role="columnheader">Department</span><span role="columnheader">People</span><span role="columnheader">/km²</span><span role="columnheader">Income</span></div>
     ${show.map((r) => `<div class="cv-cr" role="row">
       <span role="cell" class="cv-cn">${esc(r[col.name])} <small>${esc(r[col.state])}</small>${bar(r[col.population] / maxPop, "var(--sc, #c9a45c)")}</span>
       <span role="cell">${compact(r[col.population])}</span><span role="cell">${r[col.density] != null ? int(r[col.density]) : "–"}</span>
@@ -223,9 +223,9 @@ function economy(m) {
     <h4 class="cv-h4">GDP by industry <span class="muted">tick = national share</span></h4>
     ${gi.length ? `<div class="cv-inds">${gi.slice(0, 8).map(gdpRow).join("")}</div>
       ${gi.length > 8 ? `<details class="cv-more"><summary>All ${gi.length} industries</summary><div class="cv-inds">${gi.slice(8).map(gdpRow).join("")}</div></details>` : ""}`
-      : `<p class="muted cv-note">No industry breakdown for this metro.</p>`}
-    <p class="cv-note">${esc(nat.gdp_vintage || "Eurostat regional accounts")}, current dollars, counted where the work is done; shares are of the metro's total GDP. ×N = the industry's share of GDP compared with its share of French GDP.${
-      gi.some((d) => d.estimated) ? " ≈ includes an estimate where Eurostat withholds a small county's figure (its sector total, split in France proportions)." : ""}${
+      : `<p class="muted cv-note">No official industry GDP breakdown exists at AAV level.</p>`}
+    <p class="cv-note">${esc(nat.gdp_vintage || "Eurostat regional accounts")}, current euros, counted where the work is done; shares are of the urban area's total GDP. ×N = the industry's share of GDP compared with its share of French GDP.${
+      gi.some((d) => d.estimated) ? " ≈ includes an estimate where Eurostat withholds a small department's figure (its sector total, split in France proportions)." : ""}${
       gi.some((d) => d.undisclosed) ? " Undisclosed = GDP that Eurostat withholds for confidentiality." : ""}</p>
   </section>`;
 }
@@ -287,9 +287,9 @@ const COMPARE = {
     ["Growth", (c) => (Number.isFinite(c.growth) ? c.growth : null), (v) => signed(v)],
   ],
   housing: [
-    ["Home value", (c) => c.home_value, money],
-    ["Rent / mo", (c) => c.median_rent, (v) => (v == null ? "–" : "$" + int(v))],
-    ["Rent burden", (c) => c.rent_burden, (v) => pct(v, 0)],
+    ["Owners", (c) => c.homeownership, (v) => pct(v)],
+    ["2nd homes", (c) => c.second_homes, (v) => pct(v)],
+    ["Vacant", (c) => c.vacancy, (v) => pct(v)],
     ["Jobless", (c) => c.unemployment, (v) => pct(v)],
   ],
 };
@@ -299,7 +299,7 @@ export function compareTable(m, set = "size") {
   const cols = COMPARE[set] || COMPARE.size;
   const max = cols.map(([, f]) => Math.max(...rows.map((c) => Math.abs(f(c) ?? 0))) || 1);
   return `<div class="cv-cmp" role="table" aria-label="${esc(m.city.name)} and its peers">
-    <div class="cv-cmp-r cv-cmp-h" role="row"><span role="columnheader">Metro</span>${cols.map(([l]) => `<span role="columnheader">${esc(l)}</span>`).join("")}</div>
+    <div class="cv-cmp-r cv-cmp-h" role="row"><span role="columnheader">Urban area</span>${cols.map(([l]) => `<span role="columnheader">${esc(l)}</span>`).join("")}</div>
     ${rows.map((c, k) => `<div class="cv-cmp-r${k === 0 ? " me" : ""}" role="row">
       <span role="cell">${k === 0 ? `<b class="cv-cmp-n">${esc(c.name)}</b>` : `<button type="button" class="cv-cmp-n" data-peer="${esc(c.id)}" title="Open ${esc(c.full || c.name)} in the City View">${esc(c.name)}</button>`}<small>${esc((c.states || []).join("–"))}</small></span>
       ${cols.map(([, f, fmt], j) => {
@@ -426,9 +426,9 @@ export function render(el, m, h) {
     h.onDistricts?.(dd ? cityDistricts(dd, mil, m.city.id) : []);
   }, () => { if (dHost.isConnected) dHost.innerHTML = districtsHtml(m, null, null); });
 
-  // Member counties arrive with counties.json (loaded once, on demand).
+  // Member departments arrive with counties.json (loaded once, on demand).
   const host = el.querySelector("[data-counties]");
   Promise.resolve(h.loadCounties()).then((data) => {
     if (host.isConnected) host.innerHTML = countiesTable(m, data);
-  }, () => { if (host.isConnected) host.innerHTML = `<p class="muted cv-note">County table not available.</p>`; });
+  }, () => { if (host.isConnected) host.innerHTML = `<p class="muted cv-note">Department table not available.</p>`; });
 }

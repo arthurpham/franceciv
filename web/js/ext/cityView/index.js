@@ -400,7 +400,7 @@ export async function install(app) {
       return true;
     }
     const m = cv.model;
-    if (e.resource && m && e.resource.cbsa === m.city.id) {
+    if (e.resource && m && e.resource.aav === m.city.id) {
       const s = m.sites.find((x) => x.item === e.resource);
       if (s) {
         cv.pinned = s.item.cell ?? -1;

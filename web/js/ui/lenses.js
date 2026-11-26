@@ -16,7 +16,7 @@ export function formatLensValue(lens, v) {
   if (v == null || !Number.isFinite(v)) return "no data";
   switch (lens.format) {
     case "category": return lens.categories?.[Math.round(v)]?.name ?? "no data";
-    case "usd": return "$" + compact(v);
+    case "usd": return "€" + compact(v);
     case "eur": return "€" + compact(v);
     case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0) + "%";
     case "signed": return (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v * 100).toFixed(1) + "%";
@@ -25,7 +25,7 @@ export function formatLensValue(lens, v) {
     case "years": return v.toFixed(1) + " yrs";
     case "float": return (v < 10 ? v.toFixed(1) : compact(v)) + (lens.unit ? " " + lens.unit : "");
   }
-  if (lens.unit?.includes("$")) return "$" + compact(v);
+  if (lens.unit?.includes("€")) return "€" + compact(v);
   return (v < 10 ? v.toFixed(1) : compact(v)) + (lens.unit?.startsWith("people") ? " /km²" : "");
 }
 

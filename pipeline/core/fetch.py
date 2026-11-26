@@ -218,7 +218,7 @@ def download_prefix(
     """Like download(), but stop reading the response as soon as the contiguous block of lines
     that start with `prefix` has ended: the file keeps everything up to the end of that block.
 
-    For big line-sorted files where one block is needed (e.g. the county rows of an ACS
+    For big line-sorted files where one block is needed (for example the rows of a large INSEE
     5-year table). The first line must start with `header_start` (publishers sometimes
     answer with an HTML page and a 2xx status). The manifest entry gets a "partial" note,
     and its sha256/bytes describe the saved prefix, not the whole remote file.

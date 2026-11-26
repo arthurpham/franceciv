@@ -44,7 +44,7 @@ export function count3(n) {
   return int(n);
 }
 
-// Formats a value of a stat ("usd" → $, "rate" → %, anything else → compact count).
+// Formats a value of a stat (money → €, "rate" → %, anything else → compact count).
 export function fmtStat(def, v) {
   if (!fin(v)) return "–";
   if (def.unit === "usd" || def.unit === "eur") return money(v);
@@ -108,7 +108,7 @@ function rank(list, valueOf, { asc = false, min = 0, fmt = count3, exact = int, 
     .map(({ r, v }, i) => ({ rank: i + 1, kind: r.kind, ref: r.ref, name: r.name, sub: subOf ? subOf(r.o) : r.sub, value: v, text: fmt(v), exact: exact ? exact(v) : "" }));
 }
 
-// Which regions the "States" rankings cover. states.json holds the regions drawn on the map; when the national total
+// Which regions the regional rankings cover. states.json holds the regions drawn on the map; when the national total
 // Overseas France is outside the metropolitan map scope.
 function stateScope(n, st) {
   return { label: "Regions", inMap: "Map regions", note: `Ranks the ${st.length} metropolitan regions on the map; overseas France is outside the map scope.` };
@@ -205,7 +205,7 @@ function reportUnemployment(rep, n, st, metros) {
   if (mRows.length) groups.push({ title: `Large urban areas (${compact(BIG_METRO_MIN)}+)`, rows: mRows });
   if (groups.length) rep.breakdown = { title: "Spread", note: rep.scope.note, groups };
 
-  const hint = `Metros of ${compact(BIG_METRO_MIN)}+ people.`;
+  const hint = `Urban areas of ${compact(BIG_METRO_MIN)}+ people.`;
   const o = { fmt: pct, exact: (v) => pct(v, 2) };
   rep.boards.modes = [
     { id: "abs", label: "Highest", hint, states: rank(st, u, o), metros: rank(metros, u, { ...o, min: BIG_METRO_MIN }) },
@@ -404,7 +404,7 @@ export function initYieldReports(opts) {
       ${modes.length ? `<section class="yr-sec"><h3>Leaderboards</h3>
         <div class="yr-controls">
           <div class="yr-tabs" role="tablist" aria-label="Areas">
-            <button role="tab" id="yr-tab-states" data-tab="states" aria-controls="yr-board" aria-selected="${tab === "states"}" tabindex="${tab === "states" ? 0 : -1}" ${hasStates ? "" : "disabled"}>States</button>
+            <button role="tab" id="yr-tab-states" data-tab="states" aria-controls="yr-board" aria-selected="${tab === "states"}" tabindex="${tab === "states" ? 0 : -1}" ${hasStates ? "" : "disabled"}>Regions</button>
             <button role="tab" id="yr-tab-metros" data-tab="metros" aria-controls="yr-board" aria-selected="${tab === "metros"}" tabindex="${tab === "metros" ? 0 : -1}" ${hasMetros ? "" : "disabled"}>Urban areas</button>
           </div>
           ${modes.length > 1 ? `<div class="yr-modes" role="group" aria-label="Ranking">${modes
@@ -425,7 +425,7 @@ export function initYieldReports(opts) {
       title="Open the ${esc(a.label.replace(/ \(.*\)$/, ""))} advisor: charts, tables and the map linked together">${icon("g-people", "👥", { size: 14 })}Open advisor: ${esc(a.label)}</button>`).join("")}</div>`;
   }
 
-  // The ranking's hint, plus (on the States tab) which states are ranked.
+  // The ranking's hint, plus (on the Regions tab) which regions are ranked.
   function hintText(m) {
     const parts = [m?.hint || ""];
     if (tab === "states" && current.rep.boards.statesNote) parts.push(current.rep.boards.statesNote);
@@ -456,7 +456,7 @@ export function initYieldReports(opts) {
     if (current && current.btn !== btn) current.btn.setAttribute("aria-expanded", "false");
     if (!current || current.key !== key) {
       expanded = false;
-      mode = "abs"; // each report opens on its main ranking; the States / Metros tab is remembered
+      mode = "abs"; // each report opens on its main ranking; the Regions / Urban areas tab is remembered
     }
     current = { key, btn, rep };
     for (const b of buttons()) b.classList.toggle("open", b === btn);

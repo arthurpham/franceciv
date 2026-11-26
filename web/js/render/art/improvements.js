@@ -366,7 +366,7 @@ function paintPort(g, upx, tier, river) {
 // --- airports -------------------------------------------------------------------------------------------------------
 
 const HUB_ORDER = { L: 0, M: 1, S: 2, N: 3 };
-/** 0 large hub … 3 nonhub, 4 cargo-only (no FAA hub class). */
+/** 0 large hub … 3 nonhub, 4 cargo-only display classes. */
 export const airportTier = (a) => (a?.hub && HUB_ORDER[a.hub] != null ? HUB_ORDER[a.hub] : 4);
 
 /**

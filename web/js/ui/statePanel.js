@@ -15,7 +15,7 @@ export function openStatePanel(idx, ctx) {
   let st = ctx.states?.[idx];
   if (st && geo.fips && st.fips && st.fips !== geo.fips) st = ctx.states.find((s) => s.fips === geo.fips);
   st = st || { ...geo };
-  const name = st.name || geo.name || "State";
+  const name = st.name || geo.name || "Region";
   const abbr = st.abbr || geo.abbr || "";
   const count = ctx.states?.length || w.raw.states.length;
 
@@ -43,7 +43,7 @@ export function openStatePanel(idx, ctx) {
       hasEcon && { title: "Amenities &amp; Housing", html: amenities(st, n) + gdpRow(st) },
       st.jobs && { title: "Top industries · where people work", html: industries(st, nation, 8) },
       { title: "Biggest cities", html: cityRows },
-      !hasEcon && { title: "Data", html: `<p class="muted">State statistics are not in this data build (states.json is missing).</p>` },
+      !hasEcon && { title: "Data", html: `<p class="muted">Regional statistics are not in this data build (states.json is missing).</p>` },
     ],
     foot: `Source: ${esc(nation.vintage)}${nation.gdp_vintage ? `; GDP: ${esc(nation.gdp_vintage)}` : ""}. Ranks are among the ${count} mapped states + DC (1 = largest).`,
     onClose: ctx.onClose,

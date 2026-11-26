@@ -28,7 +28,7 @@ LAND, OCEAN, COAST, LAKE = range(4)
 TIDAL_SEA_SHARE = 0.5  # share of ETOPO samples below 0 m that keeps a sea-centred hex as water
 COAST_DEPTH_M = -200
 WATER_TABLE = [
-    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on French region or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays such as the Chesapeake stay water)."},
+    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on French region or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays stay water)."},
     {"id": OCEAN, "name": "Ocean", "color": "#1b4266", "rule": "Sea deeper than 200 m and not next to land."},
     {"id": COAST, "name": "Coast", "color": "#2d6d97", "rule": "Sea next to a land hex, or shallower than 200 m (ETOPO1 mean)."},
     {"id": LAKE, "name": "Lake", "color": "#3a80b0", "rule": "Water hex (most of its 7 sample points off land) with Natural Earth 1:50m lake points that outnumber sea points, or above sea level."},
@@ -57,7 +57,7 @@ RELIEF_NOTE = (
 )
 
 URBAN_MIN_PCT = 30
-# id, key, name, colour, WorldCover codes, rule. Ids are fixed by docs/DATA_CONTRACTS.md.
+# id, key, name, colour, CORINE land-cover codes, rule. Ids are fixed by docs/DATA_CONTRACTS.md.
 COVER = [
     (1, "forest_deciduous", "Deciduous forest", "#4f7a35", [41], "Forest (41+42+43) is the largest group and deciduous (41) the largest forest type."),
     (2, "forest_evergreen", "Conifer forest", "#2f5a3a", [42], "Forest is the largest group and evergreen (42) the largest forest type."),
@@ -331,7 +331,7 @@ def build() -> None:
                 kinds.append("sea")
         land = [k for k in kinds if not isinstance(k, str)]
         m_all, _ = mean_std(stats_all[i])
-        # Tidal bays (Chesapeake, Mobile, Biscayne, Puget Sound) are narrower than half a hex; keep them
+        # Narrow tidal bays are often narrower than half a hex; keep them
         # water when the centre is sea and the hex is mostly at or below sea level in ETOPO1.
         tidal = kinds[0] == "sea" and m_all is not None and (m_all <= 0 or sea_share(i) >= TIDAL_SEA_SHARE)
         if len(land) * 2 > len(kinds) and not tidal:
@@ -435,7 +435,7 @@ def build() -> None:
                 water[i] = COAST if near_land or elev[i] > COAST_DEPTH_M else OCEAN
     print(f"    {no_elev} hexes without elevation samples; {valley_floor} valley-floor hexes eased one relief class")
 
-    # --- land cover from WorldCover --------------------------------------------------------------------
+    # --- land cover from CORINE land-cover --------------------------------------------------------------------
     rows, legend = worldcover["rows"], worldcover["legend"]
     x0, dx, y0, dy = worldcover["x0"], worldcover["dx"], worldcover["y0"], worldcover["dy"]
     ncols, nrows = worldcover["cols"], len(rows)
@@ -464,8 +464,8 @@ def build() -> None:
     print(f"    {len(lattice)} CORINE raster points per hex; {no_cover} French hexes without land-cover samples")
 
     # --- rivers ----------------------------------------------------------------------------------
-    # Lake centerlines are kept only where they cross land hexes (reservoirs narrower than half a hex,
-    # e.g. Lake Sakakawea or Lake Mead), so rivers don't stop in the middle of land; over water hexes they go.
+    # Lake centerlines are kept only where they cross land hexes (lakes or reservoirs narrower than half a hex),
+    # so rivers don't stop in the middle of land; over water hexes they go.
     def on_land(pt):
         c = grid.cell_at(*pt)
         return c >= 0 and water[c] == LAND
@@ -489,7 +489,7 @@ def build() -> None:
             if len(pts) >= 2:
                 rivers.append({"name": name, "rank": rank, "pts": [round(v, 1) for p in pts for v in p]})
 
-    cover_table = [{"id": 0, "key": "none", "name": "None", "rule": "Water, foreign land, or no WorldCover land pixels."}] + [
+    cover_table = [{"id": 0, "key": "none", "name": "None", "rule": "Water, foreign land, or no CORINE land-cover land pixels."}] + [
         {"id": cid, "key": key, "name": name, "color": color, "worldcover": codes, "rule": rule}
         for cid, key, name, color, codes, rule in COVER
     ]
@@ -500,6 +500,12 @@ def build() -> None:
         "notes": {"water": WATER_NOTE, "relief": RELIEF_NOTE, "cover": COVER_NOTE},
     }
     states_out = [{"fips": s["fips"], "abbr": s["abbr"], "name": s["name"]} for s in states]
+    # Share of each hex covered by French department samples. The seven samples approximate area;
+    # sea and foreign samples both count as outside the French statistical territory.
+    france_share = [
+        round(sum(1 for k in county_samples[i] if k >= 0) / len(county_samples[i]), 4) if owner[i] >= 0 and county_samples[i] else 0
+        for i in range(grid.size)
+    ]
     write_web(
         "world.json",
         {
@@ -510,6 +516,7 @@ def build() -> None:
             "margin": MARGIN_KM,
             "owner": owner,
             "county": county,
+            "france_share": france_share,
             "elev": elev,
             "elev_max": elev_max,
             "water": water,

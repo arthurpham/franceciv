@@ -64,7 +64,7 @@ const INDUSTRY_ICON = {
   manufacturing: ["y-production", "#8a5426"], wholesale: ["y-gold", "#7a6420"], retail: ["y-gold", "#7a6420"],
   utilities: ["r-hydro", "#2a5f86"], information: ["y-science", "#25557e"], finance: ["y-gold", "#7a6420"],
   real_estate: ["l-home", "#6b4a2f"], professional: ["y-science", "#25557e"], education: ["l-degrees", "#2a3f7a"],
-  health: ["l-uninsured", "#7a2f2f"], arts: ["y-culture", "#5b3a7e"], accommodation: ["y-culture", "#5b3a7e"],
+  health: ["l-health", "#7a2f2f"], arts: ["y-culture", "#5b3a7e"], accommodation: ["y-culture", "#5b3a7e"],
 };
 const MIN_SHARE = 0.02; // an industry must hold at least 2% of a city's jobs to count as its specialty
 

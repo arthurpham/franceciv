@@ -116,7 +116,7 @@ export function mount(ctx) {
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_insee_stats", "fr_eurostat"], [
     "Science workers are workplace jobs in information/communication plus professional, scientific and technical activities; they cover whole industries, not only researchers.",
     `Department education, income and unemployment figures are ${esc(data.countyVintage)}; urban-area incomes are direct INSEE AAV values; education is department-level.`,
-    "INSEE education here means the share of adults whose highest diploma is Bac+2 or higher; it is not the same as the original US bachelor's-degree measure.",
+    "INSEE education here means the share of adults whose highest diploma is Bac+2 or higher; it is not restricted to bachelor-level degrees.",
     ...(data.countiesOffMap ? [`${int(data.countiesOffMap)} of the smallest departments are smaller than one hex, so selecting them outlines nothing on the map.`] : []),
   ]));
 
