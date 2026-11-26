@@ -110,7 +110,7 @@ function districtCard(d, row, ddata, mil) {
   const nat = ddata?.national || {};
   const c = d.cat || {};
   const lb = !!d.lower_bound;
-  const supTip = lb ? ` BLS withheld part of this in ${d.suppressed} member count${d.suppressed === 1 ? "y" : "ies"}, so it is a lower bound.` : "";
+  const supTip = lb ? ` Part of this value is unavailable in ${d.suppressed} member count${d.suppressed === 1 ? "y" : "ies"}, so it is a lower bound.` : "";
   const facts = [];
   if (d.emp != null) {
     facts.push(`<div><span>Jobs</span><b>${ge(lb)}${compact(d.emp)}</b><small>${d.share != null ? `${pct(d.share, 1)} of the metro` : ""}</small></div>`);
@@ -125,7 +125,7 @@ function districtCard(d, row, ddata, mil) {
   if (d.sub && d.subName) {
     // the speciality's own withheld flag (districts.json sub_lower_bound; older files: the top-industries row)
     const slb = d.sub_lower_bound ?? !!(row?.top || []).find((t) => t.naics === d.sub)?.lower_bound;
-    spec = `<p class="cv-dc-sub">${d.via === "specialty" ? "Qualifies through" : "Strongest speciality"}: <b>${esc(d.subName)}</b> ${lqTag(d.sub_lq, slb, slb ? `Location quotient: at least ${d.sub_lq.toFixed(2)}× the national share (BLS withheld part of it, so it is a lower bound)` : undefined)}${
+    spec = `<p class="cv-dc-sub">${d.via === "specialty" ? "Qualifies through" : "Strongest speciality"}: <b>${esc(d.subName)}</b> ${lqTag(d.sub_lq, slb, slb ? `Location quotient: at least ${d.sub_lq.toFixed(2)}× the national share (part of it is unavailable, so it is a lower bound)` : undefined)}${
       d.sub_emp != null ? ` <small>${ge(slb)}${compact(d.sub_emp)} jobs</small>` : ""}${
       d.via === "specialty" && d.lq != null ? `<br><small>The district's industries as a whole are ${d.lq.toFixed(2)}× the national share; this speciality alone passes the rule.</small>` : ""}</p>`;
   }
@@ -161,7 +161,7 @@ function topTable(row, ddata) {
     ${top.map((t) => {
       const title = ddata.industries?.[t.naics]?.title || `NACE ${t.naics}`;
       const lb = !!t.lower_bound;
-      return `<div class="cv-top-r" role="row" title="${esc(title)} (NACE ${esc(t.naics)})${lb ? `. Lower bound: BLS withheld it in ${t.suppressed} member count${t.suppressed === 1 ? "y" : "ies"}.` : ""}">
+      return `<div class="cv-top-r" role="row" title="${esc(title)} (NACE ${esc(t.naics)})${lb ? `. Lower bound: It is unavailable in ${t.suppressed} member count${t.suppressed === 1 ? "y" : "ies"}.` : ""}">
         <span role="cell" class="cv-top-n">${esc(title)}<i style="width:${((Math.log(1 + (t.lq || 0)) / Math.log(1 + max)) * 100).toFixed(1)}%"></i></span>
         <span role="cell">${ge(lb)}${compact(t.emp)}</span>
         <span role="cell"><b>${t.lq != null ? `${ge(lb)}${t.lq.toFixed(1)}` : "–"}</b></span>

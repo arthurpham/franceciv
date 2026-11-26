@@ -371,7 +371,7 @@ original visualization. `bachelors_plus` means bac+3/4 or higher among non-enrol
 French workplace-industry specialisation from INSEE census employment (`fr_insee_stats`), built by
 `pipeline/build/districts.py`. The browser contract intentionally keeps the original district ids and row shape, but
 `naics` entries are broad NACE activity codes, pay/annual-change fields are null, and there is no disclosure suppression
-or county roll-up. Location quotients compare each AAV with metropolitan France. About 210 kB: load on demand.
+or county roll-up. Catalog entries use `naics` for the summed broad activity codes and omit the US ownership-specific `own` key. Location quotients compare each AAV with metropolitan France. About 210 kB: load on demand.
 
 ### infrastructure.json (eager)
 
