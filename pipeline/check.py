@@ -723,7 +723,7 @@ def county_population(acs5: dict, geoids) -> dict[str, float]:
         gi, pi = cols.index("geoid"), cols.index("population")
     except ValueError:
         return {}
-    return {r[gi]: r[pi] for r in rows if len(r) > max(gi, pi) and r[gi] in set(geoids) and is_num(r[pi])}
+    return {r[gi]: r[pi] for r in rows if isinstance(r, list) and len(r) > max(gi, pi) and r[gi] in set(geoids) and is_num(r[pi])}
 
 
 def quality_density(r: Report, ctx: dict, lenses: dict, samples, county_pop: dict[str, float]) -> float | None:

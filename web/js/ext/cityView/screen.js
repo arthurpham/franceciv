@@ -287,9 +287,9 @@ const COMPARE = {
     ["Growth", (c) => (Number.isFinite(c.growth) ? c.growth : null), (v) => signed(v)],
   ],
   housing: [
-    ["Home value", (c) => c.home_value, money],
-    ["Rent / mo", (c) => c.median_rent, (v) => (v == null ? "–" : "$" + int(v))],
-    ["Rent burden", (c) => c.rent_burden, (v) => pct(v, 0)],
+    ["Owners", (c) => c.homeownership, (v) => pct(v)],
+    ["2nd homes", (c) => c.second_homes, (v) => pct(v)],
+    ["Vacant", (c) => c.vacancy, (v) => pct(v)],
     ["Jobless", (c) => c.unemployment, (v) => pct(v)],
   ],
 };

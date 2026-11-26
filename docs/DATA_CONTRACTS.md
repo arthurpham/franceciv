@@ -27,12 +27,12 @@ Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-c
 
 ### world.json
 
-`{"version":1,"grid":{cols,rows,radius},"projection":{...},"states":[...],"counties":[...],"owner":[],"county":[],"water":[],"cover":[],"pct":{...},"rivers":[],"lakes":[]}`.
+`{"version":2,"grid":{cols,rows,radius},"projection":{...},"states":[...],"counties":[...],"owner":[],"county":[],"water":[],"cover":[],"pct":{...},"rivers":[],"lakes":[]}`.
 
 * `owner`, `county`, `water` and `cover` are per-cell arrays.
 * `states` rows have `fips` (INSEE region code), `abbr`, `name`, `color`, `label` anchor and yield metadata added by builders.
 * `counties` rows have `geoid`, `name`, `state_fips` and area/population metadata. These are departments.
-* `pct` shares are fractions of each hex classified by CORINE Land Cover, grouped for the renderer. Renderer keys such as `cropland` are visual categories, not claims that the source is US NLCD.
+* `pct` shares are whole-percent values (0–100) for each hex classified by CORINE Land Cover, grouped for the renderer. Renderer keys such as `cropland` are visual categories, not claims that the source is US NLCD.
 * Rivers and lakes are clipped to map coordinates and used for terrain rendering.
 
 ### cities.json
