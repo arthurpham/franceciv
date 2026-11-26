@@ -534,7 +534,7 @@ About 25 kB.
              "totals_mtkm": {"within": null, "other_zones": …, "import": null, "export": null}}],
   "routes": [{"a": "ARA", "b": "PAC", "rank": 1, "volume_mtkm": 5348.1, "tons_k": 29358.0,
               "tmiles_m": 5348.1, "modes": {"truck": 0.7044, "rail": 0.1346, "water": 0.161},
-              "top_mode": "truck", "top_commodity": "all", "dist_km": 209, "path": [5939, 5940, "…"]}]
+              "top_mode": "truck", "top_commodity": "all", "rail_suppressed": false, "dist_km": 209, "path": [5939, 5940, "…"]}]
 }
 ```
 
@@ -547,7 +547,7 @@ About 25 kB.
   rough estimate derived from tonne-kilometres divided by centroid distance; it is not directly published tonnage.
 * `path` is a chain of neighbouring cells chosen over the cheapest mapped road/rail edges, falling back to
   cross-country or water steps. It is only a drawing aid: SDES does not publish the physical itinerary.
-* Rail rows suppressed for statistical secrecy are absent, not zero, so rail volumes and shares are lower bounds.
+* Rail rows suppressed for statistical secrecy are absent, not zero, so rail volumes and shares are lower bounds; `rail_suppressed` marks routes whose underlying current-region pair contains at least one suppressed source row.
   Air, maritime, pipeline, foreign trade and commodity detail are outside this dataset. Say these caveats in the UI.
 
 ### military.json (eager)

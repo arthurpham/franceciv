@@ -60,7 +60,7 @@ class FrenchFreight(Source):
         header = next(rows)
         ix = {name: i for i, name in enumerate(header)}
         value_col = "MTKM" if mode == "rail" else "TKM"
-        out, suppressed = [], 0
+        out, suppressed_rows = [], []
         for r in rows:
             old_a, old_b = r[ix["ORIG_NUTS2016"]], r[ix["DEST_NUTS2016"]]
             a, b = CURRENT.get(old_a), CURRENT.get(old_b)
@@ -68,7 +68,7 @@ class FrenchFreight(Source):
                 continue
             value = r[ix[value_col]]
             if not isinstance(value, (int, float)):
-                suppressed += 1
+                suppressed_rows.append({"mode": mode, "old_a": old_a, "old_b": old_b, "a": a, "b": b})
                 continue
             mtkm = value if mode == "rail" else value / 1e6
             dist = haversine(r[ix["ORIG_NUTS2016_longitude"]], r[ix["ORIG_NUTS2016_latitude"]], r[ix["DEST_NUTS2016_longitude"]], r[ix["DEST_NUTS2016_latitude"]])
@@ -77,14 +77,17 @@ class FrenchFreight(Source):
                 "a_name": r[ix["ORIG_NUTS2016_LIBELLE"]], "b_name": r[ix["DEST_NUTS2016_LIBELLE"]],
                 "mtkm": mtkm, "dist_km": dist, "tons_est": mtkm * 1e6 / max(80.0, dist),
             })
-        return out, suppressed
+        return out, suppressed_rows
 
     def process(self):
         rows = []
+        suppressed_rows = []
         suppressed = {}
         for mode, fn in FILES.items():
             part, miss = self.rows_from(mode, fn)
             rows += part
-            suppressed[mode] = miss
+            suppressed_rows += miss
+            suppressed[mode] = len(miss)
         print(f"    {len(rows)} usable old-region flow rows; suppressed rail rows {suppressed.get('rail', 0)}")
-        return {"vintage": "SDES national goods-flow data, 2019", "_files": list(FILES.values()), "rows": rows, "suppressed": suppressed}
+        return {"vintage": "SDES national goods-flow data, 2019", "_files": list(FILES.values()), "rows": rows,
+                "suppressed": suppressed, "suppressed_rows": suppressed_rows}

@@ -146,7 +146,7 @@ export async function mount(ctx) {
           { label: "Estimated weight", value: `${count3((r.tons_k ?? NaN) * 1000)} t`, sub: "derived from t·km / centroid distance" },
           { label: "Distance", value: `${int(r.dist_km)} km`, sub: `${count3(routeVolume(r) * 1e6)} tonne-kilometres` },
         ])}
-        <p class="adv-note"><b>By mode:</b> ${parts.map(([m, s]) => `${esc(modeName.get(m) || m)} ${pct(s)}`).join(" · ")}.</p>
+        <p class="adv-note"><b>By mode:</b> ${parts.map(([m, s]) => `${esc(modeName.get(m) || m)} ${pct(s)}`).join(" · ")}.${r.rail_suppressed ? " Rail is statistically suppressed for at least one underlying source pair, so the disclosed mode shares are incomplete." : ""}</p>
         <button type="button" class="adv-mini" data-unpin>Close</button></div>`;
       rDetail.querySelector("[data-unpin]").addEventListener("click", () => selectRoute(st.route));
     }
@@ -258,7 +258,7 @@ export async function mount(ctx) {
   let portBars = null, airBars = null, portBubbles = null, airBubbles = null;
   if (infra) {
     const v = infra.vintage || {};
-    const pBody = section(el, { title: "Ports", kicker: esc(v.ports || ""), note: `${esc(infra.rules?.ports || "")} Bars split each port's tonnage into domestic, imports and exports.` });
+    const pBody = section(el, { title: "Ports", kicker: esc(v.ports || ""), note: `${esc(infra.rules?.ports || "")}` });
     const ports = (infra.ports || []).map((p) => ({ ...p, key: `p${p.id}` }));
     const portHover = (p) => {
       link.hover(p ? { cells: new Set(p.cell != null ? [p.cell] : []), label: p.name } : null);
@@ -314,7 +314,7 @@ export async function mount(ctx) {
     mBody.appendChild(sizeBox);
     portBubbles = ctx.bubbles("ports", {
       rMax: 20, alpha: 0.5,
-      tip: (b) => `<b>${esc(b.it.name)}</b><br>Port · <b>${count3(b.it.tons)} t</b> (${b.it.year}) · rank ${b.it.rank}<br><span class="sub">domestic ${count3(b.it.domestic)} · imports ${count3(b.it.imports)} · exports ${count3(b.it.exports)}</span>`,
+      tip: (b) => `<b>${esc(b.it.name)}</b><br>Port · <b>${count3(b.it.tons)} t</b> (${b.it.year}) · rank ${b.it.rank}<br><span class="sub">Eurostat total goods handled; domestic/import/export split unavailable in this series</span>`,
       onHover: (b) => portBars?.setHot(b ? b.key : null),
       onClick: (b) => { portBars?.setHot(b.key); flyTo(b.it); },
     });

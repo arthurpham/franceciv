@@ -77,3 +77,6 @@ def test_freight_trade_contract_uses_french_units():
     assert trade["national_mtkm"]["domestic"] >= sum(r["volume_mtkm"] for r in trade["routes"])
     assert {m["id"] for m in trade["modes"]} == {"truck", "rail", "water"}
     assert any(s["id"] == "fr_freight" for s in web("sources.json"))
+    assert sum("001" in z["cities"] for z in trade["zones"]) == 1  # Paris belongs to the banner region only
+    assert min(sum(r["modes"].values()) for r in trade["routes"]) > 0.999
+    assert any(r.get("rail_suppressed") for r in trade["routes"])

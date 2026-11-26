@@ -8,6 +8,7 @@ import math
 from collections import Counter, defaultdict
 
 from ..core.hexgrid import HexGrid
+from ..core.geo import MapProjection
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
@@ -66,25 +67,46 @@ def build():
     grid = HexGrid(**world["grid"])
     state_by_abbr = {s["abbr"]: s for s in states_doc}
     abbr_by_fips = {s["fips"]: s["abbr"] for s in bounds["states"]}
+    region_abbr_by_fips = abbr_by_fips
 
-    # Regional anchors: the owned hex nearest the centroid of the region's hexes.
-    acc = {s["abbr"]: [0.0, 0.0, 0] for s in states_doc}
+    # Regional anchors: the owned hex nearest the population-weighted middle of the region.
+    proj = MapProjection(**world["projection"])
+    pop_by_cell = Counter()
+    for c in bounds["communes"]:
+        x, y = proj(c["lon"], c["lat"])
+        cell = grid.cell_at(x, y)
+        if cell < 0 or world["owner"][cell] < 0:
+            continue
+        if abbr_by_fips[world["states"][world["owner"][cell]]] != region_abbr_by_fips.get(c["region"]):
+            continue
+        pop_by_cell[cell] += c.get("population") or 0
+    acc = {s["abbr"]: [0.0, 0.0, 0.0, 0] for s in states_doc}
     for i, owner in enumerate(world["owner"]):
         if owner < 0:
             continue
         abbr = abbr_by_fips[world["states"][owner]]
-        acc[abbr][0] += grid.center(*grid.col_row(i))[0]
-        acc[abbr][1] += grid.center(*grid.col_row(i))[1]
-        acc[abbr][2] += 1
+        x, y = grid.center(*grid.col_row(i))
+        weight = pop_by_cell.get(i, 0)
+        acc[abbr][0] += x * weight
+        acc[abbr][1] += y * weight
+        acc[abbr][2] += weight
+        acc[abbr][3] += 1
     anchors = {}
-    for abbr, (sx, sy, n) in acc.items():
+    for abbr, (sx, sy, sw, n) in acc.items():
         if not n:
             continue
-        tx, ty = sx / n, sy / n
+        if sw:
+            tx, ty = sx / sw, sy / sw
+        else:
+            cells0 = [i for i, o in enumerate(world["owner"]) if o >= 0 and abbr_by_fips[world["states"][o]] == abbr]
+            tx = sum(grid.center(*grid.col_row(i))[0] for i in cells0) / len(cells0)
+            ty = sum(grid.center(*grid.col_row(i))[1] for i in cells0) / len(cells0)
         cells = [i for i, o in enumerate(world["owner"]) if o >= 0 and abbr_by_fips[world["states"][o]] == abbr]
         cell = min(cells, key=lambda i: (grid.center(*grid.col_row(i))[0] - tx) ** 2 + (grid.center(*grid.col_row(i))[1] - ty) ** 2)
         x, y = grid.center(*grid.col_row(cell))
         anchors[abbr] = {"cell": cell, "x": round(x, 1), "y": round(y, 1), "city": None}
+
+    suppressed_pairs = {tuple(sorted((r["a"], r["b"]))) for r in freight.get("suppressed_rows", []) if r.get("mode") == "rail"}
 
     # Aggregate old-region rows into current-region pairs. Source rows are already non-directional.
     pairs = {}
@@ -102,7 +124,12 @@ def build():
     zones = []
     for abbr in sorted(anchors):
         st = state_by_abbr[abbr]
-        city_ids = [c["id"] for c in sorted(cities, key=lambda c: c.get("population") or 0, reverse=True) if abbr in (c.get("states") or [])]
+        city_ids = []
+        for c in sorted(cities, key=lambda c: c.get("population") or 0, reverse=True):
+            cell = c.get("cell")
+            if cell is not None and 0 <= cell < len(world["owner"]) and world["owner"][cell] >= 0:
+                if abbr_by_fips[world["states"][world["owner"][cell]]] == abbr:
+                    city_ids.append(c["id"])
         zones.append({
             "id": abbr, "faf": [abbr], "name": st["name"], "short": st["name"], "kind": "region",
             "states": [abbr], "cities": city_ids, "counties": sum(1 for c in bounds["counties"] if c["state_fips"] == st["fips"]),
@@ -124,7 +151,7 @@ def build():
         volume = sum(rec["modes"].values())
         if volume <= 0 or a not in anchors or b not in anchors:
             continue
-        modes = {m: round(rec["modes"][m] / volume, 4) for m in ["truck", "rail", "water"] if rec["modes"][m] / volume >= 0.005}
+        modes = {m: round(rec["modes"][m] / volume, 4) for m in ["truck", "rail", "water"] if rec["modes"][m] > 0}
         top = max(modes, key=modes.get)
         ca, cb = anchors[a]["cell"], anchors[b]["cell"]
         _, prev = trees.get(a, ({}, {}))
@@ -134,6 +161,7 @@ def build():
         routes.append({
             "a": a, "b": b, "rank": 0, "volume_mtkm": round(volume, 3), "tons_k": round(rec["tons"] / 1000, 1),
             "tmiles_m": round(volume, 3), "modes": modes, "top_mode": top, "top_commodity": "all",
+            "rail_suppressed": (a, b) in suppressed_pairs or (b, a) in suppressed_pairs,
             "dist_km": round(math.hypot(bx - ax, by - ay)), "path": path,
         })
     all_routes = list(routes)
