@@ -60,6 +60,7 @@ class FrenchCorine(Source):
 
     def process(self):
         rows=[]
+        crop_details=[]
         dla=(LAT1-LAT0)/TILES; dlo=(LON1-LON0)/TILES
         files=[]
         for iy in range(TILES):
@@ -70,13 +71,17 @@ class FrenchCorine(Source):
                 strips.append(im)
             for y in range(PX):
                 chars=[]
+                detail_chars=[]
                 for im in strips:
                     pix=im.load()
                     for x in range(PX):
                         rgba=pix[x,y]
-                        chars.append(NLCD_CHAR[COLOR_TO_NLCD[nearest(rgba)]] if rgba[3] >= 128 else ".")
+                        near = nearest(rgba)
+                        chars.append(NLCD_CHAR[COLOR_TO_NLCD[near]] if rgba[3] >= 128 else ".")
+                        detail_chars.append("v" if rgba[3] >= 128 and near == (230,128,0) else "o" if rgba[3] >= 128 and near in {(242,166,77), (230,166,0)} else ".")
                 rows.append(''.join(chars))
+                crop_details.append(''.join(detail_chars))
         width=TILES*PX
         return {"vintage":f"CORINE Land Cover {YEAR}, WMS raster ~380 m","_files":files,"crs":"EPSG:4326",
                 "x0":LON0+dlo/PX/2,"dx":dlo/PX,"y0":LAT1-dla/PX/2,"dy":-dla/PX,"cols":width,"rows_n":len(rows),
-                "legend":{ch:code for code,ch in NLCD_CHAR.items()},"classes":{},"rows":rows}
+                "legend":{ch:code for code,ch in NLCD_CHAR.items()},"classes":{},"rows":rows,"crop_detail_rows":crop_details}
