@@ -63,3 +63,17 @@ def test_resource_postprocessor_cache_invariants():
     states = web("states.json")
     assert states and all(s.get("energy") is not None for s in states)
     assert sum((s["energy"] or {}).get("total", 0) > 0 for s in states) == 12
+
+
+def test_freight_trade_contract_uses_french_units():
+    trade = web("trade.json")
+    assert trade["sources"] == ["fr_freight"]
+    assert trade["year"] == 2019
+    assert len(trade["routes"]) == 40
+    assert len(trade["zones"]) == 13
+    assert all("value_musd" not in r for r in trade["routes"])
+    assert all(r["volume_mtkm"] > 0 and len(r["path"]) >= 2 for r in trade["routes"])
+    assert trade["routes"] == sorted(trade["routes"], key=lambda r: r["rank"])
+    assert trade["national_mtkm"]["domestic"] >= sum(r["volume_mtkm"] for r in trade["routes"])
+    assert {m["id"] for m in trade["modes"]} == {"truck", "rail", "water"}
+    assert any(s["id"] == "fr_freight" for s in web("sources.json"))

@@ -44,7 +44,6 @@ export const tips = {
       }
       lines.push(`<b>${num(a.enplanements)}</b> passengers (arrivals + departures) in ${esc(a.year)}${ch}`);
     }
-    if (a.cargo_lbs != null) lines.push(`All-cargo landed weight ${num(a.cargo_lbs)} lb`);
     lines.push(muted("Eurostat airport passengers; display size buckets, not FAA hub categories."));
     return lines.join("<br>");
   },
@@ -102,11 +101,11 @@ export const tips = {
     const com = t.commodities?.[r.top_commodity];
     const lines = [
       `<b>${esc(a)} ⇄ ${esc(b)}</b> ${muted(`trade route #${esc(r.rank)}`)}`,
-      `<b>${usd(r.value_musd * 1e6)}</b> of freight a year, ${num(r.tons_k * 1e3)} short tons (FAF ${esc(t.year ?? "")} estimate)`,
+      `<b>${num((r.volume_mtkm ?? 0) * 1e6)}</b> tonne-kilometres a year, about ${num((r.tons_k ?? 0) * 1e3)} metric tonnes (SDES ${esc(t.year ?? "")})`,
     ];
     if (modes) lines.push(modes);
-    if (com) lines.push(`Top commodity: ${esc(com)}`);
-    lines.push(muted("Both directions summed. Drawn as an arc between each zone's largest city: FAF records where freight starts and ends, not its route."));
+    if (com) lines.push(`Commodities: ${esc(com)}`);
+    lines.push(muted("Both directions combined. Drawn as an arc between regional anchors: SDES records where freight starts and ends, not its physical route."));
     return lines.join("<br>");
   },
 };

@@ -514,44 +514,41 @@ and `faa_airports` (both in `pipeline/sources/transport_hubs.py`). About 200 kB.
 
 ### trade.json (eager)
 
-Freight "trade routes" between FAF5 zones (`faf5`), domestic flows only (`trade_type` 1), newest FAF year. Built by
-`pipeline/build/trade.py` (after infrastructure, whose road links the drawn paths follow). About 70 kB.
+Domestic freight routes between current metropolitan French regions. Built by `pipeline/build/trade.py` from
+`fr_freight` (`sources/fr_freight.py`) after infrastructure, whose road/rail links the drawn paths use as a visual aid.
+About 25 kB.
 
 ```jsonc
 {
-  "version": 1, "vintage": "FAF5.7.1, 2024", "year": 2024, "sources": ["faf5"],
-  "rule": "The 40 largest domestic freight flows by value between FAF zones in different states …",   // quote in the UI
-  "path_note": "FAF gives a shipment's start and end zones, not its route: …",                          // quote in the UI
-  "units": {"value_musd": "million current US dollars", "tons_k": "thousand short tons", "tmiles_m": "million ton-miles"},
-  "modes": [{"id": "truck", "name": "Truck"}, {"id": "rail", …}, {"id": "water"}, {"id": "air"}, {"id": "multiple"},
-            {"id": "pipeline"}, {"id": "other"}],                  // FAF dms_mode 1..7, in this order
-  "commodities": {"43": "Mixed freight"},                          // SCTG2 code → FAF's short name (codes used below)
-  "national_musd": {"domestic": 19788731.6, "import": 3134841.1, "export": 2045950.5},   // all zones incl. AK and HI
-  "zones": [{"id": "092", "faf": ["092", "341", "363", "423"], "name": "New York-Newark, NY-NJ-CT-PA", "short": "New York",
-             "kind": "metro|rest_of_state", "states": ["CT", "NJ", "NY", "PA"], "cities": ["35620", "…"],   // population order
-             "counties": 30,                                          // member counties on the map
-             "anchor": {"cell": 3845, "x": …, "y": …, "city": "35620" | null} | null,
-             "partners": [["251", 61923.5, "truck"]],                // top 5 partner zones, any state: [zone, value_musd, top mode]
-             "totals_musd": {"within": …, "other_zones": …, "import": …, "export": …}}],   // sorted by id
-  "routes": [{"a": "092", "b": "251", "rank": 1, "value_musd": 61923.5, "tons_k": 15089.1, "tmiles_m": 3471.2,
-              "modes": {"truck": 0.7268, "rail": 0.01, "...": 0}, "top_mode": "truck", "top_commodity": "43",
-              "dist_km": 306, "path": [3845, 3846, "…"]}]           // rank order (value, desc)
+  "version": 1, "vintage": "SDES national goods-flow data, 2019", "year": 2019, "sources": ["fr_freight"],
+  "rule": "The 40 largest non-directional 2019 road, rail and inland-waterway freight flows …",   // quote in the UI
+  "path_note": "SDES publishes origin and destination regions, not the physical route: …",       // quote in the UI
+  "units": {"volume_mtkm": "million tonne-kilometres", "tons_k": "thousand metric tonnes (estimated)", "tmiles_m": "million tonne-kilometres (compatibility name)"},
+  "modes": [{"id": "truck", "name": "Road"}, {"id": "rail", "name": "Rail"}, {"id": "water", "name": "Inland waterway"}],
+  "commodities": {"all": "All commodities"},
+  "national_mtkm": {"domestic": 100139.25, "import": null, "export": null},   // all inter-region pairs in source
+  "zones": [{"id": "IDF", "name": "Île-de-France", "short": "Île-de-France", "kind": "region",
+             "states": ["IDF"], "cities": ["001"], "counties": 8,
+             "anchor": {"cell": 3845, "x": …, "y": …, "city": "001" | null},
+             "partners": [["HDF", 4419.6, "truck"]],                         // top 5 partners, any region
+             "totals_mtkm": {"within": null, "other_zones": …, "import": null, "export": null}}],
+  "routes": [{"a": "ARA", "b": "PAC", "rank": 1, "volume_mtkm": 5348.1, "tons_k": 29358.0,
+              "tmiles_m": 5348.1, "modes": {"truck": 0.7044, "rail": 0.1346, "water": 0.161},
+              "top_mode": "truck", "top_commodity": "all", "dist_km": 209, "path": [5939, 5940, "…"]}]
 }
 ```
 
-* **Zones**: Alaska and Hawaii are dropped (115 zones remain). The parts of one CFS area split by a state line
-  (same CSA/CBSA code) are **merged** into one zone: `id` = its lowest FAF code, `faf` lists the parts. Member counties
-  come from the 2023 OMB delineation (CSA or CBSA code within the part's state; Knoxville's 2017 CSA 314 is today's 315);
-  a rest-of-state zone holds the state's other counties. Each cities.json city joins the zone holding most of its
-  member counties. `anchor` = the biggest city's banner cell, or (no city) the land cell nearest the middle of the
-  zone's cells; `null` only if neither exists.
-* **Routes**: only flows between FAF parts in **different states** count, the two zones may share no state, and their
-  anchors must be ≥ 250 km apart; both directions are summed; the 40 largest by value are kept. `modes` are value
-  shares (sum to 1). `top_commodity` is the largest SCTG2 by value among each part pair's top 5. `path` is a chain of
-  neighbouring cells from `a`'s anchor to `b`'s along the cheapest road links (Interstate < major < rail < cross-country
-  < water steps): a drawing aid, not data (FAF assigns no route).
-* Values are FAF model estimates in **million current dollars** (`value_musd`) and **thousand short tons** (`tons_k`), as
-  FAF publishes them; say so in the UI. Pipeline-dominated routes (crude, gas) are real and should get their own style.
+* **Zones** are the 13 current metropolitan regions. SDES publishes 2019 flows by the former 2016 NUTS-2 regions;
+  the builder aggregates those source regions into current regions. Flows that become internal to one current region are
+  excluded from routes, so totals are inter-regional flows only. `anchor` is the population-weighted middle of the
+  region's owned hexes.
+* **Routes** are non-directional: both directions are already combined in the source. The 40 largest pairs by
+  tonne-kilometres are kept. `modes` are tonne-kilometre shares and sum to one where all modes are known. `tons_k` is a
+  rough estimate derived from tonne-kilometres divided by centroid distance; it is not directly published tonnage.
+* `path` is a chain of neighbouring cells chosen over the cheapest mapped road/rail edges, falling back to
+  cross-country or water steps. It is only a drawing aid: SDES does not publish the physical itinerary.
+* Rail rows suppressed for statistical secrecy are absent, not zero, so rail volumes and shares are lower bounds.
+  Air, maritime, pipeline, foreign trade and commodity detail are outside this dataset. Say these caveats in the UI.
 
 ### military.json (eager)
 
