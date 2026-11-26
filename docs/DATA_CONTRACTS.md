@@ -631,52 +631,42 @@ Built by `pipeline/build/military.py` from `mirta` (`sources/mirta.py`), `dmdc_p
 
 ### wonders.json (eager)
 
-Built by `pipeline/build/wonders.py` from `nps_boundaries` (`sources/nps.py`), `nps_visits`, `ipeds`, `herd`
-(`sources/nsf_herd.py`) and `nhl_landmarks` (`sources/nrhp_nhl.py`). About 20 kB, 52 wonders.
+Built by `pipeline/build/wonders.py` from `fr_unesco` (`sources/fr_unesco.py`) and `fr_culture`
+(`sources/fr_culture.py`). About 31 kB, 72 wonders.
 
 ```jsonc
 {
   "version": 1,
-  "vintage": {"parks": "NPS recreation visits 2025", "boundaries": "…", "universities": "NSF HERD FY2025; IPEDS …",
-              "landmarks": "NPS National Register GIS (NHL subset)"},
-  "sources": ["nps_boundaries", "nps_visits", "ipeds", "herd", "nhl_landmarks"],
-  "rules": [{"id": "national_park", "kind": "natural", "kinds": ["natural", "recreation", "coastal", "monument"],
-             "year": 2025, "text": "The 15 lower-48 National Parks …"},
-            {"id": "park_unit", "kind": "natural", "kinds": […same…], "year": 2025, "text": "The 5 most-visited other …"},
-            {"id": "research_university", "kind": "university", "year": 2025, "text": "The 20 universities …"},
-            {"id": "landmark", "kind": "landmark", "curated": true, "text": "Hand-picked by this project …"}],
-  "national": {"park_visits": 323014305, "park_visits_year": 2025, "r1_universities": 187},
-  "wonders": [{"id": "nps-GRSM", "name": "Great Smoky Mountains National Park", "short": "Great Smoky Mountains",
-               "kind": "natural|recreation|coastal|monument|university|landmark",   // must be in its rule's `kinds`
-               "rule": "national_park", "rank": 1,   // rank within its rule
-               "metrics": {…},                    // see below; unknown values are null
-               "x": …, "y": …, "cell": …, "cells": [..] | null,   // cells: hexes a big park covers (protected land)
-               "county": "37173" | null, "cbsa": "…" | null, "state": "NC", "curated": false,
-               "listed_as": "…",                  // landmarks only: the name in the NPS layer
-               "state_note": "…"}]                // optional: why state/county differ from the publisher's (Statue of Liberty → NY)
+  "vintage": {"unesco": "UNESCO World Heritage List, current XML export"},
+  "sources": ["fr_unesco", "fr_culture"],
+  "rules": [
+    {"id": "unesco_natural", "kind": "natural", "kinds": ["natural"], "text": "Natural and mixed UNESCO properties …"},
+    {"id": "unesco_cultural", "kind": "landmark", "kinds": ["landmark"], "text": "Cultural UNESCO properties …"},
+    {"id": "museum_attendance", "kind": "landmark", "kinds": ["landmark"], "text": "The 12 most-visited open Musées de France …"},
+    {"id": "university_enrolment", "kind": "university", "kinds": ["university"], "text": "The 12 largest French universities …"}
+  ],
+  "national": {"world_heritage_entries": 48, "museum_visits_top": 8681079, "museum_year": 2024, "university_year": 2024},
+  "wonders": [{"id": "museum-M5031", "name": "musée du Louvre", "short": "musée du Louvre",
+               "kind": "natural|university|landmark", "rule": "museum_attendance", "rank": 1,
+               "metrics": {…}, "cells": null, "curated": false,
+               "x": …, "y": …, "cell": …, "county": "75", "cbsa": "001", "state": "IDF"}]
 }
 ```
 
-* `metrics` by rule. Parks: `{visits, year, area_km2, unit_type}`; the merged National Mall (`nps-MALL`) adds
-  `visits_of` (the memorial its `visits` come from), `memorials` ({code: visits}) and a `note`: never add the memorial
-  counts together. Universities: `{rd_usd, federal_usd, year, enrollment, enrollment_year, r1, med_school,
-  reported_as?}` (dollars; `enrollment` is IPEDS 12-month unduplicated headcount, which includes online students;
-  `reported_as` names a combined HERD report matched to its lead campus, e.g. Texas A&M with its Health Science Center).
-  Landmarks: NPS sites `{visits, year, unit_type}`, NHLs `{designated, nhl_ref, note?}` (`note` when a value the
-  NHL layer leaves blank was filled in by hand: Wrigley Field's 2020 designation).
-* Park `kind` follows the NPS unit type: National Recreation Areas → `recreation` (Golden Gate, Gateway, Lake Mead),
-  seashores and lakeshores → `coastal` (Gulf Islands), memorials, historic sites and battlefields → `monument`, plus
-  overrides for the National Mall and the Gateway Arch (a National Park, but a monument); everything else `natural`.
-  `rule.kind` stays "natural" for old readers; `rule.kinds` lists what the rule allows. Parks of any of these kinds
-  have `metrics.visits` and may have `cells` (protected land): readers should key on `rule` (national_park,
-  park_unit), not `kind`, for visits and protected land.
-* `rank` is 1-based within the wonder's rule; curated landmarks are ranked alphabetically (not by importance).
-  Recreation visits are counted differently by unit type, so parks are ranked only within their rule (the rule text
-  says so). Wonders are in rule order: national_park, park_unit, research_university, landmark.
-* `state`/`county`: the publisher's filed state wins when the point lands across a border river on the 1:20M county
-  outlines (Gateway Arch → St. Louis city). The curated landmarks never repeat a site a park rule already holds
-  (Hoover Dam was dropped for Golden Spike because Lake Mead NRA is a park-unit wonder). Statue of Liberty: NPS files it under NJ,
-  but Liberty Island is part of New York County, so `state` "NY", `county` "36061" with a `state_note`.
+* `rank` is 1-based within the wonder's rule. UNESCO rules rank by inscription year; museums rank by total visits;
+  universities rank by total students.
+* UNESCO metrics: `{designated, criteria, url, transnational}`. Natural and mixed properties use kind `natural`;
+  cultural properties use `landmark`. Serial properties are represented by one French component point, not full
+  boundaries.
+* Museum metrics: `{visits, year, sites, domain, url}`. The value is each museum institution's latest available
+  annual total, summed across distinct physical sites sharing its Muséofile identifier. Repeated correction rows for
+  the same institution/year/site are deduplicated by keeping the largest total.
+* University metrics: `{students, year, academic_year, seat, type}`. Students include principal and secondary enrolments and CPGE
+  double enrolments. SISE gives only the administrative headquarters commune, so positions are not full campus
+  footprints. Universities sharing a parent commune may be offset slightly for marker visibility; those offsets are
+  display geometry, not source geography.
+* `county`, `cbsa` and `state` are the map's department, AAV and region inferred from the point. `x`/`y` remain the
+  true or display-adjusted point in map kilometres; `cell` is the nearest French land hex.
 
 ### disasters.json (lazy)
 

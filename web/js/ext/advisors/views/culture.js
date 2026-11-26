@@ -13,7 +13,7 @@ const KIND = {
   university: { label: "Universities", color: "#4a86d6" },
   landmark: { label: "Landmarks", color: "#e0b54c" },
 };
-const RULE_TITLE = { national_park: "National parks", park_unit: "Other park units", research_university: "Research universities", landmark: "Landmarks", unesco_natural: "Natural World Heritage", unesco_cultural: "Cultural World Heritage" };
+const RULE_TITLE = { national_park: "National parks", park_unit: "Other park units", research_university: "Research universities", landmark: "Landmarks", unesco_natural: "Natural World Heritage", unesco_cultural: "Cultural World Heritage", museum_attendance: "Most-visited museums", university_enrolment: "Largest universities" };
 const DIS_COLOR = { hurricane: "#4f9ad6", flood: "#2fa4b8", fire: "#e8774a", severe_storm: "#9a7bc9", winter: "#c9dcef", other: "#9a9aa8" };
 
 export async function mount(ctx) {
@@ -36,12 +36,12 @@ export async function mount(ctx) {
   const tileEl = mk("div");
   el.appendChild(tileEl);
   const drawTiles = (dis) => {
+    const topMuseum = wonders.filter((w) => w.rule === "museum_attendance")[0];
+    const topUniversity = wonders.filter((w) => w.rule === "university_enrolment")[0];
     tileEl.innerHTML = tiles([
-      { label: "Wonders", value: int(wonders.length), sub: (() => { const byRule = (...ids) => wonders.filter((w) => ids.includes(w.rule)).length; return `${byRule("national_park", "park_unit", "unesco_natural")} natural properties · ${byRule("research_university")} universities · ${byRule("landmark", "unesco_cultural")} landmarks`; })() },
-      { label: "Park visits", value: count3(won?.national?.park_visits), sub: `all NPS units, ${won?.national?.park_visits_year || ""}` },
-      dis?.noaa?.national
-        ? { label: "$1B+ disasters", value: int(dis.noaa.national.events), sub: `${dis.noaa.years?.join("–") || ""} · ${money(dis.noaa.national.cost_usd)}` }
-        : { label: "Adherents ≈", value: fin(adherents) ? `${adherents.toFixed(0)} / 100` : "–", sub: "residents, 2020 congregations" },
+      { label: "Wonders", value: int(wonders.length), sub: `${byKind("natural")} natural · ${byKind("university")} universities · ${byKind("landmark")} landmarks` },
+      { label: "Top museum", value: topMuseum ? `${count3(topMuseum.metrics?.visits)} visits` : "–", sub: topMuseum ? `${topMuseum.short || topMuseum.name}, ${topMuseum.metrics?.year}` : "" },
+      { label: "Largest university", value: topUniversity ? count3(topUniversity.metrics?.students) : "–", sub: topUniversity ? `${topUniversity.short || topUniversity.name} students` : "" },
     ]);
   };
   drawTiles(null);
@@ -69,7 +69,7 @@ export async function mount(ctx) {
     onClick: (b) => flyTo(b.it),
   });
   if (won && wonders.length) {
-    const wBody = section(el, { title: "Wonders", kicker: "Each chosen by a published rule", note: "Hover a wonder to find it on the map; click to fly there. UNESCO entries are ranked by inscription year; they are not measures of visits or importance." });
+    const wBody = section(el, { title: "Wonders", kicker: "Each chosen by a published rule", note: "Hover a wonder to find it on the map; click to fly there. Each section uses its own published rule: UNESCO inscription year, museum visits or university enrolment." });
     let kind = "all";
     segmented(wBody, {
       label: "Kind", value: kind,
@@ -88,7 +88,7 @@ export async function mount(ctx) {
         wHost.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">${esc(RULE_TITLE[rule.id] || rule.id)}</h4><p class="adv-note adv-rule">${esc(rule.text)}</p>`);
         const host = mk("div");
         wHost.appendChild(host);
-        const val = (w) => (w.kind === "university" ? w.metrics?.rd_usd : w.kind === "natural" ? w.metrics?.visits : null);
+        const val = (w) => (w.kind === "university" ? w.metrics?.students : w.metrics?.visits ?? null);
         wonderBars.push(barList(host, {
           rank: !rule.curated, compact: true, ariaLabel: RULE_TITLE[rule.id] || rule.id,
           rows: list.map((w) => ({ key: w.key, label: w.short || w.name, full: w.name, sub: w.state, value: val(w), text: metricText(w), color: KIND[w.kind]?.color })),
@@ -191,13 +191,11 @@ export async function mount(ctx) {
   const srcEl = mk("div");
   el.appendChild(srcEl);
   const drawSources = (dis) => {
-    srcEl.innerHTML = sourcesHtml(data, [...(won?.sources || []), "usrc_2020", "cdc_places", ...(dis?.sources || ["fema_declarations", "noaa_billions"])], [
-      `Faith: ${esc(lensFaith?.note || "counts adherents of congregations where they worship, not residents' beliefs.")}`,
-      `Amenities: ${esc(lensAmen?.note || "model-based estimates, not a happiness survey.")}`,
-      "A FEMA declaration is an administrative act that unlocks federal aid, not a measure of damage; Connecticut's planning regions count a disaster declared for any old county they overlap, which can overstate them.",
-      "NOAA billion-dollar events span several states: a state's cost is its share of the events that touched it, and state figures must not be added up.",
-      "Park visits are counted differently by unit type, so parks are ranked only within their own rule. Landmarks are an editorial choice.",
-      "University R&D includes medical schools; a few universities report together with their medical centre.",
+    srcEl.innerHTML = sourcesHtml(data, [...(won?.sources || []), ...(dis?.sources || [])], [
+      "UNESCO serial properties are represented by one French component point rather than their full boundaries.",
+      "Museum attendance uses each museum's latest annual total, summing distinct physical sites that share one Muséofile institution. Repeated correction rows for the same site are not double-counted.",
+      "University enrolment includes principal and secondary enrolments and CPGE double enrolments. SISE places institutions at their administrative headquarters commune, not across every campus.",
+      "France has no census religion question comparable to the original US faith lens, so that layer is intentionally absent.",
     ]);
   };
   drawSources(null);
@@ -342,7 +340,7 @@ export async function mount(ctx) {
 
 function metricText(w) {
   const m = w.metrics || {};
-  if (w.kind === "university") return fin(m.rd_usd) ? `${money(m.rd_usd)} R&D` : "–";
+  if (w.kind === "university") return fin(m.students) ? `${count3(m.students)} students` : "–";
   if (w.kind === "natural") return fin(m.visits) ? `${count3(m.visits)} visits` : fin(m.designated) ? `inscribed ${m.designated}` : "–";
   if (fin(m.visits)) return `${count3(m.visits)} visits`;
   return fin(m.designated) ? `landmark since ${m.designated}` : "landmark";

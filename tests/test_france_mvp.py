@@ -90,3 +90,46 @@ def test_freight_trade_contract_uses_french_units():
     assert sum("001" in z["cities"] for z in trade["zones"]) == 1  # Paris belongs to the banner region only
     assert min(sum(r["modes"].values()) for r in trade["routes"]) > 0.999
     assert any(r.get("rail_suppressed") for r in trade["routes"])
+
+
+def test_culture_wonders_contract():
+    wonders = web("wonders.json")
+    rows = wonders["wonders"]
+    assert wonders["sources"] == ["fr_unesco", "fr_culture"]
+    museums = [w for w in rows if w["rule"] == "museum_attendance"]
+    universities = [w for w in rows if w["rule"] == "university_enrolment"]
+    assert len(museums) == len(universities) == 12
+    assert museums[0]["name"] == "musée du Louvre"
+    assert museums[0]["metrics"]["visits"] > 8_000_000
+    carnavalet = next(w for w in museums if "Carnavalet" in w["name"])
+    assert carnavalet["metrics"]["visits"] == 1_624_576
+    assert carnavalet["metrics"]["sites"] == 3
+    assert universities[0]["name"] == "Université de Lille"
+    assert universities[0]["metrics"]["students"] > 80_000
+    assert {w["name"] for w in universities} >= {"Université de Lorraine", "Université Grenoble Alpes"}
+    assert all(w["cell"] is not None and w["state"] for w in museums + universities)
+    assert [w["metrics"]["visits"] for w in museums] == sorted((w["metrics"]["visits"] for w in museums), reverse=True)
+    assert [w["metrics"]["students"] for w in universities] == sorted((w["metrics"]["students"] for w in universities), reverse=True)
+    assert any(s["id"] == "fr_culture" for s in web("sources.json"))
+
+
+def test_museum_attendance_parser_deduplicates_sites(tmp_path, monkeypatch):
+    from pipeline.sources.fr_culture import FrenchCulture
+
+    (tmp_path / "museofile.csv").write_text(
+        "Identifiant|Nom_officiel|AUTNOM|Ville|Coordonnees|Domaine_thematique|URL\n"
+        "M1|Test museum||Paris|48.8,2.3|History|example.fr\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "museum-attendance.csv").write_text(
+        "IDPatrimostat;IDMuseofile;ferme;annee;total\n"
+        "S1;M1;NON;2024;100\n"
+        "S1;M1;NON;2024;120\n"
+        "S2;M1;NON;2024;30\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(FrenchCulture, "raw_dir", property(lambda self: tmp_path))
+    rows, year = FrenchCulture().museums()
+    assert year == 2024
+    assert rows[0]["visits"] == 150
+    assert rows[0]["sites"] == 2
