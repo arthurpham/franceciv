@@ -18,9 +18,9 @@ R_EARTH_KM = 6371.0088
 
 
 class Albers:
-    """Albers equal-area conic, standard USGS parameters for the lower 48."""
+    """Albers equal-area conic, with default standard parallels fitted to metropolitan France."""
 
-    def __init__(self, lat1=29.5, lat2=45.5, lat0=37.5, lon0=-96.0):
+    def __init__(self, lat1=42.0, lat2=50.0, lat0=46.0, lon0=2.5):
         p1, p2, p0 = map(math.radians, (lat1, lat2, lat0))
         self.lon0 = math.radians(lon0)
         self.n = (math.sin(p1) + math.sin(p2)) / 2

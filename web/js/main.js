@@ -533,7 +533,7 @@ async function main() {
   const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "State";
 
   function describeCanvas() {
-    const parts = ["Hex map of the contiguous United States", state.lens ? `coloured by the ${state.lens.name} lens` : "showing terrain"];
+    const parts = ["Hex map of metropolitan France", state.lens ? `coloured by the ${state.lens.name} lens` : "showing terrain"];
     if (state.selectedCity) parts.push(`${state.selectedCity.name} selected`);
     else if (state.selectedState != null) parts.push(`${stateName(state.selectedState)} selected`);
     canvas.setAttribute("aria-label", parts.join(", "));
@@ -786,7 +786,7 @@ async function main() {
     beforeCopy: () => url.flush(),
     fileName: () => {
       const sel = shareInfo().selection;
-      return `united-states-${state.lens?.id || "terrain"}${sel ? "-" + slug(sel.name) : ""}.png`;
+      return `france-${state.lens?.id || "terrain"}${sel ? "-" + slug(sel.name) : ""}.png`;
     },
     onToast: toast,
   });

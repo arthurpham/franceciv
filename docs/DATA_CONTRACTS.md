@@ -1,4 +1,7 @@
-# Data contracts (v2)
+# Data contracts
+
+> France adaptation note: the filenames and schema names are inherited from `usaciv` for browser compatibility. In this repository, `states` are French metropolitan régions, `counties`/GEOIDs are départements (`2A`/`2B` in Corsica), and city IDs are three-digit INSEE aire d'attraction des villes codes. Monetary values are euros rather than dollars; the `eur` unit/format is the French equivalent of the upstream `usd` contract.
+
 
 The pipeline (Python) and the browser (web/js) agree on these files in `web/data/`. Change a contract here first, then on
 both sides. All coordinates are **map km**: Albers equal-area, origin top-left, y **down** (see `pipeline/core/geo.py`).

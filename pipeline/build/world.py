@@ -9,16 +9,15 @@ from __future__ import annotations
 import math
 from collections import Counter
 
-from ..core.geo import AlbersEllipsoid, MapProjection, Shape, ShapeIndex
+from ..core.geo import MapProjection, Shape, ShapeIndex
 from ..core.hexgrid import SQRT3, HexGrid
 from ..core.store import load_interim, save_interim, write_web
 
-REQUIRES = ["census_boundaries", "natural_earth", "etopo", "nlcd"]
+REQUIRES = ["fr_boundaries", "natural_earth", "etopo", "fr_worldcover"]
 PRODUCES = ["_world", "world.json"]
 
-HEX_RADIUS_KM = 25.0
-MARGIN_KM = 200.0
-CONUS_EXCLUDE = {"02", "15", "60", "66", "69", "72", "78"}  # AK, HI, territories
+HEX_RADIUS_KM = 8.0
+MARGIN_KM = 100.0
 
 # Cell owner codes (besides state index >= 0)
 WATER, FOREIGN = -1, -2
@@ -29,16 +28,16 @@ LAND, OCEAN, COAST, LAKE = range(4)
 TIDAL_SEA_SHARE = 0.5  # share of ETOPO samples below 0 m that keeps a sea-centred hex as water
 COAST_DEPTH_M = -200
 WATER_TABLE = [
-    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on Census state or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays such as the Chesapeake stay water)."},
+    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on French region or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays such as the Chesapeake stay water)."},
     {"id": OCEAN, "name": "Ocean", "color": "#1b4266", "rule": "Sea deeper than 200 m and not next to land."},
     {"id": COAST, "name": "Coast", "color": "#2d6d97", "rule": "Sea next to a land hex, or shallower than 200 m (ETOPO1 mean)."},
     {"id": LAKE, "name": "Lake", "color": "#3a80b0", "rule": "Water hex (most of its 7 sample points off land) with Natural Earth 1:50m lake points that outnumber sea points, or above sea level."},
 ]
 
 WATER_NOTE = (
-    "Census 1:20M state outlines and Natural Earth 1:50m country and lake outlines don't meet exactly. A sea hex whose "
+    "French region outlines and Natural Earth 1:50m country and lake outlines don't meet exactly. A sea hex whose "
     "ETOPO1 mean is above sea level (and under half of its samples below it) becomes land when at least 4 of its 6 neighbours are land, or when it touches both "
-    "US and foreign land; it takes the neighbours' majority owner. Narrow reservoirs that cover less than half a hex "
+    "French and foreign land; it takes the neighbours' majority owner. Narrow reservoirs that cover less than half a hex "
     "are land, and their river is drawn through them. Tidal bays stay water when the hex centre is sea and its "
     "ETOPO1 mean is at or below sea level or at least half of its ETOPO1 samples are. A sea hex's "
     "elevation is the mean of its ETOPO1 samples below sea level (its water depth)."
@@ -47,18 +46,18 @@ WATER_NOTE = (
 FLAT, HILLS, MOUNTAINS, PEAKS = range(4)
 LAND_MIN_ALT_M = -100  # ETOPO samples below this inside a land hex are treated as sea floor
 RELIEF_TABLE = [
-    {"id": FLAT, "name": "Flat", "rule": "Elevation standard deviation inside the hex under 85 m."},
-    {"id": HILLS, "name": "Hills", "rule": "Elevation standard deviation ≥ 85 m."},
-    {"id": MOUNTAINS, "name": "Mountains", "rule": "Elevation standard deviation ≥ 260 m, or mean elevation ≥ 2,300 m."},
-    {"id": PEAKS, "name": "Peaks", "rule": "Mean elevation ≥ 2,700 m (alpine)."},
+    {"id": FLAT, "name": "Flat", "rule": "Elevation standard deviation inside the hex under 40 m."},
+    {"id": HILLS, "name": "Hills", "rule": "Elevation standard deviation ≥ 40 m."},
+    {"id": MOUNTAINS, "name": "Mountains", "rule": "Elevation standard deviation ≥ 120 m, or mean elevation ≥ 1,300 m."},
+    {"id": PEAKS, "name": "Peaks", "rule": "Mean elevation ≥ 1,900 m (high Alps or Pyrenees)."},
 ]
 RELIEF_NOTE = (
-    "From ETOPO1 samples (~9 km apart, about 20 per hex) with altitude ≥ -100 m, so bays and sea floor don't "
+    "From ETOPO1 samples (~4 km apart, a few per hex) with altitude ≥ -100 m, so bays and sea floor don't "
     "count; all samples are used if none qualify. Water hexes are always flat."
 )
 
 URBAN_MIN_PCT = 30
-# id, key, name, colour, NLCD codes, rule. Ids are fixed by docs/DATA_CONTRACTS.md.
+# id, key, name, colour, WorldCover codes, rule. Ids are fixed by docs/DATA_CONTRACTS.md.
 COVER = [
     (1, "forest_deciduous", "Deciduous forest", "#4f7a35", [41], "Forest (41+42+43) is the largest group and deciduous (41) the largest forest type."),
     (2, "forest_evergreen", "Conifer forest", "#2f5a3a", [42], "Forest is the largest group and evergreen (42) the largest forest type."),
@@ -73,10 +72,9 @@ COVER = [
     (11, "ice", "Ice & snow", "#e8eef2", [12], "Perennial ice/snow (12) is the largest group."),
 ]
 COVER_NOTE = (
-    "From NLCD 2021 (~2 km pixels), sampled on a 2 km lattice inside each US hex (about 400 points). Open water (11) "
+    "From ESA WorldCover 2021 reduced to ~670 m pixels, sampled on a 1 km lattice inside each French hex. Open water (11) "
     "and no-data pixels are ignored; shares are of the remaining land points, rounded to whole percent, and the urban "
-    "threshold is applied to the rounded developed share. NLCD covers only the lower 48, so foreign hexes (Canada, "
-    "Mexico, the Caribbean) have cover 0 (none)."
+    "threshold is applied to the rounded developed share. Foreign hexes have cover 0 (none) in this France build."
 )
 # Groups competing for the dominant cover (urban is decided by its threshold first).
 GROUPS = {
@@ -90,15 +88,15 @@ PCT = {
     "forest": (41, 42, 43), "crop": (82,), "pasture": (81,), "grass": (71, 21), "shrub": (52,),
     "wetland": (90, 95), "developed": (22, 23, 24),
 }
-NLCD_STEP_KM = 2.0
+WORLDCOVER_STEP_KM = 1.0
 
 
 def classify_relief(mean: float, std: float) -> int:
-    if mean >= 2700:
+    if mean >= 1900:
         return PEAKS
-    if std >= 260 or mean >= 2300:
+    if std >= 120 or mean >= 1300:
         return MOUNTAINS
-    if std >= 85:
+    if std >= 40:
         return HILLS
     return FLAT
 
@@ -114,7 +112,7 @@ def is_valley_floor(samples: list) -> bool:
 
 
 def dominant_cover(counts: Counter, land: int) -> int:
-    """Cover id for a hex from its NLCD class counts (land = points that are not water or no-data)."""
+    """Cover id for a hex from its WorldCover class counts (land = points that are not water or no-data)."""
     if not land:
         return 0
     if round(100 * sum(counts[c] for c in (22, 23, 24)) / land) >= URBAN_MIN_PCT:  # same rounding as pct.developed
@@ -247,17 +245,15 @@ def majority(values: list, centre) -> object:
 
 
 def build() -> None:
-    bounds = load_interim("census_boundaries")
+    bounds = load_interim("fr_boundaries")
     ne = load_interim("natural_earth")
     etopo = load_interim("etopo")
-    nlcd = load_interim("nlcd")
+    worldcover = load_interim("fr_worldcover")
 
-    states = [s for s in bounds["states"] if s["fips"] not in CONUS_EXCLUDE]
-    states.sort(key=lambda s: s["name"])
-    counties = [c for c in bounds["counties"] if c["state_fips"] not in CONUS_EXCLUDE]
-    counties.sort(key=lambda c: c["geoid"])
+    states = sorted(bounds["states"], key=lambda s: s["name"])
+    counties = sorted(bounds["counties"], key=lambda c: c["geoid"])
 
-    # Projection: fit the lower-48 with a margin.
+    # Projection: fit metropolitan France with a margin.
     probe = MapProjection(0, 0, 0)
     xs, ys = [], []
     for s in states:
@@ -354,9 +350,9 @@ def build() -> None:
             lakeish = "lake" in wet and (above_sea or majority(wet, kinds[0] if kinds[0] in wet else "lake") == "lake")
             water[i] = LAKE if lakeish else OCEAN
 
-    # Sliver fix: Census (1:20M) and Natural Earth (1:50m) outlines don't meet exactly, leaving water hexes
-    # on land along the 49th parallel and the Rio Grande. A non-lake water hex whose ETOPO mean is above sea
-    # level becomes land if at least 4 of its neighbours are land, or if it touches both US and foreign land.
+    # Sliver fix: French administrative and Natural Earth (1:50m) outlines don't meet exactly, leaving water hexes
+    # on land along land borders and coasts. A non-lake water hex whose ETOPO mean is above sea
+    # level becomes land if at least 4 of its neighbours are land, or if it touches both French and foreign land.
     # It takes its land neighbours' majority owner.
     slivers = []
     for i in range(grid.size):
@@ -371,7 +367,7 @@ def build() -> None:
         owner[i], water[i] = o, LAND
     print(f"    {len(slivers)} sliver water hexes turned into land: {[i for i, _ in slivers]}")
 
-    # --- counties for US cells -------------------------------------------------------------------
+    # --- counties for French cells -------------------------------------------------------------------
     county = [-1] * grid.size
     county_samples: list[list[int]] = [[] for _ in range(grid.size)]
     for i in range(grid.size):
@@ -401,7 +397,7 @@ def build() -> None:
         pool = same or valid
         county[i] = smp[0] if smp[0] in pool else Counter(pool).most_common(1)[0][0]
         off_state += not same
-    print(f"    {borrowed} US hexes borrowed a neighbour's county; {off_state} have no county in their own state")
+    print(f"    {borrowed} French hexes borrowed a neighbour's county; {off_state} have no county in their own state")
 
     # --- elevation, water depth classes and relief -------------------------------------------------
     elev = [0] * grid.size
@@ -439,12 +435,11 @@ def build() -> None:
                 water[i] = COAST if near_land or elev[i] > COAST_DEPTH_M else OCEAN
     print(f"    {no_elev} hexes without elevation samples; {valley_floor} valley-floor hexes eased one relief class")
 
-    # --- land cover from NLCD --------------------------------------------------------------------
-    albers = AlbersEllipsoid()  # NLCD is in EPSG:5070
-    rows, legend = nlcd["rows"], nlcd["legend"]
-    x0, dx, y0, dy = nlcd["x0"], nlcd["dx"], nlcd["y0"], nlcd["dy"]
-    ncols, nrows = nlcd["cols"], len(rows)
-    lattice = hex_lattice(HEX_RADIUS_KM, NLCD_STEP_KM)
+    # --- land cover from WorldCover --------------------------------------------------------------------
+    rows, legend = worldcover["rows"], worldcover["legend"]
+    x0, dx, y0, dy = worldcover["x0"], worldcover["dx"], worldcover["y0"], worldcover["dy"]
+    ncols, nrows = worldcover["cols"], len(rows)
+    lattice = hex_lattice(HEX_RADIUS_KM, WORLDCOVER_STEP_KM)
     cover = [0] * grid.size
     pct = {k: [0] * grid.size for k in PCT}
     no_cover = 0
@@ -454,8 +449,8 @@ def build() -> None:
         cx, cy = grid.center(*grid.col_row(i))
         counts: Counter = Counter()
         for ox, oy in lattice:
-            ex, ey = albers(*proj.inverse(cx + ox, cy + oy))
-            c, r = round((ex - x0) / dx), round((ey - y0) / dy)
+            lon, lat = proj.inverse(cx + ox, cy + oy)
+            c, r = round((lon - x0) / dx), round((lat - y0) / dy)
             if 0 <= c < ncols and 0 <= r < nrows:
                 counts[rows[r][c]] += 1
         counts = Counter({legend[ch]: n for ch, n in counts.items()})
@@ -466,7 +461,7 @@ def build() -> None:
             continue
         for k, codes in PCT.items():
             pct[k][i] = round(100 * sum(counts[c] for c in codes) / land)
-    print(f"    {len(lattice)} NLCD points per hex; {no_cover} US hexes without land-cover samples")
+    print(f"    {len(lattice)} WorldCover points per hex; {no_cover} French hexes without land-cover samples")
 
     # --- rivers ----------------------------------------------------------------------------------
     # Lake centerlines are kept only where they cross land hexes (reservoirs narrower than half a hex,
@@ -494,8 +489,8 @@ def build() -> None:
             if len(pts) >= 2:
                 rivers.append({"name": name, "rank": rank, "pts": [round(v, 1) for p in pts for v in p]})
 
-    cover_table = [{"id": 0, "key": "none", "name": "None", "rule": "Water, foreign land, or no NLCD land pixels."}] + [
-        {"id": cid, "key": key, "name": name, "color": color, "nlcd": codes, "rule": rule}
+    cover_table = [{"id": 0, "key": "none", "name": "None", "rule": "Water, foreign land, or no WorldCover land pixels."}] + [
+        {"id": cid, "key": key, "name": name, "color": color, "worldcover": codes, "rule": rule}
         for cid, key, name, color, codes, rule in COVER
     ]
     tables = {

@@ -2,10 +2,10 @@ import csv
 
 from ..core.source import Source, SourceInfo
 
-# ETOPO1 (1 arc-minute) via NOAA ERDDAP, sampled every 5th point (~9 km). The window covers the
-# whole map rectangle (lower 48 plus the margin into Canada, Mexico and the oceans).
-STRIDE = 5
-LAT, LON = (22, 56), (-131, -60)
+# ETOPO1 (1 arc-minute) via NOAA ERDDAP, sampled every 2nd point (~4 km). The window covers the
+# whole map rectangle (metropolitan France plus the margins into neighbouring countries and seas).
+STRIDE = 2
+LAT, LON = (39, 53), (-8, 13)
 URL = (
     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/etopo180.csv"
     f"?altitude%5B({LAT[0]}):{STRIDE}:({LAT[1]})%5D%5B({LON[0]}):{STRIDE}:({LON[1]})%5D"
@@ -20,7 +20,7 @@ class Etopo(Source):
         publisher="NOAA National Centers for Environmental Information (via ERDDAP)",
         homepage="https://www.ncei.noaa.gov/products/etopo-global-relief-model",
         license="Public domain (U.S. Government work)",
-        description="Land elevation and ocean depth, sampled every ~9 km. Each hex's relief (flat, hills, mountains, "
+        description="Land elevation and ocean depth, sampled every ~4 km. Each hex's relief (flat, hills, mountains, "
         "peaks) comes from the mean and roughness (standard deviation) of the land samples inside it.",
         used_for=["Relief (hills, mountains)", "Hill-shading", "Ocean depth"],
     )
@@ -40,7 +40,7 @@ class Etopo(Source):
                 lon.append(round(float(lo), 4))
                 alt.append(int(float(al)))
         return {
-            "vintage": "ETOPO1, 1 arc-minute, sampled every ~9 km",
+            "vintage": "ETOPO1, 1 arc-minute, sampled every ~4 km",
             "_files": [FILE],
             "lat": lat,
             "lon": lon,
