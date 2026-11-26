@@ -10,7 +10,7 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json", "states.json"]
 PRODUCES = ["resources.json"]
 
 TYPES = [
