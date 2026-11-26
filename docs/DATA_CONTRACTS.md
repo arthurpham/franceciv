@@ -498,9 +498,10 @@ Built by `pipeline/build/military.py` from `fr_military` (`sources/fr_military.p
   regional personnel, but is not drawn as an installation. Overseas and foreign rows are outside the map.
 * The file's national organisation total is 251,063, the sum of detailed rows outside Île-de-France. The browser
   drops 10,960 overseas and foreign personnel, then adds the separate 20,131-person Île-de-France aggregate.
-* Encampment: an AAV appears when its geocoded base seats account for at least 1,000 personnel or 0.3% of population;
-  `fortress` at 5,000+ personnel or 3% share. `armed_forces` is retained as the contract key for compatibility but now
-  means stationed personnel assigned by base seat, not residents in uniform.
+* Encampment: an AAV appears when its geocoded base seats account for at least 1,000 personnel; `fortress` at 5,000+.
+  `share` divides 2012 personnel by the map's current AAV population only as contextual scale; it is not a historical
+  rate and is not used for selection. `armed_forces` is retained as the contract key for compatibility but now means
+  stationed personnel assigned by base seat, not residents in uniform.
 * `ranges`, spending, veterans, reserve and civilian breakdowns are null/empty because no comparable current French
   public dataset is used. Do not resurrect US MIRTA/DMDC/OLDCC wording for this file.
 

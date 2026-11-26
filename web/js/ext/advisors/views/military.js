@@ -110,7 +110,7 @@ export async function mount(ctx) {
         { key: "name", label: "City", align: "l", width: "minmax(0,1.8fr)", value: (g) => g.row.name, html: (g) => `${esc(g.row.name)} <span class="sub">${esc(g.row.sub || "")}</span>`, tip: (g) => (g.installations || []).map((id) => instById.get(id)?.name || id).join(", ") || "Aggregate regional personnel only" },
         { key: "tier", label: "Tier", align: "l", width: "minmax(0,.7fr)", value: (g) => (g.tier === "fortress" ? 0 : 1), text: (g) => g.tier === "fortress" ? "Fortress" : "Garrison" },
         { key: "personnel", label: "Stationed", value: (g) => g.armed_forces, text: (g) => count3(g.armed_forces), title: "Stationed personnel assigned to this AAV by base seat; not residents in uniform" },
-        { key: "share", label: "Share", value: (g) => g.share, text: (g) => pct(g.share), bar: { max: Math.max(...garrisons.map((g) => g.share || 0), 0.01), color: "rgba(135,150,171,.35)" }, title: "Stationed personnel ÷ AAV population" },
+        { key: "share", label: "Share", value: (g) => g.share, text: (g) => pct(g.share), bar: { max: Math.max(...garrisons.map((g) => g.share || 0), 0.01), color: "rgba(135,150,171,.35)" }, title: "2012 stationed personnel ÷ the map's current AAV population; contextual scale only, not a historical rate" },
         { key: "bases", label: "Bases", value: (g) => g.installation_count, text: (g) => int(g.installation_count || 0), hideBelow: 430 },
       ],
       rows: garrisons, sort: { key: "personnel", dir: "desc" },

@@ -111,11 +111,11 @@ def build():
         personnel = sum(f["personnel"] for f in rows)
         population = city_by_id[city_id].get("population") or 0
         share = personnel / population if population else 0
-        if personnel < 1000 and share < 0.003:
+        if personnel < 1000:
             continue
         rows.sort(key=lambda f: -f["personnel"])
         city_rows[city_id] = {
-            "tier": "fortress" if personnel >= 5000 or share >= 0.03 else "garrison",
+            "tier": "fortress" if personnel >= 5000 else "garrison",
             "armed_forces": personnel, "share": round(share, 4), "naval": False,
             "installations": [f["id"] for f in rows[:8]], "installation_count": len(rows),
         }
@@ -146,11 +146,11 @@ def build():
         "version": 1,
         "vintage": {"installations": "Ministry of the Armed Forces defense-base personnel, 2012", "personnel": "Same 2012 file"},
         "sources": ["fr_military"],
-        "rule": "An AAV appears as a garrison when its geocoded base seats account for at least 1,000 stationed personnel or 0.3% of its population in the 2012 file.",
+        "rule": "An AAV appears as a garrison when its geocoded base seats account for at least 1,000 stationed personnel in the 2012 file.",
         "rules": {
             "tier": "Installation display tiers are by stationed personnel in 2012: major 5,000+, base 2,000+, site below 2,000. They are not official importance tiers.",
             "ranges": "No current official open boundary inventory is used; no restricted-ground polygons are drawn.",
-            "encampment": "Fortress: 5,000+ stationed personnel or at least 3% of the AAV population. Garrison: 1,000+ or 0.3%. Personnel are counted at the base seat commune, not where personnel live.",
+            "encampment": "Fortress: 5,000+ stationed personnel. Garrison: 1,000+. Personnel are counted at the base seat commune, not where personnel live. The displayed share divides 2012 personnel by the map's current AAV population only as contextual scale; it is not a historical rate and is not used for selection.",
             "installations": "Rows are 2012 bases de défense, geocoded at their support-group seat commune. They are not individual barracks, boundaries, or a current order of battle.",
         },
         "flagships": [],
