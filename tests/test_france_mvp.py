@@ -134,6 +134,20 @@ def test_time_dimension_contract():
         assert lens["values"] == meta["series"][str(meta["default"])]
     scales = data["methodology"]["inset_display_area_over_real_area"]
     assert scales["972"] > 13 and scales["973"] < 0.6
+    world = web("world.json")
+
+    def inset_values(abbr, year=2023):
+        idx = next(i for i, s in enumerate(world["states"]) if s["abbr"] == abbr)
+        series = next(l for l in data["lenses"] if l["id"] == "population_history")["time"]["series"][str(year)]
+        return [series[i] for i, owner in enumerate(world["owner"]) if owner == idx and series[i] is not None]
+
+    # The inset affine transforms are large enough that forgetting ground-area conversion is demographically
+    # implausible: island averages fall to roughly 25-40 people/km² instead of several hundred.
+    for abbr in ("GUA", "MTQ", "REU"):
+        vals = inset_values(abbr)
+        assert vals and 150 < sum(vals) / len(vals) < 600
+    guyane = inset_values("GUY")
+    assert 200 < max(guyane) < 700
     pop = next(l for l in data["lenses"] if l["id"] == "population_history")
     assert pop["time"]["years"] == [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
     mean = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in pop["time"]["series"][str(year)] if v is not None])
