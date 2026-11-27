@@ -545,8 +545,10 @@ async function main() {
       lens.activeYear = year;
       lens.values = lens.time.series[String(year)] || lens.values;
     }
+    const restoreYearFocus = document.activeElement?.classList?.contains("lg-year");
     applyLens(w, state.lens, state.band);
     dock.render(state.lens, state.band);
+    if (restoreYearFocus) document.querySelector(".lg-year")?.focus();
     rebuildMinimap();
     describeCanvas();
     requestDraw();
