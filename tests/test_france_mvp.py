@@ -121,6 +121,40 @@ def test_quality_of_life_contracts():
     assert "Alsace-Moselle" in by_id["house_price"]["description"]
 
 
+def test_time_dimension_contract():
+    data = web("time.json")
+    assert data["sources"] == ["fr_insee_stats"]
+    assert {l["id"] for l in data["lenses"]} == {"population_history", "housing_stock_history", "homeownership_history", "second_homes_history", "vacancy_history"}
+    n = len(web("world.json")["owner"])
+    for lens in data["lenses"]:
+        meta = lens["time"]
+        assert meta["years"] == sorted(meta["years"]) and meta["default"] == meta["years"][-1]
+        assert set(meta["series"]) == {str(y) for y in meta["years"]}
+        assert all(len(values) == n for values in meta["series"].values())
+        assert lens["values"] == meta["series"][str(meta["default"])]
+    scales = data["methodology"]["inset_display_area_over_real_area"]
+    assert scales["972"] > 13 and scales["973"] < 0.6
+    world = web("world.json")
+
+    def inset_values(abbr, year=2023):
+        idx = next(i for i, s in enumerate(world["states"]) if s["abbr"] == abbr)
+        series = next(l for l in data["lenses"] if l["id"] == "population_history")["time"]["series"][str(year)]
+        return [series[i] for i, owner in enumerate(world["owner"]) if owner == idx and series[i] is not None]
+
+    # The inset affine transforms are large enough that forgetting ground-area conversion is demographically
+    # implausible: island averages fall to roughly 25-40 people/km² instead of several hundred.
+    for abbr in ("GUA", "MTQ", "REU"):
+        vals = inset_values(abbr)
+        assert vals and 150 < sum(vals) / len(vals) < 600
+    guyane = inset_values("GUY")
+    assert 200 < max(guyane) < 700
+    pop = next(l for l in data["lenses"] if l["id"] == "population_history")
+    assert pop["time"]["years"] == [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
+    mean = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in pop["time"]["series"][str(year)] if v is not None])
+    assert mean(2023) > mean(1968)
+    assert sum(v is not None for v in pop["time"]["series"]["1968"]) > 2500
+
+
 def test_society_contract():
     data = web("society.json")
     assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 3

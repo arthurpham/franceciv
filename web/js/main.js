@@ -55,17 +55,22 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility] = await Promise.all([
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
-    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true), loadJSON("neighborhoods", true), loadJSON("mobility", true),
+    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true), loadJSON("neighborhoods", true), loadJSON("mobility", true), loadJSON("time", true),
   ]);
   if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
-  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility]) {
+  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData]) {
     if (!extra?.lenses?.length) continue;
     if (extra.group && !lensFile.groups.some((g) => g.id === extra.group.id)) lensFile.groups.push(extra.group);
     const known = new Set(lensFile.lenses.map((l) => l.id));
     lensFile.lenses.push(...extra.lenses.filter((l) => !known.has(l.id)));
+  }
+  for (const lens of lensFile.lenses) {
+    if (!lens.time?.series) continue;
+    lens.activeYear = lens.time.default || lens.time.years?.at(-1);
+    lens.values = lens.time.series[String(lens.activeYear)] || lens.values;
   }
   const w = prepareWorld(world, cities, { resources });
   const state = {
@@ -129,7 +134,7 @@ async function main() {
     return `${l.id}:${vis}:${sig}`;
   }).join(";");
   const cacheKey = () =>
-    `${state.lens?.id ?? "terrain"}|${state.band ? state.band.join(",") : ""}|${state.showResources ? 1 : 0}|${dpr}|${cam.w}x${cam.h}` +
+    `${state.lens?.id ?? "terrain"}:${state.lens?.activeYear ?? ""}|${state.band ? state.band.join(",") : ""}|${state.showResources ? 1 : 0}|${dpr}|${cam.w}x${cam.h}` +
     `|${state.selectedCity?.id ?? ""}|${resourceFilterSig(state.resourceFilter)}|${layersSig()}`;
 
   // lead: [-1|0|1, -1|0|1], the direction a pan ran off the cache; the new cache reaches further that way (and less
@@ -506,6 +511,7 @@ async function main() {
     lenses: lensFile, sources: sources || [], w,
     onPick: (lens) => setLens(lens),
     onBand: (band) => setBand(band),
+    onYear: (year) => setLensYear(year),
   });
 
   let minimapQueued = false;
@@ -526,6 +532,28 @@ async function main() {
     requestDraw();
     url.schedule();
     if (changed) events.emit("lens", lens);
+  }
+
+  function setLensYear(year) {
+    const active = state.lens;
+    if (!active?.time?.series || !active.time.years.includes(year) || active.activeYear === year) return;
+    for (const lens of lensFile.lenses) {
+      if (!lens.time?.series) continue;
+      // Temporal lenses share the selected year when they measure it. Coarser series return to their explicit
+      // default year rather than interpolating, relabelling another vintage, or keeping hidden cross-link state.
+      const next = lens.time.years.includes(year) ? year : lens.time.default || lens.time.years.at(-1);
+      lens.activeYear = next;
+      lens.values = lens.time.series[String(next)] || lens.values;
+    }
+    const restoreYearFocus = document.activeElement?.classList?.contains("lg-year");
+    applyLens(w, state.lens, state.band);
+    dock.render(state.lens, state.band);
+    if (restoreYearFocus) document.querySelector(".lg-year")?.focus();
+    rebuildMinimap();
+    describeCanvas();
+    requestDraw();
+    url.schedule();
+    events.emit("lens", state.lens);
   }
 
   function setBand(band) {
@@ -552,7 +580,7 @@ async function main() {
   const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "Region";
 
   function describeCanvas() {
-    const parts = ["Hex map of metropolitan France", state.lens ? `coloured by the ${state.lens.name} lens` : "showing terrain"];
+    const parts = ["Hex map of metropolitan France", state.lens ? `coloured by the ${state.lens.name} lens${state.lens.activeYear ? ` in ${state.lens.activeYear}` : ""}` : "showing terrain"];
     if (state.selectedCity) parts.push(`${state.selectedCity.name} selected`);
     else if (state.selectedState != null) parts.push(`${stateName(state.selectedState)} selected`);
     canvas.setAttribute("aria-label", parts.join(", "));
@@ -676,6 +704,16 @@ async function main() {
         userMoved = false;
       }
       requestDraw();
+    },
+  });
+  url.register("year", {
+    get: () => state.lens?.time ? state.lens.activeYear : null,
+    set: (value) => {
+      const lens = state.lens;
+      if (!lens?.time) return;
+      const fallback = lens.time.default || lens.time.years?.at(-1);
+      const year = value == null || value === "" ? fallback : Number(value);
+      if (lens.time.years.includes(year)) setLensYear(year);
     },
   });
 
@@ -826,7 +864,8 @@ async function main() {
     beforeCopy: () => url.flush(),
     fileName: () => {
       const sel = shareInfo().selection;
-      return `france-${state.lens?.id || "terrain"}${sel ? "-" + slug(sel.name) : ""}.png`;
+      const year = state.lens?.time && state.lens.activeYear ? `-${state.lens.activeYear}` : "";
+      return `france-${state.lens?.id || "terrain"}${year}${sel ? "-" + slug(sel.name) : ""}.png`;
     },
     onToast: toast,
   });
@@ -1266,6 +1305,7 @@ async function main() {
       if (lens && !modes.mode) dock.remember(lens.id);
     },
     setBand,
+    setLensYear,
     flyTo(x, y, scale = cam.scale, ms = 750) { flyToVisible(x, y, scale, ms); },
     fitBounds,
     home() { const h = homeView(); cam.flyTo(h.x, h.y, h.s, 750); userMoved = false; requestDraw(); },

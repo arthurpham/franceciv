@@ -127,6 +127,10 @@ Coverage combines consolidated feeds for Île-de-France, Auvergne-Rhône-Alpes, 
 
 Official annual-average-daily-traffic sections on the national road network. `road_traffic` is a length-weighted sampled average in vehicles/day and `heavy_vehicle_share` is traffic-weighted. Coverage excludes departmental and municipal roads; section measurement years can precede the 2024 reference year. Heavy-share outliers above 100% in the source are treated as invalid rather than plausible shares. The same geometry replaces schematic Natural Earth major-road links for mainland France; Corsica retains schematic geometry.
 
+### time.json
+
+INSEE comparateur historical population and housing lenses. Temporal lenses carry the normal per-cell `values` array for their default year plus `time: {label, years, default, series}`; `series` maps each census year to a complete world-grid array and the frontend switches `values` to the selected exact year without interpolating missing vintages. Commune counts are distributed across current commune polygons on a 1 km lattice, uniformly within each commune, with centroid fallback for very small/sparsely sampled polygons. Missing or suppressed commune values produce null hexes rather than zero. Density denominators convert affine overseas-inset display area back to real spherical ground area; `methodology.inset_display_area_over_real_area` records the correction ratios. Colour domains are fixed across years. Although uncompressed `time.json` is large, it is an eager lens-catalog layer so the lenses are discoverable and temporal deep links resolve synchronously; a future split manifest/series format can make it fully lazy.
+
 ### society.json
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.

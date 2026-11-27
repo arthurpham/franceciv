@@ -34,6 +34,7 @@ function vintageYear(vintage) {
 }
 
 function measurementYear(lens, fallback) {
+  if (lens.time && lens.activeYear) return String(lens.activeYear);
   const text = String(lens.description || "");
   const ranges = [...text.matchAll(yearRangePattern())];
   if (!ranges.length) return fallback;
@@ -73,7 +74,8 @@ export function createLocationInspector(opts) {
   }
 
   function stats(lens) {
-    if (statsCache.has(lens.id)) return statsCache.get(lens.id);
+    const key = `${lens.id}:${lens.activeYear ?? ""}`;
+    if (statsCache.has(key)) return statsCache.get(key);
     const values = [];
     for (let i = 0; i < lens.values.length; i++) {
       const v = lens.values[i];
@@ -81,7 +83,7 @@ export function createLocationInspector(opts) {
     }
     values.sort((a, b) => a - b);
     const out = { values, count: values.length };
-    statsCache.set(lens.id, out);
+    statsCache.set(key, out);
     return out;
   }
 

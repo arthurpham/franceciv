@@ -106,10 +106,12 @@ export function initLensDock(opts) {
   let restoreFocus = null;
   const histCache = new Map();
   const coverageCache = new Map();
+  const cacheKey = (lens) => `${lens.id}:${lens.activeYear ?? ""}`;
 
   function coverage(lens) {
     if (!lens?.id || !Array.isArray(lens.values)) return null;
-    if (coverageCache.has(lens.id)) return coverageCache.get(lens.id);
+    const key = cacheKey(lens);
+    if (coverageCache.has(key)) return coverageCache.get(key);
     const owner = w.raw.owner;
     let total = 0, present = 0;
     for (let i = 0; i < lens.values.length && i < owner.length; i++) {
@@ -118,7 +120,7 @@ export function initLensDock(opts) {
       if (lens.values[i] != null) present++;
     }
     const out = { present, total, share: total ? present / total : 0 };
-    coverageCache.set(lens.id, out);
+    coverageCache.set(key, out);
     return out;
   }
   const coverageLabel = (lens) => {
@@ -251,7 +253,8 @@ export function initLensDock(opts) {
 
   // ---- legend ---------------------------------------------------------------------------------------------------
   function histogram(lens) {
-    if (histCache.has(lens.id)) return histCache.get(lens.id);
+    const key = cacheKey(lens);
+    if (histCache.has(key)) return histCache.get(key);
     const counts = new Array(BINS).fill(0);
     const t = lensScale(lens);
     const owner = w.raw.owner;
@@ -265,7 +268,7 @@ export function initLensDock(opts) {
       n++;
     }
     const h = { counts, n, max: Math.max(1, ...counts) };
-    histCache.set(lens.id, h);
+    histCache.set(key, h);
     return h;
   }
 
@@ -294,7 +297,7 @@ export function initLensDock(opts) {
     return [k === 0 ? -Infinity : k / (n - 1) - h, k === n - 1 ? Infinity : k / (n - 1) + h];
   };
   const catCounts = (l) => {
-    const key = `cat:${l.id}`;
+    const key = `cat:${cacheKey(l)}`;
     if (histCache.has(key)) return histCache.get(key);
     const counts = new Array(l.categories.length).fill(0);
     const owner = w.raw.owner;
@@ -308,6 +311,14 @@ export function initLensDock(opts) {
     return counts;
   };
   const noteHtml = (l) => (l.note ? `<div class="lg-note">${esc(l.note)}</div>` : "");
+  const timeHtml = (l) => {
+    if (!l.time?.years?.length) return "";
+    const options = l.time.years.map((y) => `<option value="${y}"${y === l.activeYear ? " selected" : ""}>${y}</option>`).join("");
+    return `<div class="lg-time"><label>${esc(l.time.label || "Year")}</label><select class="lg-year" aria-label="${esc(l.time.label || "Year")}">${options}</select><span title="The colour scale is fixed across years so colours remain comparable">fixed scale</span></div>`;
+  };
+  const wireTime = () => {
+    legend.querySelector(".lg-year")?.addEventListener("change", (e) => opts.onYear?.(Number(e.target.value)));
+  };
 
   function renderCategoricalLegend(l) {
     const counts = catCounts(l);
@@ -320,6 +331,7 @@ export function initLensDock(opts) {
         <button class="icon-btn lg-close" aria-label="Turn the lens off (back to terrain)" title="Back to terrain">${icon("close", "✕", { size: 11 })}</button></div>
       <div class="desc">${esc(l.description || l.unit || "")}</div>
       ${noteHtml(l)}
+      ${timeHtml(l)}
       <div class="lg-cats" role="group" aria-label="${esc(l.name)} categories: click one to show only it">${sw}</div>
       <div class="lg-meta"><span class="src">${sourceLine(l)}</span>${coverageLine(l)}</div>
       <div class="lg-hint" aria-live="polite">Click a category to show only it</div>`;
@@ -329,6 +341,7 @@ export function initLensDock(opts) {
       legendExpanded = !legendExpanded;
       renderLegend();
     };
+    wireTime();
     legend.querySelector(".lg-cats").onclick = (e) => {
       const b = e.target.closest(".lg-cat");
       if (!b) return;
@@ -375,6 +388,7 @@ export function initLensDock(opts) {
         <button class="icon-btn lg-close" aria-label="Turn the lens off (back to terrain)" title="Back to terrain">${icon("close", "✕", { size: 11 })}</button></div>
       <div class="desc">${esc(l.description || l.unit || "")}</div>
       ${noteHtml(l)}
+      ${timeHtml(l)}
       <div class="lg-scale" role="slider" tabindex="0" aria-label="Highlight a range of ${esc(l.name)} values. Hover or drag; arrow keys move the highlight, Escape clears it."
         aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
         <canvas class="lg-hist" aria-hidden="true"></canvas>
@@ -391,6 +405,7 @@ export function initLensDock(opts) {
       legendExpanded = !legendExpanded;
       renderLegend();
     };
+    wireTime();
     wireScale(legend.querySelector(".lg-scale"));
     drawHist();
   }

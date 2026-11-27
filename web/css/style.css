@@ -392,6 +392,11 @@ body.panel-open #lens-area { right: calc(394px + var(--dock-right, 0px)); }
 .legend .title { font-family: var(--serif); color: var(--gold-bright); font-size: 15px; letter-spacing: .06em; flex: 1; }
 .lg-close { width: 20px; height: 20px; }
 .legend .desc { color: var(--ink-dim); margin-bottom: 6px; line-height: 1.4; max-height: 4.3em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.lg-time { display: flex; align-items: center; gap: 6px; margin: -1px 0 7px; color: var(--ink-dim); font-size: 10.5px; }
+.lg-time label { font-weight: 600; color: var(--ink); }
+.lg-time select { min-width: 68px; padding: 2px 4px; border: 1px solid rgba(201,164,92,.45); border-radius: 3px; background: rgba(0,0,0,.35); color: var(--gold-bright); font: 11px var(--sans); }
+.lg-time select:focus { outline: 1px solid var(--gold-bright); }
+.lg-time span { margin-left: auto; font-size: 9.5px; opacity: .8; }
 .lg-scale { position: relative; cursor: crosshair; touch-action: none; padding-top: 2px; border-radius: 3px; }
 .lg-hist { display: block; width: 100%; height: 38px; }
 .legend .ramp { position: relative; height: 11px; border-radius: 2px; border: 1px solid rgba(0,0,0,.5); box-shadow: 0 0 0 1px rgba(201,164,92,.25); }
