@@ -113,7 +113,7 @@ Housing energy lenses use ADEME post-July-2021 DPE records; because diagnostics 
 
 ### flood.json
 
-Physical river-flood exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow WMS rasters. They are not parcel-level risk determinations, damage estimates, or a substitute for regulatory hazard maps.
+Physical river-flood and coastal-submersion exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow and marine-submersion WMS rasters. They are not parcel-level risk determinations, erosion/groundwater-rise estimates, damage estimates, or a substitute for regulatory hazard maps.
 
 ### risk.json
 
