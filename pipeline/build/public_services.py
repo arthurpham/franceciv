@@ -1,8 +1,11 @@
 """Crime and school-access lenses."""
 
+from ..core.geo import MapProjection
+from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
+from .connectivity import nearest_land
 
-REQUIRES = ["_world", "fr_crime", "fr_schools", "fr_boundaries"]
+REQUIRES = ["_world", "fr_crime", "fr_schools", "fr_boundaries", "fr_public_equipment"]
 PRODUCES = ["public_services.json"]
 RAMP = ["#26324a", "#465f78", "#718a69", "#b9a95c", "#e0bd55"]
 
@@ -28,6 +31,7 @@ def build():
     crime = load_interim("fr_crime")
     schools = load_interim("fr_schools")
     boundaries = load_interim("fr_boundaries")
+    equipment = load_interim("fr_public_equipment")
     year = crime["year"]
     rates = {}
     for r in crime["rows"]:
@@ -50,14 +54,55 @@ def build():
         primary[dep] = 10000 * row.get("Ecole", 0) / pop
         secondary[dep] = 10000 * (row.get("Collège", 0) + row.get("Lycée", 0)) / pop
 
+    grid = HexGrid(**world["grid"])
+    proj = MapProjection(**world["projection"])
+    cell_by_commune = {}
+    pop_acc = {}
+    for c in boundaries["communes"]:
+        if c.get("lon") is None:
+            continue
+        x, y = proj(c["lon"], c["lat"])
+        cell = nearest_land(world, grid, x, y)
+        if cell >= 0:
+            cell_by_commune[c["code"]] = cell
+            pop_acc[cell] = pop_acc.get(cell, 0) + (c.get("population") or 0)
+    commune_pop = {c["code"]: c.get("population") or 0 for c in boundaries["communes"]}
+    eq_acc = {}
+    unmatched_eq = 0
+    for code, row in equipment["rows"].items():
+        cell = cell_by_commune.get(code)
+        if cell is None:
+            unmatched_eq += 1
+            continue
+        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "service_pop": 0})
+        a["food"] += row["food_shops"]
+        a["pharm"] += row["pharmacies"]
+        a["culture"] += row["culture_sports"]
+        # Population-weight the presence score so hexes represent residents' typical access,
+        # not the arithmetic mean of tiny and large communes.
+        a["service_pop"] += row["essential_score"] * commune_pop.get(code, 0)
+    essential, food, pharm, culture = [], [], [], []
+    for i in range(grid.size):
+        pop = pop_acc.get(i, 0)
+        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "service_pop": 0})
+        essential.append(round(a["service_pop"] / pop, 2) if pop else None)
+        food.append(round(a["food"] * 10_000 / pop, 2) if pop else None)
+        pharm.append(round(a["pharm"] * 10_000 / pop, 2) if pop else None)
+        culture.append(round(a["culture"] * 10_000 / pop, 2) if pop else None)
+
     write_web("public_services.json", {
-        "version": 1, "vintage": f"Interior Ministry crime {year}; current school directory", "sources": ["fr_crime", "fr_schools"],
-        "group": {"id": "public_services", "name": "Safety & schools"},
+        "version": 1, "vintage": f"Interior Ministry crime {year}; current school directory; INSEE BPE 2024", "sources": ["fr_crime", "fr_schools", "fr_public_equipment"],
+        "group": {"id": "public_services", "name": "Safety & services"},
+        "unmatched_equipment_communes": unmatched_eq,
         "lenses": [
             lens("burglary", "Burglaries", "🏠", "per 100 residents / yr", dep_values(world, burglary), "fr_crime", f"Recorded home burglaries per 100 residents in {year}. Police/gendarmerie recording and reporting propensity vary by territory."),
             lens("violence", "Physical violence", "🛡️", "per 100 residents / yr", dep_values(world, violence), "fr_crime", f"Recorded non-domestic physical violence per 100 residents in {year}. This is recorded crime, not victimization prevalence."),
             lens("primary_schools", "Primary schools", "🏫", "schools per 10k residents", dep_values(world, primary), "fr_schools", "Open schools classified as Ecole in the current Ministry directory, per 10,000 department residents."),
             lens("secondary_schools", "Collèges & lycées", "🎓", "schools per 10k residents", dep_values(world, secondary), "fr_schools", "Open Collège and Lycée establishments in the current Ministry directory, per 10,000 department residents."),
+            lens("essential_services", "Everyday services", "🏪", "of 6 service categories", essential, "fr_public_equipment", "Population-weighted number of six everyday service categories present in communes: food shops, pharmacy, general practitioner, primary school, post office/relais and library. INSEE BPE 2024."),
+            lens("food_shops", "Food shops", "🥖", "per 10k residents", food, "fr_public_equipment", "Food retailers counted in the INSEE Base permanente des équipements 2024, per 10,000 residents. Commune counts are aggregated by map hex."),
+            lens("pharmacies", "Pharmacies", "💊", "per 10k residents", pharm, "fr_public_equipment", "Pharmacies counted in the INSEE Base permanente des équipements 2024, per 10,000 residents."),
+            lens("culture_sports", "Sports & culture", "🎭", "facilities per 10k residents", culture, "fr_public_equipment", "Sports, leisure and cultural facilities counted in the INSEE Base permanente des équipements 2024, per 10,000 residents. Counts reflect facility records, not floor area or quality."),
         ],
     })
 
@@ -65,7 +110,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "public_services.json").read_text())
-    assert len(doc["lenses"]) == 4
+    assert len(doc["lenses"]) == 8
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and max(vals) > 0.1
-    return [("PASS", f"public_services.json: 4 safety/school lenses over {len(vals)} cells")]
+    return [("PASS", f"public_services.json: 8 safety/school/equipment lenses over {len(vals)} cells")]
