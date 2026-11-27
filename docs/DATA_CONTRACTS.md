@@ -102,6 +102,10 @@ Enedis electricity-consumption lenses. Values are 2024 MWh per department reside
 
 CORINE vineyard/orchard land-cover shares plus Agreste 2020 farm density and average farm size. Agreste values are commune census statistics aggregated to hexes by commune centroid. Blank commune cells conflate no farm and statistical suppression, so they are omitted from both numerator and denominator rather than zero-filled. Utilised agricultural area is assigned to the farm headquarters commune and may include land worked elsewhere.
 
+### heritage.json
+
+Ministry of Culture Mérimée protected-building lenses. Counts are attributed to current communes through INSEE municipal-merger mappings where unambiguous, then aggregated by commune centroid. `heritage_sites` is protected buildings per 10,000 residents; `classified_heritage` is the share of protected buildings whose protection text includes classement and is null where no protected building is recorded.
+
 ### military.json
 
 Ministry of the Armed Forces 2012 `bases de défense` personnel table. Installations are support-group seat communes, not boundaries, ranges, barracks-level geography, or a current order of battle. City garrison tiers are derived only from stationed-personnel thresholds; `share` is a contextual scale mixing the 2012 personnel count with current population and must not be presented as a current rate.
