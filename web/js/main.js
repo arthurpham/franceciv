@@ -264,7 +264,11 @@ async function main() {
     hits = drawBanners(ctx, cam, w, state, nation.yields, nation);
     if (overlays.length) drawOverlays(ctx, cam, overlays, app, { dpr, zMin: 100 });
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    minimap.draw();
+    // At the whole-country home scale the minimap is redundant and hides the lower-left overseas
+    // insets. Reveal it once the user zooms in enough for it to provide orientation.
+    const minimapUseful = isMobile() || cam.scale > fitScale() * 1.12;
+    document.body.classList.toggle("minimap-auto-hidden", !minimapUseful);
+    if (minimapUseful) minimap.draw();
     record(perf.frame, performance.now() - t0);
   }
 

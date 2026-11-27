@@ -197,7 +197,7 @@ export function drawStatic(ctx, vp, w, opts) {
   ctx.clip();
   drawRivers(ctx, w, { s, Rpx, lod, lens: !!opts.lens });
   drawBorders(ctx, w, s, Rpx, !!opts.lens);
-  drawInsetFrames(ctx, w, s);
+  drawInsetFrames(ctx, w, s, vp);
   ctx.restore();
 
   // 6. City tiles.
@@ -320,7 +320,7 @@ function drawEdgeFog(ctx, vp, W, H) {
 }
 
 
-function drawInsetFrames(ctx, w, s) {
+function drawInsetFrames(ctx, w, s, vp) {
   if (!w.raw.insets?.length) return;
   ctx.save();
   ctx.lineWidth = 1.8 / s;
@@ -330,10 +330,41 @@ function drawInsetFrames(ctx, w, s) {
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.font = `${13 / s}px system-ui, sans-serif`;
+  // Labels are constant-size on screen while the canvas is in map kilometres. Measure their
+  // screen-space rectangles and try above, below, then inside the frame so the dense overseas
+  // inset matrix stays readable instead of printing colliding names.
+  const placed = [];
+  const overlap = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
   for (const inset of w.raw.insets) {
     const [x0, y0, x1, y1] = inset.frame;
     ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-    ctx.fillText(inset.name, (x0 + x1) / 2, y0 - 5 / s);
+    const width = ctx.measureText(inset.name).width * s;
+    const halfMap = width / (2 * s) + 10 / s;
+    const cx = Math.max(vp.x0 + halfMap, Math.min(vp.x1 - halfMap, (x0 + x1) / 2));
+    const narrow = width / s > (x1 - x0) * 1.2;
+    const candidates = [
+      ...(narrow ? [{ x: x0 + 3 / s, y: y0 - 5 / s, baseline: "bottom", align: "left" }] : []),
+      { x: cx, y: y0 - 5 / s, baseline: "bottom", align: "center" },
+      { x: cx, y: y1 + 6 / s, baseline: "top", align: "center" },
+      { x: cx, y: y0 + 6 / s, baseline: "top", align: "center" },
+    ];
+    let best = null;
+    for (const c of candidates) {
+      const sx = (c.align === "left" ? c.x * s : c.x * s - width / 2) - 3;
+      const sy = (c.baseline === "bottom" ? c.y * s - 15 : c.y * s) - 2;
+      const rect = { x0: sx, y0: sy, x1: sx + width + 6, y1: sy + 17 };
+      const hits = placed.filter((r) => overlap(rect, r)).length;
+      if (!hits) {
+        best = { ...c, rect };
+        break;
+      }
+      if (!best || hits < best.hits) best = { ...c, rect, hits };
+    }
+    placed.push(best.rect);
+    ctx.textBaseline = best.baseline;
+    ctx.textAlign = best.align;
+    ctx.fillText(inset.name, best.x, best.y);
+    ctx.textAlign = "center";
   }
   ctx.restore();
 }
