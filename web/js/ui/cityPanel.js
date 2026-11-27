@@ -21,6 +21,7 @@ export function openCityPanel(city, ctx) {
     .join("");
 
   const growth = growthSpan(city, n);
+  const local = ctx.inspector?.section(city.cell);
 
   showPanel({
     kind: "city",
@@ -31,6 +32,7 @@ export function openCityPanel(city, ctx) {
     headExtra: popLine(city, growth),
     sections: [
       { title: "Yields", html: `<div class="yield-grid">${yieldGrid(nation, city.yields)}</div>` },
+      local,
       { title: "Amenities &amp; Housing", html: amenities(city, n) + gdpRow(city) },
       { title: "Districts · where people work", html: industries(city, nation) },
     ],
@@ -40,6 +42,7 @@ export function openCityPanel(city, ctx) {
     onPedia: ctx.onPedia,
     wire(panel) {
       panel.querySelectorAll("[data-state]").forEach((b) => (b.onclick = () => ctx.onState(+b.dataset.state)));
+      ctx.inspector?.wire(panel, city.cell);
     },
   });
 }

@@ -24,11 +24,14 @@ export function initEpciPanel(opts = {}) {
     close,
     get isOpen() { return !el.hidden; },
     open(e) {
+      const cell = opts.cellAt?.(e.x, e.y);
+      const local = opts.inspector?.section(cell);
       const facts = rows.map(([k, label, fmt]) => e[k] == null ? "" : `<div class="cp-row"><span>${label}</span><b>${fmt(e[k])}</b></div>`).join("");
       el.innerHTML = `<button class="cp-close" aria-label="Close">×</button>
         <div class="cp-kicker">EPCI</div><h2>${esc(e.name)}</h2><div class="cp-sub">${int(e.population)} residents · ${int(e.commune_count)} communes${e.departments ? ` · ${esc(e.departments)}` : ""}</div>
-        <div class="cp-grid">${facts}</div>
+        <div class="cp-grid">${facts}</div>${local ? `<h3>${esc(local.title)}</h3>${local.html}` : ""}
         <p class="cp-note">INSEE comparateur de territoires 2023 and geo.api.gouv.fr EPCI membership. Position is the population-weighted centroid of member communes. Poverty and income can be suppressed in small or revised territories.</p>`;
+      if (local) opts.inspector.wire(el, cell);
       el.hidden = false;
       notify();
     },

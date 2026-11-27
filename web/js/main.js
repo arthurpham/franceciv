@@ -9,6 +9,7 @@ import { openCityPanel, closeCityPanel } from "./ui/cityPanel.js";
 import { initCommunePanel } from "./ui/communePanel.js";
 import { initEpciPanel } from "./ui/epciPanel.js";
 import { initIrisPanel } from "./ui/irisPanel.js";
+import { createLocationInspector } from "./ui/locationInspector.js";
 import { openStatePanel } from "./ui/statePanel.js";
 import { installSheetSwipe } from "./ui/infoPanel.js";
 import { initPedia } from "./ui/pedia.js";
@@ -535,6 +536,13 @@ async function main() {
     requestDraw(); // the cache key includes the band, so the static layer re-renders
   }
 
+  const inspector = createLocationInspector({
+    lensFile, sources: sources || [], w,
+    getActiveLens: () => state.lens,
+    onPick: (lens) => { setLens(lens); dock.remember(lens.id); },
+  });
+  events.on("lens", () => inspector.refresh(panelEl));
+
   // --- selection -------------------------------------------------------------------------------------------------
   const announceEl = document.getElementById("announce");
   const announce = (text) => {
@@ -551,7 +559,7 @@ async function main() {
   }
 
   const panelCtx = () => ({
-    w, nation, states, cities,
+    w, nation, states, cities, inspector,
     onClose: () => clearSelection(),
     onPedia: () => pedia.open("Yields"),
     onState: (idx) => selectState(idx, { fly: true }),
@@ -568,11 +576,11 @@ async function main() {
     afterSelect();
   }
 
-  function selectState(idx, { fly = false } = {}) {
+  function selectState(idx, { fly = false, cell = null } = {}) {
     if (idx == null || !w.raw.states[idx]) return clearSelection();
     state.selectedCity = null;
     state.selectedState = idx;
-    app.panels.state(idx, panelCtx());
+    app.panels.state(idx, { ...panelCtx(), inspectCell: cell });
     if (fly) focusState(idx);
     announce(`${stateName(idx)} selected.`);
     afterSelect();
@@ -680,11 +688,13 @@ async function main() {
 
   let communePanel, epciPanel, irisPanel;
   const updateGeoPanelVisibility = () => { communeCardOpen = Boolean(communePanel?.isOpen || epciPanel?.isOpen || irisPanel?.isOpen); };
-  communePanel = initCommunePanel({ onVisibility: updateGeoPanelVisibility });
-  epciPanel = initEpciPanel({ onVisibility: updateGeoPanelVisibility });
-  irisPanel = initIrisPanel({ onVisibility: updateGeoPanelVisibility });
+  const geoPanelOpts = { onVisibility: updateGeoPanelVisibility, inspector, cellAt: (x, y) => w.grid.cellAt(x, y) };
+  communePanel = initCommunePanel(geoPanelOpts);
+  epciPanel = initEpciPanel(geoPanelOpts);
+  irisPanel = initIrisPanel(geoPanelOpts);
   const closeGeoPanels = () => { communePanel.close(); epciPanel.close(); irisPanel.close(); };
   events.on("select", (sel) => { if (sel) closeGeoPanels(); });
+  events.on("lens", () => ["commune-panel", "epci-panel", "iris-panel"].forEach((id) => inspector.refresh(document.getElementById(id))));
   const search = initSearch({
     loadCommunes: () => loadData("communes"),
     loadEpcis: () => loadData("epci"),
@@ -1061,7 +1071,8 @@ async function main() {
       if (city) selectCity(city);
       else if (owner >= 0) {
         // On phones the bottom sheet would hide the state, so bring it into the visible part of the map.
-        if (owner !== state.selectedState) selectState(owner, { fly: isMobile() });
+        if (owner !== state.selectedState) selectState(owner, { fly: isMobile(), cell });
+        else if (!inspector.update(panelEl, cell)) selectState(owner, { cell });
       } else if (state.selectedCity || state.selectedState != null) clearSelection();
     }, DOUBLE_MS);
     // A click changes what is on screen (a panel, a mode, a flight), so drop the tooltip until the pointer moves again.
@@ -1266,7 +1277,7 @@ async function main() {
     ui,
     panels: { city: openCityPanel, state: openStatePanel, close: closeCityPanel, element: panelEl },
     // the built-in modules, for poking at things from the console
-    search, share, help, lensDock: dock, reports, pedia, minimap, shareInfo, url, perf,
+    search, share, help, lensDock: dock, locationInspector: inspector, reports, pedia, minimap, shareInfo, url, perf,
     stats() {
       const avg = (a) => (a.length ? a.reduce((p, q) => p + q, 0) / a.length : 0);
       return { staticAvg: avg(perf.static), staticLast: perf.static.at(-1), frameAvg: avg(perf.frame), frameLast: perf.frame.at(-1) };

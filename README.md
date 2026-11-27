@@ -25,7 +25,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
-- The original interactive map, city panels, minimap, sharing, searchable/favorite lens heritage catalog, coverage-aware legends, and lens histogram UI, plus search and compact public-data cards for metropolitan and overseas communes, including EPCI/intercommunality names and populations.
+- The original interactive map, city panels, minimap, sharing, searchable/favorite lens heritage catalog, coverage-aware legends, and lens histogram UI, plus search and compact public-data cards for metropolitan and overseas communes, including EPCI/intercommunality names and populations. City, region, commune, EPCI and IRIS cards include a local multi-layer inspector with hex-level lens values, rankings, source vintages and explicit no-data states.
 
 ## Explicitly not in the MVP yet
 

@@ -32,6 +32,7 @@ export function openStatePanel(idx, ctx) {
     : `<p class="muted">No metro or micro areas in this state's data.</p>`;
 
   const hasEcon = st.population != null || st.yields;
+  const local = ctx.inspector?.section(ctx.inspectCell);
   showPanel({
     kind: "state",
     stripe: css(w.stateColor[idx] || [190, 190, 190]),
@@ -40,6 +41,7 @@ export function openStatePanel(idx, ctx) {
     headExtra: hasEcon ? popLine(st, growthSpan(st, n)) : "",
     sections: [
       st.yields && { title: "Yields · rank among states", html: `<div class="yield-grid">${yieldGrid(nation, st.yields, st.ranks, count)}</div>` },
+      local,
       hasEcon && { title: "Amenities &amp; Housing", html: amenities(st, n) + gdpRow(st) },
       st.jobs && { title: "Top industries · where people work", html: industries(st, nation, 8) },
       { title: "Biggest cities", html: cityRows },
@@ -49,6 +51,7 @@ export function openStatePanel(idx, ctx) {
     onClose: ctx.onClose,
     onPedia: ctx.onPedia,
     wire(panel) {
+      ctx.inspector?.wire(panel, ctx.inspectCell);
       panel.querySelectorAll("[data-city]").forEach((b) => {
         b.onclick = () => {
           const c = ctx.cities.find((x) => x.id === b.dataset.city);

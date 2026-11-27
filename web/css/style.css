@@ -279,6 +279,55 @@ button.chip:hover { background: rgba(201,164,92,.2); }
 .cp-foot { padding: 10px 16px 0; font-size: 11px; color: var(--ink-dim); }
 .cp-foot a { color: var(--gold); cursor: pointer; }
 
+/* ---------- local multi-layer inspector ---------- */
+.location-inspector { font-size: 12px; color: var(--ink); }
+.li-context { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin-bottom: 7px; color: var(--ink-dim); }
+.li-context b { color: var(--gold-bright); font-family: var(--serif); font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-context span { flex: none; font-size: 10.5px; }
+.li-tools { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.li-search { flex: 1; min-width: 0; padding: 6px 8px; border-radius: 4px; border: 1px solid rgba(201,164,92,.35); background: rgba(0,0,0,.3); color: var(--ink); font: 12px var(--sans); }
+.li-search:focus { outline: 1px solid var(--gold-bright); border-color: var(--gold-bright); }
+.li-toggle { display: inline-flex; align-items: center; gap: 4px; flex: none; color: var(--ink-dim); font-size: 11px; cursor: pointer; }
+.li-toggle input { accent-color: var(--gold); }
+.li-summary { margin: 4px 0 7px; color: var(--ink-dim); font-size: 11px; }
+.li-summary b { color: var(--gold-bright); }
+.li-active {
+  display: grid; grid-template-columns: 32px minmax(0,1fr) auto; gap: 8px; align-items: center; margin-bottom: 8px;
+  padding: 8px; border-radius: 5px; border: 1px solid var(--gold); background: linear-gradient(180deg, rgba(90,74,36,.5), rgba(0,0,0,.24));
+}
+.li-active.empty { display: block; color: var(--ink-dim); font-size: 11.5px; line-height: 1.35; }
+.li-bigic { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #1b2838; border: 1px solid var(--gold); color: var(--gold-bright); }
+.li-active-main { min-width: 0; display: grid; gap: 1px; }
+.li-active-main b { color: var(--gold-bright); font-family: var(--serif); font-weight: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-active-main span:last-child { color: var(--ink-dim); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-kicker { color: var(--gold); font-size: 9px; letter-spacing: .16em; }
+.li-active-value { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.li-active-value small { display: block; color: var(--ink-dim); font-size: 9.5px; font-weight: 400; }
+.li-group { margin-bottom: 6px; border: 1px solid rgba(201,164,92,.22); border-radius: 5px; background: rgba(0,0,0,.16); overflow: hidden; }
+.li-group summary { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 8px; cursor: pointer; color: var(--gold-bright); font-family: var(--serif); list-style: none; }
+.li-group summary::-webkit-details-marker { display: none; }
+.li-group summary::before { content: "›"; color: var(--gold); margin-right: 5px; transition: transform .12s; }
+.li-group[open] summary::before { transform: rotate(90deg); }
+.li-count { color: var(--ink-dim); font-family: var(--sans); font-size: 10px; }
+.li-rows { display: grid; gap: 3px; padding: 0 5px 5px; }
+.li-row {
+  display: grid; grid-template-columns: 24px minmax(0,1fr) auto; gap: 6px; align-items: center; width: 100%; text-align: left; cursor: pointer;
+  padding: 5px; border: 1px solid rgba(201,164,92,.16); border-radius: 4px; background: rgba(0,0,0,.22); color: var(--ink); font-size: 11.5px;
+}
+.li-row:hover, .li-row:focus-visible { border-color: var(--gold); background: rgba(201,164,92,.11); }
+.li-row.active { border-color: var(--gold-bright); background: rgba(90,74,36,.55); }
+.li-row.missing { opacity: .62; }
+.li-ic { display: inline-grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: #1b2838; border: 1px solid rgba(201,164,92,.45); color: var(--gold-bright); }
+.li-main { min-width: 0; display: grid; gap: 1px; }
+.li-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-row.active .li-name { color: var(--gold-bright); }
+.li-meta { color: var(--ink-dim); font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-value { max-width: 104px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.li-value b { display: block; font-size: 11.5px; }
+.li-rank { display: block; color: var(--ink-dim); font-size: 9px; font-weight: 400; }
+.li-empty, .li-note { color: var(--ink-dim); font-size: 10.5px; line-height: 1.4; }
+.li-note { margin: 7px 2px 2px; }
+
 /* ---------- lenses ---------- */
 /* left: 266px keeps the area clear of the 252px-wide minimap; it never overlaps it. */
 #lens-area {
