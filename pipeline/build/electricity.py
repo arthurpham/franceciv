@@ -11,10 +11,10 @@ REQUIRES = ["_world", "fr_electricity", "fr_boundaries"]
 PRODUCES = ["electricity.json"]
 RAMP = ["#252a3f", "#365070", "#457a76", "#a69b53", "#e1c55e"]
 SECTORS = {
-    "RESIDENTIEL": ("residential_electricity", "Residential electricity", "🏠", "Residential {year} electricity consumption on the Enedis distribution network per resident."),
-    "TERTIAIRE": ("tertiary_electricity", "Tertiary electricity", "🏢", "Tertiary-sector {year} electricity consumption on the Enedis distribution network per resident. Values reflect where economic activity is located, not household use."),
-    "INDUSTRIE": ("industrial_electricity", "Industrial electricity", "🏭", "Industrial {year} electricity consumption on the Enedis distribution network per resident. Values reflect where industrial load is located."),
-    "AGRICULTURE": ("agricultural_electricity", "Agricultural electricity", "🚜", "Agricultural {year} electricity consumption on the Enedis distribution network per resident. Values reflect where metered agricultural load is located."),
+    "RESIDENTIEL": ("residential_electricity", "Residential electricity", "🏠", "Published residential {year} electricity consumption on the Enedis distribution network per resident."),
+    "TERTIAIRE": ("tertiary_electricity", "Tertiary electricity", "🏢", "Published tertiary-sector {year} electricity consumption on the Enedis distribution network per resident. Values reflect where economic activity is located, not household use."),
+    "INDUSTRIE": ("industrial_electricity", "Industrial electricity", "🏭", "Published industrial {year} electricity consumption on the Enedis distribution network per resident. Values reflect where industrial load is located."),
+    "AGRICULTURE": ("agricultural_electricity", "Agricultural electricity", "🚜", "Published agricultural {year} electricity consumption on the Enedis distribution network per resident. Values reflect where metered agricultural load is located."),
 }
 
 
@@ -29,7 +29,7 @@ def lens(lens_id, name, emoji, unit, fmt, vals, desc, scale="linear", year="2025
         "id": lens_id, "group": "energy_use", "name": name, "icon": lens_id, "emoji": emoji,
         "unit": unit, "format": fmt, "scale": scale,
         "domain": [percentile(vals, 2), percentile(vals, 98)], "ramp": RAMP, "higher_is": "neutral",
-        "source": "fr_electricity", "description": desc + " Commune values are distributed approximately over commune polygons at a 1 km lattice, assuming a uniform distribution inside each commune; this is a commune-level approximation, not meter locations. Enedis does not serve Corsica, overseas France and some local-distribution areas.",
+        "source": "fr_electricity", "description": desc + " Commune values are distributed approximately over commune polygons at a 1 km lattice, assuming a uniform distribution inside each commune; this is a commune-level approximation, not meter locations. Enedis does not serve Corsica, overseas France and some local-distribution areas. Privacy-withheld rows are absent rather than zero; customer-class lenses omit commune populations where that class has no published row.",
         "values": vals,
     }
 
@@ -71,6 +71,8 @@ def build():
     sector_acc = defaultdict(lambda: defaultdict(float))
     category_acc = defaultdict(lambda: defaultdict(float))
     covered_pop = defaultdict(float)
+    sector_pop = defaultdict(lambda: defaultdict(float))
+    category_pop = defaultdict(lambda: defaultdict(float))
     heat_rows = defaultdict(list)
     sensitive_rows = defaultdict(list)
     matched = set()
@@ -92,22 +94,24 @@ def build():
                 covered_pop[cell] += pop * weight
                 for sector, value in row.get("sectors", {}).items():
                     sector_acc[cell][sector] += (value or 0) * weight
+                    sector_pop[sector][cell] += pop * weight
                 for category, value in row.get("categories", {}).items():
                     category_acc[cell][category] += (value or 0) * weight
+                    category_pop[category][cell] += pop * weight
             if pop:
                 heat_rows[cell].append((row.get("electric_heating_share"), pop * weight))
                 sensitive_rows[cell].append((row.get("heat_sensitive_share"), pop * weight))
 
-    def per_resident(selector):
+    def per_resident(selector, populations):
         vals = []
         for i in range(grid.size):
-            pop = covered_pop.get(i, 0)
-            vals.append(round(selector(i) / pop, 3) if pop and consumption.get(i) is not None else None)
+            pop = populations.get(i, 0)
+            vals.append(round(selector(i) / pop, 3) if pop else None)
         return vals
 
-    total_vals = per_resident(lambda i: consumption[i])
-    sector_vals = {sector: per_resident(lambda i, s=sector: sector_acc[i][s]) for sector in SECTORS}
-    small_business_vals = per_resident(lambda i: category_acc[i]["PRO"])
+    total_vals = per_resident(lambda i: consumption[i], covered_pop)
+    sector_vals = {sector: per_resident(lambda i, s=sector: sector_acc[i][s], sector_pop[sector]) for sector in SECTORS}
+    small_business_vals = per_resident(lambda i: category_acc[i]["PRO"], category_pop["PRO"])
     residential_share, heat, sensitive = [], [], []
     heat_vals = weighted_mean(heat_rows)
     sensitive_vals = weighted_mean(sensitive_rows)
@@ -119,13 +123,13 @@ def build():
 
     lenses = [lens(
         "electricity_use", "Electricity use", "⚡", "MWh per resident per year", "float", total_vals,
-        "Total {year} electricity consumption on the Enedis distribution network per resident. Commune-level totals aggregate residential and economic activity; they are not household-only consumption.", year=year
+        "Total published {year} electricity consumption on the Enedis distribution network per resident. Commune-level totals aggregate residential and economic activity; they are not household-only consumption.", year=year
     )]
     for sector, (lens_id, name, emoji, desc) in SECTORS.items():
         lenses.append(lens(lens_id, name, emoji, "MWh per resident per year", "float", sector_vals[sector], desc, year=year))
     lenses.extend([
         lens("small_business_electricity", "Small-business electricity", "🏪", "MWh per resident per year", "float", small_business_vals,
-             year=year, desc="Consumption by small professional customers (Enedis category PRO) per resident in {year}. This customer class cuts across the broad activity-sector lenses and should not be added to them as an additional sector total."),
+             year=year, desc="Published consumption by small professional customers (Enedis category PRO) per resident in {year}. This customer class cuts across the broad activity-sector lenses and should not be added to them as an additional sector total."),
         lens("residential_electricity_share", "Residential electricity share", "🏘️", "share of electricity consumption", "pct", residential_share,
              year=year, desc="Residential consumption as a share of all {year} electricity consumption in each commune aggregate. High values usually indicate housing-dominated territories; low values often indicate industrial, tertiary or agricultural load."),
         lens("electric_heating_share", "Electric heating", "♨️", "share of primary residences", "pct", heat,
