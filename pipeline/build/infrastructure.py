@@ -14,7 +14,7 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_transport", "fr_rail_network", "fr_rail_stations", "cities.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_transport", "fr_rail_network", "fr_rail_stations", "fr_road_traffic", "cities.json"]
 PRODUCES = ["infrastructure.json"]
 
 ROAD_CLASSES = [{"id": "motorway", "name": "Motorway / European route"}, {"id": "major", "name": "Major highway"}]
@@ -150,6 +150,7 @@ def build():
     aav = load_interim("fr_aav")
     trans = load_interim("fr_transport")
     rail_network = load_interim("fr_rail_network")
+    road_traffic = load_interim("fr_road_traffic")
     rail_stations_src = load_interim("fr_rail_stations")
     cities = json.loads((WEB_DATA / "cities.json").read_text())
     grid = HexGrid(**world["grid"])
@@ -179,7 +180,11 @@ def build():
             "state": state_abbr.get(c["region"]) if c else state_abbr.get(world["states"][world["owner"][cell]]) if cell >= 0 and world["owner"][cell] >= 0 else None,
         }
 
-    roads = rasterize(trans["roads"], road_class, proj, grid, world)
+    official_roads = [{"line": r["line"], "properties": {"level": "E" if (r.get("route") or "").startswith("A") else None, "type": "Major Highway", "expressway": 1, "scalerank": 5, "routeraw": r.get("route")}} for r in road_traffic["rows"]]
+    def corsican_road(row):
+        lons = [x for x, y in row["line"]]; lats = [y for x, y in row["line"]]
+        return sum(lons) / len(lons) > 8.2 and sum(lats) / len(lats) < 43.3
+    roads = rasterize(official_roads + [r for r in trans["roads"] if corsican_road(r)], road_class, proj, grid, world)
     rail_rows = [row for row in trans["rail"] if corsican_line(row)] + rail_network["rows"]
     rail = rasterize(rail_rows, rail_tier, proj, grid, world)
 
@@ -247,7 +252,7 @@ def build():
     write_web("infrastructure.json", {
         "version": 1,
         "vintage": {"roads": "Natural Earth v5.1.2 (1:10m)", "rail": "SNCF Réseau official active-line shapes; Natural Earth v5.1.2 retained only for Corsica", "ports": "Eurostat mar_go_aa, 2023", "airports": "Eurostat avia_paoa, 2023; OurAirports positions", "stations": "SNCF station traffic 2025"},
-        "sources": ["fr_transport", "fr_rail_network", "fr_rail_stations"],
+        "sources": ["fr_transport", "fr_rail_network", "fr_rail_stations", "fr_road_traffic"],
         "rules": {
             "roads": "Natural Earth European-route/motorway lines form class 0; major highways and expressways at scale rank 7 or better form class 1. Geometry is schematic map art, not a complete road inventory.",
             "rail": "Official active SNCF Réseau line sections: ordinary lines form main lines and connections/main/port tracks form secondary lines. Natural Earth is retained only for Corsica because it is outside the RFN export.",

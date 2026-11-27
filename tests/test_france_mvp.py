@@ -451,3 +451,13 @@ def test_statistical_geography_contract():
     assert len(density) > 2500 and 20 < sum(density) / len(density) < 1000
     assert len(seniors) > 2500 and 0.05 < sum(seniors) / len(seniors) < 0.4
     assert any(s["id"] == "fr_iris" for s in web("sources.json"))
+
+
+def test_mobility_contract():
+    data = web("mobility.json")
+    assert data["sources"] == ["fr_road_traffic"] and len(data["lenses"]) == 2
+    vals = [v for v in data["lenses"][0]["values"] if v is not None]
+    heavy = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert len(vals) > 500 and max(vals) > 100_000
+    assert len(heavy) > 500 and all(0 <= v <= 1 for v in heavy)
+    assert any(s["id"] == "fr_road_traffic" for s in web("sources.json"))
