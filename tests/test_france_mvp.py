@@ -121,6 +121,15 @@ def test_quality_of_life_contracts():
     assert "Alsace-Moselle" in by_id["house_price"]["description"]
 
 
+def test_cycling_contract():
+    data = web("cycling.json")
+    assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2
+    vals = [v for v in data["lenses"][0]["values"] if v is not None]
+    prot = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert len(vals) > 2500 and max(vals) > 5 and len(prot) > 2000
+    assert data["unmatched_network_km"] < 100
+
+
 def test_economy_contract():
     data = web("economy.json")
     assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 5

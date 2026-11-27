@@ -90,6 +90,11 @@ SDES 2019 interregional freight flows. Routes are schematic arcs between regiona
 
 Commune connectivity lenses. Fiber values are eligible premises shares from ARCEP; EV-charging values are consolidated public charge points per 10,000 residents. Mobile lenses use ARCEP operator-reported physical site deployment: `mobile_operators` is the population-weighted number of operators with a local 4G-capable site, and `mobile_5g` is the population share in communes with a local 5G-capable site. Mobile values measure infrastructure presence, not theoretical signal coverage or measured quality; a commune without a site may still receive signal from neighbouring communes. Commune values are aggregated to hexes by centroid. IRVE zero means no published public charge point, not missing data; arrondissement charge points are attributed to Paris, Lyon and Marseille commune totals.
 
+### cycling.json
+
+National BNAC/OpenStreetMap cycling-infrastructure lenses. Segment lengths are computed from WGS84 geometries, attributed to current communes through INSEE municipal-merger mappings, split across boundary-crossing communes, and aggregated by commune centroid. `cycling_network` counts explicit cycling amenities; `protected_cycling` counts pistes cyclables, voies vertes, bus-bike corridors, mixed pedestrian/cycle facilities, protected shoulders and goulotte lanes. OpenStreetMap completeness varies by territory.
+
+
 ### economy.json
 
 INSEE census workplace-employment composition lenses. Commune job counts are summed within each map hex before calculating shares, so values describe where jobs are located rather than where workers live. Manufacturing uses NACE CA–CM; knowledge services use information/communication, finance/insurance and professional/scientific/technical divisions; public and care uses public administration, education, health and social work.
