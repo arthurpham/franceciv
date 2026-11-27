@@ -18,7 +18,8 @@ function upperBound(values, x) {
 }
 
 function compactRange(start, end) {
-  return `${start}–${end.length === 2 ? end : end.slice(2)}`;
+  const shortEnd = end.length === 2 || start.slice(0, 2) !== end.slice(0, 2) ? end : end.slice(2);
+  return `${start}–${shortEnd}`;
 }
 
 const yearRangePattern = () => /\b((?:19|20)\d{2})\s*[–-]\s*((?:19|20)?\d{2})\b(?!-)/g;
