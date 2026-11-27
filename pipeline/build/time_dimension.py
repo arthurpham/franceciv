@@ -287,7 +287,7 @@ def build():
     mobility_series = ratio_series(world, grid, mig_other, mig_other_missing, mig_total, mig_total_missing, MIGRATION_YEARS)
     outside_migration_series = ratio_series(world, grid, mig_outside, mig_outside_missing, mig_total, mig_total_missing, MIGRATION_YEARS)
 
-    price_years = housing_history["years"]
+    price_years = [y for y in housing_history["years"] if y >= 2021]
     price_series = weighted_price_series(world, grid, housing_history["communes"], weights, price_years)
     climate_years = climate["annual_years"]
     temperature_series = climate_series(world, grid, proj, climate, "annual_temperature", climate_years, 2)
@@ -308,7 +308,7 @@ def build():
                        "Both runoffs opposed Emmanuel Macron and Marine Le Pen, so vote shares are directly comparable; colour scales stay fixed across years.")
     price_method = ("Terralyse commune medians are distributed over current commune polygons on a 1 km lattice and combined as a transaction-count-weighted mean, "
                     "not as a true hex-level median. Terralyse excludes new-build sales and dwellings outside its 20–500 m² and €1,000–50,000/m² filters, and does not publish a commune median below five sales. Hex estimates based on fewer than five spatially allocated sales are likewise suppressed. Sparse commune coverage reflects too few usable sales and is null rather than zero. "
-                    "DVF excludes Alsace-Moselle and Mayotte. Municipal-arrondissement detail for Paris, Lyon and Marseille begins in 2021, so those parent communes are null in earlier years; colour scales stay fixed across years.")
+                    "DVF excludes Alsace-Moselle and Mayotte. Only 2021–2025 are exposed: pre-2021 rows include commune medians below the source's own €1,000/m² transaction floor, so they are not treated as the same measurement. Municipal-arrondissement detail for Paris, Lyon and Marseille is aggregated to parent communes; colour scales stay fixed across years.")
     climate_method = ("SIM2 reanalysis grid points are averaged inside each hex over metropolitan France. These are individual weather-year snapshots, "
                       "not climate normals, so year-to-year variability is part of the measurement; overseas departments are outside SIM2 coverage. Colour scales stay fixed across years.")
 
@@ -342,15 +342,15 @@ def build():
                       source="fr_elections", time_label="Election year"),
         temporal_lens("housing_price_history", "quality", "Housing-price history", "💶", "euros / m²", "eur", "linear",
                       price_series, price_years, RAMP_QUALITY,
-                      "Median sale price per m² of existing dwellings sold in each year from 2014 to 2025. " + price_method,
+                      "Median sale price per m² of existing dwellings sold in each year from 2021 to 2025. " + price_method,
                       source="fr_housing_history", time_label="Sale year"),
         temporal_lens("residential_mobility_history", "society", "Residential mobility history", "🧭", "share of residents aged 1+", "pct", "linear",
                       mobility_series, MIGRATION_YEARS, RAMP_PEOPLE,
                       "Residents aged one year or more who lived in another commune one year earlier, as a share of all residents aged one year or more, in the 2012, 2017 and 2023 censuses. " + migration_method,
                       source="fr_migration"),
-        temporal_lens("interdepartmental_migration_history", "society", "Interdepartmental in-migration history", "🧳", "share of residents aged 1+", "pct", "linear",
+        temporal_lens("interdepartmental_migration_history", "society", "Out-of-department in-migration history", "🧳", "share of residents aged 1+", "pct", "linear",
                       outside_migration_series, MIGRATION_YEARS, RAMP_PEOPLE,
-                      "Residents aged one year or more whose previous residence was outside their current department, as a share of all residents aged one year or more, in the 2012, 2017 and 2023 censuses. " + migration_method,
+                      "Residents aged one year or more whose previous residence was outside their current department, including abroad or another overseas territory, as a share of all residents aged one year or more, in the 2012, 2017 and 2023 censuses. " + migration_method,
                       source="fr_migration"),
         temporal_lens("temperature_history", "climate", "Temperature history", "🌡️", "°C", "float", "linear",
                       temperature_series, climate_years, RAMP_CLIMATE,
@@ -416,7 +416,7 @@ def check(web_dir):
     assert len(vals68) > 2500 and len(vals23) > 2500
     assert sum(vals23) / len(vals23) > sum(vals68) / len(vals68)
     price = next(l for l in doc["lenses"] if l["id"] == "housing_price_history")
-    assert price["time"]["years"] == list(range(2014, 2026))
+    assert price["time"]["years"] == list(range(2021, 2026))
     assert min(sum(v is not None for v in vals) for vals in price["time"]["series"].values()) > 2000
     election = next(l for l in doc["lenses"] if l["id"] == "lepen_history")
     assert election["time"]["years"] == [2017, 2022]

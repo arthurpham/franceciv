@@ -36,7 +36,7 @@ class FrenchHousingHistory(Source):
         "DVF lines by transaction, filters dwellings to 20–500 m² and €1,000–50,000/m², excludes new-build sales, and does not publish a median below five sales; sparse commune coverage is intentional "
         "missingness rather than zero-priced housing. Municipal-arrondissement rows in Paris, Lyon and Marseille are aggregated "
         "back to their parent communes with transaction-count weights. That arrondissement detail begins in 2021, so the three parent communes have no earlier annual rows. DVF excludes Alsace-Moselle and Mayotte.",
-        used_for=["Housing-price history lens"],
+        used_for=["Housing-price history lens, exposed for 2021–2025"],
     )
 
     def fetch(self, force=False):
