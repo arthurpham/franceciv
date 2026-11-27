@@ -24,7 +24,7 @@ export function initPedia(data) {
   const pages = {
     "About this map": () => `
       ${h2("pedia", "📖", "About this map")}
-      <p>This is real metropolitan France, drawn like a strategy game. Nothing is invented: every tile, city and
+      <p>This is real France, drawn like a strategy game. Nothing is invented: every tile, city and
       number comes from public data, listed under <i>Sources</i>.</p>
       <h4>How it's built</h4>
       <p>Metropolitan France and Corsica are projected (Albers equal-area) and cut into ${data.world.grid.cols}×${data.world.grid.rows}
@@ -47,7 +47,7 @@ export function initPedia(data) {
       <p>Click any land hex without a city to open its region. A region's numbers are regional aggregates from the
       same tables as the cities (${esc(data.nation.vintage)}${data.nation.gdp_vintage ? `; GDP from ${esc(data.nation.gdp_vintage)}` : ""}),
       not the sum of its cities, so rural areas count too.</p>
-      <p><b>Ranks</b> compare the 13 metropolitan French regions; 1 is the largest. Overseas France is not mapped.</p>
+      <p><b>Ranks</b> compare regions and collectivities with validated source coverage; missing source coverage stays null rather than being treated as zero.</p>
       <p>Urban areas that cross regional boundaries are listed under every region they touch, with their whole-area numbers.</p>
       ${data.states ? "" : `<p class="muted">This data build has no states.json, so region panels show names and cities only.</p>`}`,
     Terrain: () => {
@@ -72,15 +72,14 @@ export function initPedia(data) {
       <h4>${icon("r-hydro", "💧", { size: 16 })} Water</h4>
       <table>${t.water.filter((x) => x.id > 0).map(row).join("")}</table>
       <h4>Beyond the borders</h4>
-      <p class="muted">Foreign land (Canada, Mexico, and in the Caribbean Cuba and the Bahamas) is drawn under a light fog:
+      <p class="muted">Foreign land around metropolitan and overseas France is drawn under a light fog:
       it is shown for context and not mapped in detail.</p>`;
     },
     Lenses: () => `
       ${h2("layers", "▤", "Lenses")}
-      <p>Lenses recolour the map by one measure, built from county data (${esc(data.lenses.vintage)}). Each hex is sampled
-      at 7 points. A county covering some of them is assumed to cover that share of the hex. Small dense counties that no
-      sample hits (Manhattan, Virginia's independent cities) are added to the hex containing their centre. Income and home
-      value are averaged over the counties in a hex, weighted by population.</p>
+      <p>Lenses recolour the map by one measure, built from commune, département or grid data (${esc(data.lenses.vintage)}). Each hex is sampled
+      at 7 points. A département covering some of them is assumed to cover that share of the hex. Compact statistical units that no
+      sample hits are represented by the hex containing their most important commune. Values are weighted according to each layer's documented method.</p>
       <p>The legend shows how many hexes fall at each value. Hover or drag on it to show only that range on the map.</p>
       ${(data.lenses.groups || [{ id: null, name: "" }]).map((g) => {
         const ls = data.lenses.lenses.filter((l) => !g.id || l.group === g.id);
@@ -110,6 +109,30 @@ export function initPedia(data) {
           <td class="nm"><b>${esc(t.name)}</b>${t.unit ? `<br><span class="muted">value in ${esc(t.unit)}</span>` : ""}</td>
           <td>${esc(t.description || "")}<br><span class="muted">Source: ${esc(srcName(t.source))}</span></td>
           <td class="num">${count.get(t.id) || 0}</td></tr>`).join("")}</table>`).join("")}`;
+    },
+
+    "Data trust": () => {
+      const t = data.trust;
+      if (!t?.summary) return `${h2("pedia", "📖", "Data trust")}<p class="muted">This data build has no trust.json report.</p>`;
+      const pct = (v) => v == null ? "—" : `${Math.round(v * 100)}%`;
+      const statusColor = { fresh: "#8fd18c", attention: "#e8c15a", due: "#e07a66", unknown: "#9aa6b2" };
+      const srcRows = [...t.sources].sort((a, b) => (a.status === b.status ? (a.title || "").localeCompare(b.title || "") : ["due", "attention", "unknown", "fresh"].indexOf(a.status) - ["due", "attention", "unknown", "fresh"].indexOf(b.status)));
+      const sparse = t.layers.filter((l) => l.shape === "ok").sort((a, b) => a.coverage - b.coverage).slice(0, 20);
+      return `
+      ${h2("pedia", "📖", "Data trust")}
+      <p>This report is generated during every data build. It separates three questions: when the cached source was last retrieved,
+      how often that source should be refreshed, and how much of the owned hex grid each lens covers. Null means no validated coverage, never zero.</p>
+      <table><tr><th>Sources</th><th>Fresh</th><th>Attention</th><th>Due</th><th>Lenses</th><th>Mean coverage</th></tr>
+      <tr><td class="num">${t.summary.sources}</td><td class="num">${t.summary.fresh}</td><td class="num">${t.summary.attention}</td><td class="num">${t.summary.due}</td><td class="num">${t.summary.lenses}</td><td class="num">${pct(t.summary.mean_coverage)}</td></tr></table>
+      <p class="muted">Generated ${esc((t.generated || "").slice(0, 19).replace("T", " "))} · source fingerprint <code>${esc((t.reproducibility?.source_fingerprint || "").slice(0, 16))}</code><br>
+      Reproduce offline with <code>${esc(t.reproducibility?.rebuild || "")}</code>, then validate with the pipeline checks.</p>
+      <h3>Source freshness</h3>
+      <table><tr><th>Status</th><th>Source</th><th>Vintage</th><th>Retrieved</th><th>Cadence</th><th>Files</th></tr>
+      ${srcRows.map((s) => `<tr><td><b style="color:${statusColor[s.status] || "#ddd"}">${esc(s.status)}</b></td><td class="nm">${esc(s.title)}</td><td>${esc(s.vintage || "—")}</td><td>${esc((s.retrieved || "—").slice(0, 10))}</td><td class="num">${s.refresh_cadence_days} d</td><td class="num">${s.files}</td></tr>`).join("")}</table>
+      <h3>Lowest-coverage lenses</h3>
+      <p class="muted">Coverage is the share of owned hexes with a value at the default/latest year. Metropolitan and overseas columns expose structural source gaps.</p>
+      <table><tr><th>Lens</th><th>All owned hexes</th><th>Metropolitan</th><th>Overseas</th><th>Data file</th></tr>
+      ${sparse.map((l) => `<tr><td class="nm">${esc(l.name)}</td><td class="num">${pct(l.coverage)}</td><td class="num">${pct(l.metropolitan_coverage)}</td><td class="num">${pct(l.overseas_coverage)}</td><td><code>${esc(l.file)}</code></td></tr>`).join("")}</table>`;
     },
     Sources: () => `
       ${h2("pedia", "📖", "Sources")}
