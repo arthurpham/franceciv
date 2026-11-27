@@ -17,13 +17,28 @@ function upperBound(values, x) {
   return lo;
 }
 
+function compactRange(start, end) {
+  return `${start}–${end.length === 2 ? end : end.slice(2)}`;
+}
+
+const yearRangePattern = () => /\b((?:19|20)\d{2})\s*[–-]\s*((?:19|20)?\d{2})\b(?!-)/g;
+
 function vintageYear(vintage) {
   const text = String(vintage || "");
   // Prefer an explicit statistical period over a later geographic-reference year ("census 2023, geography 2026").
   // Do not mistake ISO dates such as 2026-11-02 for year ranges.
-  const range = text.match(/\b((?:19|20)\d{2})\s*[–-]\s*((?:19|20)?\d{2})\b(?!-)/);
-  if (range) return `${range[1]}–${range[2].length === 2 ? range[2] : range[2].slice(2)}`;
+  const range = yearRangePattern().exec(text);
+  if (range) return compactRange(range[1], range[2]);
   return text.match(/\b(?:19|20)\d{2}\b/)?.[0] || "";
+}
+
+function measurementYear(lens, fallback) {
+  const text = String(lens.description || "");
+  const ranges = [...text.matchAll(yearRangePattern())];
+  if (!ranges.length) return fallback;
+  const first = compactRange(ranges[0][1], ranges[0][2]);
+  if (ranges.length > 1 && /\b(?:difference|change|between)\b/i.test(text)) return `${first} vs ${compactRange(ranges[1][1], ranges[1][2])}`;
+  return first;
 }
 
 /**
@@ -82,7 +97,7 @@ export function createLocationInspector(opts) {
   const yearOf = (lens) => vintageYear(sourceOf(lens)?.vintage || "");
   const sourceLabel = (lens) => {
     const s = sourceOf(lens);
-    const year = yearOf(lens);
+    const year = measurementYear(lens, yearOf(lens));
     return [year, s?.publisher || s?.title || lens.source].filter(Boolean).join(" · ");
   };
 
@@ -144,6 +159,27 @@ export function createLocationInspector(opts) {
     </div>`;
   }
 
+  const ownedCell = (cell) => Number.isInteger(cell) && cell >= 0 && cell < w.grid.size && w.raw.owner?.[cell] >= 0;
+  const resolvedCache = new Map();
+  // Commune/EPCI reference points can fall in a coastal or foreign hex even though the territory itself is French.
+  // Use the closest measured hex and disclose the approximation rather than dropping the whole local-data section.
+  function resolveCell(cell) {
+    if (!Number.isInteger(cell) || cell < 0 || cell >= w.grid.size) return null;
+    if (ownedCell(cell)) return { cell, approximate: false };
+    if (resolvedCache.has(cell)) return resolvedCache.get(cell);
+    const x0 = w.grid.cx(cell), y0 = w.grid.cy(cell);
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < w.grid.size; i++) {
+      if (!ownedCell(i)) continue;
+      const dx = w.grid.cx(i) - x0, dy = w.grid.cy(i) - y0;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    const out = best >= 0 ? { cell: best, approximate: true, distance: Math.sqrt(bestD) } : null;
+    resolvedCache.set(cell, out);
+    return out;
+  }
+
   function renderResults(root, cell) {
     const entries = entriesFor(cell);
     const measuredTotal = lenses.filter((l) => !isMissing(l.values[cell])).length;
@@ -160,7 +196,7 @@ export function createLocationInspector(opts) {
       if (!rows.length) return "";
       groupIndex++;
       const measured = lenses.filter((l) => (l.group || "__other") === g.id && !isMissing(l.values[cell])).length;
-      const isOpen = groupsTouched ? openGroups.has(g.id) : (g.id === activeGroup || groupIndex === 0);
+      const isOpen = groupsTouched ? openGroups.has(g.id) : (query.trim() ? true : (g.id === activeGroup || groupIndex === 0));
       return `<details class="li-group" data-group="${esc(g.id)}"${isOpen ? " open" : ""}>
         <summary><span>${esc(g.name)}</span><span class="li-count" title="Measured layers in this group at the selected hex">${measured}/${groupTotals.get(g.id) || rows.length}</span></summary>
         <div class="li-rows">${rows.map(rowHtml).join("")}</div>
@@ -170,14 +206,18 @@ export function createLocationInspector(opts) {
       <div class="li-summary"><b>${measuredTotal}</b> of ${lenses.length} layers measured here${hiddenMissing && !showMissing ? ` · ${hiddenMissing} no-data hidden` : ""}</div>
       ${activeHtml(cell)}
       ${body || `<div class="li-empty">No layer matches “${esc(query)}” at this location.</div>`}
-      <p class="li-note">Values describe the containing/reference hex cell, not an exact address or a whole commune/EPCI/IRIS. “No data” means unavailable, suppressed or outside source coverage; it is not zero unless the lens definition says so. Rankings compare measured hex cells, highest raw value first.</p>`;
+      <p class="li-note">Values describe ${root._liApproximate ? "the nearest measured hex to the reference point" : "the containing/reference hex cell"}, not an exact address or a whole commune/EPCI/IRIS. “No data” means unavailable, suppressed or outside source coverage; it is not zero unless the lens definition says so. Rankings compare measured hex cells, highest raw value first.</p>`;
   }
 
-  function layout(root, cell) {
+  function layout(root, requestedCell) {
+    const resolved = resolveCell(requestedCell);
+    if (!resolved) return;
+    const cell = resolved.cell;
     root.dataset.cell = String(cell);
+    root._liApproximate = resolved.approximate;
     const elev = w.raw.elev?.[cell];
     root.innerHTML = `
-      <div class="li-context"><b>${esc(place(cell))}</b><span>8 km hex${Number.isFinite(elev) ? ` · ${int(elev)} m mean elevation` : ""}</span></div>
+      <div class="li-context"><b>${esc(place(cell))}</b><span>8 km hex${resolved.approximate ? ` · nearest measured · ~${int(resolved.distance)} km away` : ""}${Number.isFinite(elev) ? ` · ${int(elev)} m mean elevation` : ""}</span></div>
       <div class="li-tools">
         <input class="li-search" type="search" value="${esc(query)}" placeholder="Filter local layers…" aria-label="Filter local layers">
         <label class="li-toggle" title="Include layers with no measured value at this hex"><input type="checkbox"${showMissing ? " checked" : ""}> show no data</label>
@@ -200,31 +240,38 @@ export function createLocationInspector(opts) {
         if (!lens) return;
         opts.onPick?.(lens);
       });
-      root.addEventListener("toggle", (e) => {
-        const d = e.target.closest?.("details[data-group]");
+      root.addEventListener("click", (e) => {
+        const summary = e.target.closest("summary");
+        if (!summary) return;
+        const d = summary.closest("details[data-group]");
         if (!d) return;
-        groupsTouched = true;
-        if (d.open) openGroups.add(d.dataset.group);
-        else openGroups.delete(d.dataset.group);
-      }, true);
+        if (!groupsTouched) {
+          // Preserve the automatic expansion state before applying the user's first manual toggle.
+          openGroups = new Set([...root.querySelectorAll("details[data-group]")].filter((x) => x.open).map((x) => x.dataset.group));
+          groupsTouched = true;
+        }
+        // The details element's open state flips after the click handler, so read it on the next task.
+        setTimeout(() => {
+          if (d.open) openGroups.add(d.dataset.group);
+          else openGroups.delete(d.dataset.group);
+        }, 0);
+      });
     }
     renderResults(root, cell);
   }
 
-  const validCell = (cell) => Number.isInteger(cell) && cell >= 0 && cell < w.grid.size && w.raw.owner?.[cell] >= 0;
-
   return {
     section(cell) {
-      if (!validCell(cell)) return null;
+      if (!resolveCell(cell)) return null;
       return { title: "Local data inspector", html: `<div class="location-inspector" data-cell="${cell}"></div>` };
     },
     wire(panel, cell) {
       const root = panel.querySelector(".location-inspector");
-      if (root && validCell(cell)) layout(root, cell);
+      if (root && resolveCell(cell)) layout(root, cell);
     },
     update(panel, cell) {
       const root = panel?.querySelector(".location-inspector");
-      if (!root || !validCell(cell)) return false;
+      if (!root || !resolveCell(cell)) return false;
       layout(root, cell);
       return true;
     },
@@ -232,7 +279,7 @@ export function createLocationInspector(opts) {
       const root = panel?.querySelector(".location-inspector");
       if (!root) return;
       const cell = Number(root.dataset.cell);
-      if (validCell(cell)) renderResults(root, cell);
+      if (ownedCell(cell)) renderResults(root, cell);
     },
   };
 }
