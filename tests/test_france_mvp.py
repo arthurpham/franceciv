@@ -330,6 +330,15 @@ def test_agriculture_tourism_electricity_contracts():
     assert any(s["id"] == "fr_electricity" for s in web("sources.json"))
 
 
+def test_heritage_contract():
+    data = web("heritage.json")
+    assert data["sources"] == ["fr_heritage"] and len(data["lenses"]) == 2
+    vals = [v for v in data["lenses"][0]["values"] if v is not None]
+    share = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert len(vals) > 2500 and max(vals) > 5 and len(share) > 1500
+    assert all(0 <= v <= 1 for v in share)
+
+
 def test_public_services_contract():
     data = web("public_services.json")
     assert data["sources"] == ["fr_crime", "fr_schools", "fr_public_equipment"]
