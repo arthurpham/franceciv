@@ -90,6 +90,10 @@ SDES 2019 interregional freight flows. Routes are schematic arcs between regiona
 
 Commune connectivity lenses. Fiber values are eligible premises shares from ARCEP; EV-charging values are consolidated public charge points per 10,000 residents. Commune values are aggregated to hexes by centroid. IRVE zero means no published public charge point, not missing data; arrondissement charge points are attributed to Paris, Lyon and Marseille commune totals.
 
+### quality_life.json
+
+DVF housing-price and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.
+
 ### flood.json
 
 Physical river-flood exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow WMS rasters. They are not parcel-level risk determinations, damage estimates, or a substitute for regulatory hazard maps.
