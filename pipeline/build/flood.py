@@ -1,4 +1,4 @@
-"""Physical flood-exposure lens."""
+"""Physical flood-exposure lenses."""
 
 from ..core.geo import MapProjection
 from ..core.hexgrid import HexGrid
@@ -15,12 +15,7 @@ def percentile(vals, p):
     return xs[min(len(xs) - 1, max(0, round((p / 100) * (len(xs) - 1))))] if xs else None
 
 
-def build():
-    world = load_interim("_world")
-    flood = load_interim("fr_flood")
-    grid = HexGrid(**world["grid"])
-    proj = MapProjection(**world["projection"])
-    rows = flood["rows"]
+def sample_layer(world, grid, proj, flood, rows):
     x0, dx, y0, dy, ncols = flood["x0"], flood["dx"], flood["y0"], flood["dy"], flood["cols"]
     lattice = hex_lattice(HEX_RADIUS_KM, WORLDCOVER_STEP_KM)
     vals = []
@@ -39,23 +34,43 @@ def build():
             if ch != ".":
                 cover += int(ch) / 9
         vals.append(round(cover / total, 4) if total else None)
+    return vals
+
+
+def lens(lens_id, name, vals, description):
+    return {
+        "id": lens_id, "group": "hazards", "name": name, "icon": lens_id,
+        "emoji": "🌊", "unit": "share of hex area", "format": "pct", "scale": "linear",
+        "domain": [0, percentile([v for v in vals if v], 98)], "ramp": RAMP,
+        "higher_is": "worse", "source": "fr_flood", "description": description, "values": vals,
+    }
+
+
+def build():
+    world = load_interim("_world")
+    flood = load_interim("fr_flood")
+    grid = HexGrid(**world["grid"])
+    proj = MapProjection(**world["projection"])
+    river = sample_layer(world, grid, proj, flood, flood["layers"]["river_overflow"])
+    coastal = sample_layer(world, grid, proj, flood, flood["layers"]["coastal_submersion"])
     write_web("flood.json", {
         "version": 1, "vintage": flood.get("vintage", "TRI flood-risk synthesis, 2020 reporting"), "sources": ["fr_flood"],
         "group": {"id": "hazards", "name": "Hazards"},
-        "lenses": [{
-            "id": "flood_exposure", "group": "hazards", "name": "River flood exposure", "icon": "flood_exposure", "emoji": "🌊",
-            "unit": "share of hex area", "format": "pct", "scale": "linear",
-            "domain": [percentile(vals, 2), percentile(vals, 98)], "ramp": RAMP, "higher_is": "worse", "source": "fr_flood",
-            "description": "Approximate share of hex area inside rare or millennial river-overflow flood surfaces from the official 2020 TRI synthesis. Values are raster-sampled estimates limited to designated TRI territories, not parcel-level risk determinations.",
-            "values": vals,
-        }],
+        "lenses": [
+            lens("flood_exposure", "River flood exposure", river, "Approximate share of hex area inside rare or millennial river-overflow flood surfaces from the official 2020 TRI synthesis. Values are raster-sampled estimates limited to designated TRI territories, not parcel-level risk determinations."),
+            lens("coastal_submersion", "Coastal submersion exposure", coastal, "Approximate share of hex area inside rare or millennial marine-submersion flood surfaces from the official 2020 TRI synthesis. Values are raster-sampled estimates limited to designated TRI territories; they do not include erosion, groundwater rise, drainage failure or parcel-level protection standards."),
+        ],
     })
 
 
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "flood.json").read_text())
+    assert len(doc["lenses"]) == 2
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
+    coastal = [v for v in doc["lenses"][1]["values"] if v is not None]
     nonzero = [v for v in vals if v]
+    coast_nonzero = [v for v in coastal if v]
     assert len(vals) > 2500 and len(nonzero) > 400 and max(vals) > 0.2
-    return [("PASS", f"flood.json: physical flood lens over {len(vals)} cells")]
+    assert len(coastal) > 2500 and len(coast_nonzero) > 70 and max(coastal) > 0.1
+    return [("PASS", f"flood.json: river and coastal flood lenses over {len(vals)} cells")]
