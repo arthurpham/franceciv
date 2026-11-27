@@ -53,13 +53,27 @@ def build():
         if cell >= 0: cells[c["code"]] = cell
 
     house_rows = defaultdict(list); apartment_rows = defaultdict(list)
+    market_acc = defaultdict(lambda: {"sales": 0, "apartment_sales": 0, "pop": 0})
     for r in housing["rows"]:
         cell = cells.get(r["code"])
         if cell is None: continue
         if r["house_price"] and r["house_sales"]: house_rows[cell].append((r["house_price"], r["house_sales"]))
         if r["apartment_price"] and r["apartment_sales"]: apartment_rows[cell].append((r["apartment_price"], r["apartment_sales"]))
+        sales = (r.get("house_sales") or 0) + (r.get("apartment_sales") or 0)
+        if sales:
+            market_acc[cell]["sales"] += sales
+            market_acc[cell]["apartment_sales"] += r.get("apartment_sales") or 0
+            market_acc[cell]["pop"] += communes.get(r["code"], {}).get("population") or 0
     house = weighted_series(grid.size, house_rows)
     apartment = weighted_series(grid.size, apartment_rows)
+    liquidity, apartment_share = [], []
+    for i in range(grid.size):
+        a = market_acc.get(i)
+        if a and a["pop"]:
+            liquidity.append(round(a["sales"] * 10_000 / a["pop"], 2))
+            apartment_share.append(round(a["apartment_sales"] / a["sales"], 4) if a["sales"] else None)
+        else:
+            liquidity.append(None); apartment_share.append(None)
 
     health_vals = {}
     labels = {
@@ -90,6 +104,10 @@ def build():
              "Transaction-count-weighted mean of commune median house sale prices per m², DVF sales in 2024–2025. DVF excludes Alsace-Moselle and Mayotte."),
         lens("apartment_price", "Apartment prices", "🏢", "euros / m²", "eur", apartment, "fr_housing",
              "Transaction-count-weighted mean of commune median apartment sale prices per m², DVF sales in 2024–2025. Sparse rural coverage reflects few apartment sales."),
+        lens("housing_liquidity", "Housing-market liquidity", "🔁", "sales per 10k residents / 2 years", "float", liquidity, "fr_housing",
+             "House and apartment sale records in DVF 2024–2025 per 10,000 residents. This measures transaction volume over roughly two years, not turnover among all dwellings; DVF excludes Alsace-Moselle and Mayotte."),
+        lens("apartment_sale_share", "Apartment sale share", "🏙️", "share of housing sales", "pct", apartment_share, "fr_housing",
+             "Apartment sales as a share of all house and apartment sale records in DVF 2024–2025. This reflects the transacted stock rather than the full dwelling stock and is sparse where there are few sales."),
     ]
     fg_rows=defaultdict(list);ab_rows=defaultdict(list)
     for code,counts in energy["rows"].items():
@@ -116,8 +134,8 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "quality_life.json").read_text())
-    assert len(doc["lenses"]) == 9
+    assert len(doc["lenses"]) == 11
     n = len(json.loads((web_dir / "world.json").read_text())["owner"])
     assert all(len(l["values"]) == n for l in doc["lenses"])
     assert sum(v is not None for v in doc["lenses"][0]["values"]) > 2500
-    return [("PASS", "quality_life.json: housing, healthcare and social-housing lenses")]
+    return [("PASS", "quality_life.json: 11 housing, healthcare and social-housing lenses")]
