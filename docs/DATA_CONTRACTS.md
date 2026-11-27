@@ -117,7 +117,7 @@ Physical river-flood exposure. Values are approximate hex-area shares derived fr
 
 ### risk.json
 
-Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `clay_shrink_swell`, `seismic_zone` and `radon_potential` are normalized area-weighted class indices, not probabilities, damage estimates or measurements. Clay low/medium/high and radon low/moderate/high classes are weighted ⅓, ⅔ and 1; seismic zones 1–5 are weighted 0.2–1. Values are raster-sampled hex estimates and may be null outside the published mainland raster coverage.
+Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `clay_shrink_swell`, `seismic_zone` and `radon_potential` are normalized area-weighted class indices, not probabilities, damage estimates or measurements. Clay low/medium/high and radon low/moderate/high classes are weighted ⅓, ⅔ and 1; seismic zones 1–5 are weighted 0.2–1. Values are raster-sampled hex estimates and may be null outside the published mainland raster coverage. Forest-fire, avalanche and ground-movement perimeter lenses are approximate hex-area shares inside official risk-prevention servitude perimeters; they are administrative exposure/regulation areas rather than probabilities, intensity measurements or damage estimates.
 
 ### electricity.json
 

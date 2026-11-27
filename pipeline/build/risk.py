@@ -5,7 +5,7 @@ from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 from .world import HEX_RADIUS_KM, WORLDCOVER_STEP_KM, hex_lattice
 
-REQUIRES = ["_world", "fr_risk_zones"]
+REQUIRES = ["_world", "fr_risk_zones", "fr_risk_perimeters"]
 PRODUCES = ["risk.json"]
 RAMP = ["#26324a", "#5a5872", "#8e6a63", "#c77948", "#e0a13f"]
 
@@ -45,22 +45,36 @@ def lens(lens_id, name, emoji, vals, desc):
             "source": "fr_risk_zones", "description": desc, "values": vals}
 
 
+def perimeter_lens(lens_id, name, emoji, vals, desc):
+    positive = [v for v in vals if v]
+    return {"id": lens_id, "group": "hazards", "name": name, "icon": lens_id, "emoji": emoji,
+            "unit": "share of hex area", "format": "pct", "scale": "linear",
+            "domain": [0, percentile(positive, 98)], "ramp": RAMP, "higher_is": "worse",
+            "source": "fr_risk_perimeters", "description": desc, "values": vals}
+
+
 def build():
     world = load_interim("_world")
     risk = load_interim("fr_risk_zones")
+    perimeters = load_interim("fr_risk_perimeters")
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
     raster = {k: risk[k] for k in ["x0", "dx", "y0", "dy", "cols"]}
     vals = {}
     for key in ["clay", "seismic", "radon"]:
         vals[key] = sample_layer(world, grid, proj, raster | {"rows": risk["layers"][key]["rows"]})
+    for key in ["forest_fire", "avalanche", "ground_movement"]:
+        vals[key] = sample_layer(world, grid, proj, raster | {"rows": perimeters["layers"][key]})
     write_web("risk.json", {
-        "version": 1, "vintage": risk.get("vintage", "Géorisques/BRGM risk zoning"), "sources": ["fr_risk_zones"],
+        "version": 1, "vintage": risk.get("vintage", "Géorisques/BRGM risk zoning"), "sources": ["fr_risk_zones", "fr_risk_perimeters"],
         "group": {"id": "hazards", "name": "Hazards"},
         "lenses": [
             lens("clay_shrink_swell", "Clay shrink-swell", "🏚️", vals["clay"], "Area-weighted clay shrink-swell exposure index from the official Géorisques/BRGM zoning raster. Low, medium and high classes are weighted ⅓, ⅔ and 1; coverage is metropolitan France outside Paris and values are hex-scale estimates."),
             lens("seismic_zone", "Seismic zoning", "🫨", vals["seismic"], "Area-weighted seismic-zone index from the official French zoning raster. Zones 1–5 are weighted 0.2–1, so values represent average zoning intensity rather than earthquake probability or expected damage."),
             lens("radon_potential", "Radon potential", "☢️", vals["radon"], "Population-independent commune radon-potential index from Géorisques/BRGM. Low, moderate and high commune classes are weighted ⅓, ⅔ and 1; values are not indoor measurements."),
+            perimeter_lens("forest_fire_perimeter", "Forest-fire risk perimeter", "🔥", vals["forest_fire"], "Approximate share of hex area inside official forest-fire risk-prevention servitude perimeters. These administrative prevention perimeters indicate regulated exposure areas, not fire probability, vegetation-fuel intensity or expected damage."),
+            perimeter_lens("avalanche_perimeter", "Avalanche risk perimeter", "🏔️", vals["avalanche"], "Approximate share of hex area inside official avalanche risk-prevention servitude perimeters. These administrative prevention perimeters indicate regulated exposure areas, not avalanche return periods or expected damage."),
+            perimeter_lens("ground_movement_perimeter", "Ground-movement risk perimeter", "⛰️", vals["ground_movement"], "Approximate share of hex area inside official ground-movement risk-prevention servitude perimeters. These administrative prevention perimeters indicate regulated exposure areas, not landslide probability, velocity or expected damage."),
         ],
     })
 
@@ -68,10 +82,16 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "risk.json").read_text())
-    assert len(doc["lenses"]) == 3
+    assert len(doc["lenses"]) == 6
     clay = [v for v in doc["lenses"][0]["values"] if v is not None]
     seismic = [v for v in doc["lenses"][1]["values"] if v is not None]
     radon = [v for v in doc["lenses"][2]["values"] if v is not None]
     assert len(clay) > 2500 and len([v for v in clay if v]) > 500
     assert len(seismic) > 2500 and len(radon) > 2500 and max(seismic) > 0.3 and max(radon) > 0.3
-    return [("PASS", f"risk.json: 3 natural-risk lenses over {len(clay)} cells")]
+    perimeter_counts = []
+    for item in doc["lenses"][3:]:
+        vals = [v for v in item["values"] if v is not None]
+        perimeter_counts.append(len([v for v in vals if v]))
+        assert len(vals) > 2500 and max(vals) > 0.05
+    assert min(perimeter_counts) > 40 and max(perimeter_counts) > 300
+    return [("PASS", f"risk.json: 6 natural-risk lenses over {len(clay)} cells")]
