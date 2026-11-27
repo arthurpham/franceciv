@@ -147,6 +147,15 @@ def test_transit_contract():
     assert any(v > 0 for v in vals) and "frequency" in data["lenses"][0]["description"]
 
 
+def test_energy_system_contract():
+    data = web("energy_system.json")
+    assert data["sources"] == ["fr_energy"] and len(data["lenses"]) == 4
+    assert data["unmatched_capacity_mw"] < 1000
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and len([v for v in vals if v]) > 10
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
