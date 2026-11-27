@@ -19,7 +19,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - The other yields are census workplace employment by industry, observed directly for each aire d'attraction.
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming, rainfall and climatic water deficit.
-- Historical time lenses with a year selector: population density in nine census snapshots from 1968 to 2023, plus housing-stock density, homeownership, second-home and vacancy shares for 2012, 2017 and 2023, all using fixed colour scales for year-to-year comparison.
+- Historical time lenses with a year selector and fixed colour scales: population density in nine census snapshots from 1968 to 2023; housing-stock density, homeownership, second-home and vacancy shares for 2012, 2017 and 2023; presidential second-round votes and abstention for 2017 and 2022; annual DVF housing prices for 2014–2025; residential mobility and interdepartmental in-migration for 2012, 2017 and 2023; and annual SIM2 temperature, rainfall and climatic water-deficit snapshots for 1985, 1995, 2005, 2015 and 2025.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
 - Detailed named watercourses from IGN BD CARTO, official national-road geometry/traffic and active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, first-class EPCI and IRIS/neighborhood search and statistics, commune-derived fiber, EV-charging and mobile-site lenses, national cycling-infrastructure lenses, national GTFS scheduled-frequency lens, DVF housing-price/market lenses, DREES healthcare-access lenses, social-housing shares, housing energy-performance lenses, CORINE vineyard/orchard and Agreste farm-structure and workplace economic-composition and demographic/business-dynamism lenses, INSEE hotel-tourism intensity, Mérimée protected-heritage lenses, ODRÉ installed-capacity/storage lenses and Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, Géorisques/BRGM natural-risk zoning and prevention-perimeter lenses, INSEE everyday-services, health/social-care, cinema, swimming-pool, rail-station, postal, library, France Services, recycling-center, police/gendarmerie and sports/culture lenses, INPN Natura 2000, ZNIEFF, nature-reserve and park lenses, and physical river-flood/coastal-submersion exposure lenses.
 
@@ -55,8 +55,8 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_mobile_network fr_cycling fr_transit_stops fr_transit_frequency fr_road_traffic fr_housing fr_healthcare fr_social_housing fr_housing_energy fr_tourism fr_electricity fr_crime fr_schools fr_risk_zones fr_risk_perimeters fr_public_equipment fr_nature fr_flood fr_insee_stats fr_iris fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_mobile_network fr_cycling fr_transit_stops fr_transit_frequency fr_road_traffic fr_housing fr_healthcare fr_social_housing fr_housing_energy fr_tourism fr_electricity fr_crime fr_schools fr_risk_zones fr_risk_perimeters fr_public_equipment fr_nature fr_flood fr_insee_stats fr_iris fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_mobile_network fr_cycling fr_transit_stops fr_transit_frequency fr_road_traffic fr_housing fr_housing_history fr_healthcare fr_social_housing fr_housing_energy fr_tourism fr_electricity fr_crime fr_schools fr_risk_zones fr_risk_perimeters fr_public_equipment fr_nature fr_flood fr_insee_stats fr_migration fr_iris fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_mobile_network fr_cycling fr_transit_stops fr_transit_frequency fr_road_traffic fr_housing fr_housing_history fr_healthcare fr_social_housing fr_housing_energy fr_tourism fr_electricity fr_crime fr_schools fr_risk_zones fr_risk_perimeters fr_public_equipment fr_nature fr_flood fr_insee_stats fr_migration fr_iris fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
 uv run python -m pipeline build world france_core climate hydrography connectivity cycling transit mobility economy energy_system society statistical_geography quality_life agriculture tourism electricity risk public_services nature flood citizens districts military resources infrastructure wonders trade communes heritage time_dimension catalog
 ```
 
@@ -65,7 +65,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 ## Data sources
 
 - Etalab / geo.api.gouv.fr: current région, département and commune boundaries, commune populations/centroids, and EPCI reference data.
-- INSEE: 2020 aires d'attraction des villes, census/comparateur demographic and housing series, 2026 vintage geography.
+- INSEE: 2020 aires d'attraction des villes, census/comparateur demographic and housing series, residential-migration principal indicators, 2026 vintage geography.
 - Eurostat regional accounts: `nama_10r_3gdp`, `nama_10r_3gva`, `nama_10r_3empers` for 2024.
 - CORINE Land Cover 2018, served through the IGN Géoplateforme WMS.
 - ODRÉ national registry of electricity generation and storage installations.
@@ -74,7 +74,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - SNCF Gares & Connexions station traffic and station reference coordinates.
 - ARCEP Ma connexion internet commune technology-eligibility statistics.
 - transport.data.gouv.fr national GTFS stop extraction and scheduled-service frequency extraction, with consolidated regional feeds, supplemental local feeds and duplicate/overlap suppression.
-- OpenParcels commune medians derived from DGFiP/Etalab DVF transactions.
+- OpenParcels current commune medians and Terralyse annual commune series, both derived from DGFiP/Etalab DVF transactions.
 - DREES localized potential accessibility (APL) to health professionals.
 - INSEE Melodi tourist-accommodation occupancy statistics.
 - Enedis annual electricity consumption by commune and activity sector, aggregated by department.
@@ -87,7 +87,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - Natural Earth 1:50m neighbouring countries, lakes and rivers; 1:10m roads, railroads and ports.
 - OurAirports and Eurostat `avia_paoa` / `mar_go_aa` transport traffic.
 - UNESCO World Heritage Centre official XML export.
-- Ministry of the Interior definitive 2022 presidential election results, mirrored on data.gouv.
+- Ministry of the Interior definitive 2017 and 2022 presidential election results, mirrored on data.gouv.
 - GASPAR catastrophe-naturelle recognitions from Géorisques.
 - Géorisques forest-fire, avalanche and ground-movement risk-prevention servitude perimeters, rasterized through the official WMS.
 - SDES 2019 road, rail and inland-waterway goods-flow workbooks.
