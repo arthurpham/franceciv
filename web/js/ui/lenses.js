@@ -154,7 +154,7 @@ export function initLensDock(opts) {
     const known = new Set(groups.map((g) => g.id));
     if (lenses.some((l) => !known.has(l.group))) groups.push({ id: "__other", name: "Other" });
     const haystack = (l) => normText([
-      l.name, l.description, l.unit, l.group,
+      l.name, l.description, l.unit, l.group, l.time?.label, (l.time?.years || []).join(" "),
       groups.find((g) => g.id === l.group)?.name,
       sources.find((s) => s.id === l.source)?.publisher,
       sources.find((s) => s.id === l.source)?.vintage,
