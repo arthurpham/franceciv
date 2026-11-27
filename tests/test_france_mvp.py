@@ -121,6 +121,17 @@ def test_quality_of_life_contracts():
     assert "Alsace-Moselle" in by_id["house_price"]["description"]
 
 
+def test_society_contract():
+    data = web("society.json")
+    assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 3
+    assert {l["id"] for l in data["lenses"]} == {"natural_balance", "net_migration", "business_density"}
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and max(vals) > 0
+    migration = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert min(migration) < 0 < max(migration)
+
+
 def test_cycling_contract():
     data = web("cycling.json")
     assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2
