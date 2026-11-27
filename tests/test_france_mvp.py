@@ -408,9 +408,11 @@ def test_nature_contract():
 def test_flood_contract():
     data = web("flood.json")
     assert data["sources"] == ["fr_flood"]
-    assert [l["id"] for l in data["lenses"]] == ["flood_exposure"]
+    assert [l["id"] for l in data["lenses"]] == ["flood_exposure", "coastal_submersion"]
     vals = [v for v in data["lenses"][0]["values"] if v is not None]
     nonzero = [v for v in vals if v]
     assert len(vals) > 2500 and len(nonzero) > 400
     assert max(vals) > 0.2 and 0.01 < sum(vals) / len(vals) < 0.4
+    coastal = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert len([v for v in coastal if v]) > 70 and max(coastal) > 0.1
     assert any(s["id"] == "fr_flood" for s in web("sources.json"))
