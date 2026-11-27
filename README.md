@@ -20,7 +20,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming and rainfall.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
-- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber and EV-charging lenses, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard and Agreste farm-structure lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INPN Natura 2000 protected-nature lenses, and a physical river-flood exposure lens.
+- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber and EV-charging lenses, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard and Agreste farm-structure lenses, INSEE hotel-tourism intensity, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INPN Natura 2000 protected-nature lenses, and physical river-flood, clay shrink-swell, seismic and radon risk lenses.
 
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
@@ -53,9 +53,9 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
-uv run python -m pipeline build world france_core climate hydrography connectivity quality_life agriculture tourism electricity public_services nature flood citizens districts military resources infrastructure wonders trade communes catalog
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_risk_zones fr_agreste fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_risk_zones fr_agreste fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_military
+uv run python -m pipeline build world france_core climate hydrography connectivity quality_life agriculture tourism electricity public_services nature flood risk citizens districts military resources infrastructure wonders trade communes catalog
 ```
 
 Downloads are cached under `data/raw/` with provenance manifests. Generated browser data is written to `web/data/`.

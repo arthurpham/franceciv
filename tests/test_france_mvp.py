@@ -337,6 +337,17 @@ def test_public_services_contract():
     assert any(s["id"] == "fr_schools" for s in web("sources.json"))
 
 
+def test_risk_contract():
+    data = web("risk.json")
+    assert data["sources"] == ["fr_risk_zones"]
+    assert {l["id"] for l in data["lenses"]} == {"clay_shrink_swell", "seismic_zone", "radon_potential"}
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and all(0 <= v <= 1 for v in vals)
+    clay = [v for v in data["lenses"][0]["values"] if v]
+    assert len(clay) > 500
+
+
 def test_nature_contract():
     data = web("nature.json")
     assert data["sources"] == ["fr_nature"]

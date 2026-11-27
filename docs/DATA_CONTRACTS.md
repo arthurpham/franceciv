@@ -94,6 +94,10 @@ Commune connectivity lenses. Fiber values are eligible premises shares from ARCE
 
 Physical river-flood exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow WMS rasters. They are not parcel-level risk determinations, damage estimates, or a substitute for regulatory hazard maps.
 
+### risk.json
+
+Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `clay_shrink_swell`, `seismic_zone` and `radon_potential` are normalized area-weighted class indices, not probabilities, damage estimates or measurements. Clay low/medium/high and radon low/moderate/high classes are weighted ⅓, ⅔ and 1; seismic zones 1–5 are weighted 0.2–1. Values are raster-sampled hex estimates and may be null outside the published mainland raster coverage.
+
 ### electricity.json
 
 Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.
