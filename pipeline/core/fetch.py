@@ -19,12 +19,15 @@ from __future__ import annotations
 
 import hashlib
 import http.client
+import ipaddress
 import itertools
 import json
+import socket
 import threading
 import time
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
@@ -37,6 +40,41 @@ OFFLINE = False  # set by the CLI's --offline flag
 MANIFEST_LOCK = threading.Lock()
 RETRIES = 3  # total attempts per download
 BACKOFF = 2.0  # seconds before the 2nd attempt; doubles each time
+
+
+class UnsafeURLError(RuntimeError):
+    """A download URL is not a public HTTPS destination."""
+
+
+def validate_public_https_url(url: str) -> None:
+    """Reject URLs that can address loopback, private, link-local or otherwise non-public hosts.
+
+    The check is intentionally strict for publisher-supplied URLs: HTTPS only, no embedded
+    credentials, and every resolved address must be globally routable. Redirect targets are
+    checked again by PublicHTTPSRedirectHandler before being followed.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        raise UnsafeURLError(f"unsafe download URL: {url}")
+    host = parsed.hostname
+    try:
+        addresses = [ipaddress.ip_address(host)]
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(host, parsed.port or 443, type=socket.SOCK_STREAM)
+            addresses = [ipaddress.ip_address(info[4][0]) for info in infos]
+        except (socket.gaierror, ValueError) as exc:
+            raise UnsafeURLError(f"cannot resolve a public address for {host}") from exc
+    if not addresses or any(not ip.is_global for ip in addresses):
+        raise UnsafeURLError(f"download host does not resolve only to public addresses: {host}")
+
+
+class PublicHTTPSRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is not None:
+            validate_public_https_url(redirected.full_url)
+        return redirected
 
 
 class OfflineError(RuntimeError):
@@ -83,7 +121,7 @@ def read_manifest(source_id: str) -> dict:
     return json.loads(p.read_text()) if p.exists() else {}
 
 
-def _fetch_to(url: str, tmp: Path, timeout: int, headers: dict | None, expect_binary: bool) -> tuple[str, int]:
+def _fetch_to(url: str, tmp: Path, timeout: int, headers: dict | None, expect_binary: bool, require_public: bool = False) -> tuple[str, int]:
     """One download attempt into `tmp`. Returns (sha256 hex, size).
 
     A body shorter than the declared Content-Length (connection cut mid-transfer)
@@ -91,7 +129,13 @@ def _fetch_to(url: str, tmp: Path, timeout: int, headers: dict | None, expect_bi
     """
     digest = hashlib.sha256()
     size = 0
-    with urllib.request.urlopen(_request(url, headers=headers), timeout=timeout) as resp:
+    if require_public:
+        validate_public_https_url(url)
+        opener = urllib.request.build_opener(PublicHTTPSRedirectHandler())
+        open_url = opener.open
+    else:
+        open_url = urllib.request.urlopen
+    with open_url(_request(url, headers=headers), timeout=timeout) as resp:
         ctype = (resp.headers.get("Content-Type") or "").lower()
         length = resp.headers.get("Content-Length")
         identity = not resp.headers.get("Content-Encoding")
@@ -160,6 +204,7 @@ def download(
     timeout: int = 600,
     headers: dict | None = None,
     expect_binary: bool = False,
+    require_public: bool = False,
 ) -> Path:
     """Download `url` to data/raw/<source_id>/<rel_path> unless already cached.
 
@@ -167,7 +212,7 @@ def download(
     response is an error (some publishers answer missing files with a 200 page).
     """
     return _download_with(
-        source_id, url, rel_path, lambda tmp: _fetch_to(url, tmp, timeout, headers, expect_binary), force=force
+        source_id, url, rel_path, lambda tmp: _fetch_to(url, tmp, timeout, headers, expect_binary, require_public), force=force
     )
 
 
