@@ -164,11 +164,14 @@ export function createLocationInspector(opts) {
   const resolvedCache = new Map();
   // Commune/EPCI reference points can fall in a coastal or foreign hex even though the territory itself is French.
   // Use the closest measured hex and disclose the approximation rather than dropping the whole local-data section.
-  function resolveCell(cell) {
+  function resolveCell(cell, point = null) {
     if (!Number.isInteger(cell) || cell < 0 || cell >= w.grid.size) return null;
     if (ownedCell(cell)) return { cell, approximate: false };
-    if (resolvedCache.has(cell)) return resolvedCache.get(cell);
-    const x0 = w.grid.cx(cell), y0 = w.grid.cy(cell);
+    const px = Number.isFinite(point?.x) ? point.x : null;
+    const py = Number.isFinite(point?.y) ? point.y : null;
+    const key = px == null || py == null ? cell : `${cell}:${px}:${py}`;
+    if (resolvedCache.has(key)) return resolvedCache.get(key);
+    const x0 = px ?? w.grid.cx(cell), y0 = py ?? w.grid.cy(cell);
     let best = -1, bestD = Infinity;
     for (let i = 0; i < w.grid.size; i++) {
       if (!ownedCell(i)) continue;
@@ -177,7 +180,7 @@ export function createLocationInspector(opts) {
       if (d < bestD) { bestD = d; best = i; }
     }
     const out = best >= 0 ? { cell: best, approximate: true, distance: Math.sqrt(bestD) } : null;
-    resolvedCache.set(cell, out);
+    resolvedCache.set(key, out);
     return out;
   }
 
@@ -210,8 +213,8 @@ export function createLocationInspector(opts) {
       <p class="li-note">Values describe ${root._liApproximate ? "the nearest measured hex to the reference point" : "the containing/reference hex cell"}, not an exact address or a whole commune/EPCI/IRIS. “No data” means unavailable, suppressed or outside source coverage; it is not zero unless the lens definition says so. Rankings compare measured hex cells, highest raw value first.</p>`;
   }
 
-  function layout(root, requestedCell) {
-    const resolved = resolveCell(requestedCell);
+  function layout(root, requestedCell, point = null) {
+    const resolved = resolveCell(requestedCell, point);
     if (!resolved) return;
     const cell = resolved.cell;
     root.dataset.cell = String(cell);
@@ -262,18 +265,18 @@ export function createLocationInspector(opts) {
   }
 
   return {
-    section(cell) {
-      if (!resolveCell(cell)) return null;
+    section(cell, point = null) {
+      if (!resolveCell(cell, point)) return null;
       return { title: "Local data inspector", html: `<div class="location-inspector" data-cell="${cell}"></div>` };
     },
-    wire(panel, cell) {
+    wire(panel, cell, point = null) {
       const root = panel.querySelector(".location-inspector");
-      if (root && resolveCell(cell)) layout(root, cell);
+      if (root && resolveCell(cell, point)) layout(root, cell, point);
     },
-    update(panel, cell) {
+    update(panel, cell, point = null) {
       const root = panel?.querySelector(".location-inspector");
-      if (!root || !resolveCell(cell)) return false;
-      layout(root, cell);
+      if (!root || !resolveCell(cell, point)) return false;
+      layout(root, cell, point);
       return true;
     },
     refresh(panel) {
