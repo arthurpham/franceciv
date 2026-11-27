@@ -30,7 +30,7 @@ class FrenchPublicEquipment(Source):
         description="Detailed registry of publicly accessible equipment and services at 1 January 2024, using the stable "
         "data.gouv mirror of INSEE's parquet extract. Rows are counted with NBEQUIDENT where INSEE groups identical "
         "equipment; arrondissement codes are normalized to Paris, Lyon and Marseille commune totals.",
-        used_for=["Everyday-services, food-shop, pharmacy and sports/culture lenses"],
+        used_for=["Everyday-services, food-shop, pharmacy, sports/culture, hospital-service, childcare, eldercare, cinema and rail-station lenses"],
     )
 
     def fetch(self, force=False):
@@ -40,7 +40,7 @@ class FrenchPublicEquipment(Source):
     def process(self):
         path = self.raw_dir / "bpe24.parquet"
         cols = ["DEPCOM", "DOM", "SDOM", "TYPEQU", "NBEQUIDENT"]
-        rows = defaultdict(lambda: {"food_shops": 0.0, "pharmacies": 0.0, "culture_sports": 0.0, "food": 0, "pharmacy": 0, "gp": 0, "school": 0, "post": 0, "library": 0})
+        rows = defaultdict(lambda: {"food_shops": 0.0, "pharmacies": 0.0, "culture_sports": 0.0, "hospital_services": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "rail_stations": 0.0, "food": 0, "pharmacy": 0, "gp": 0, "school": 0, "post": 0, "library": 0})
         total = 0
         for batch in pq.ParquetFile(path).iter_batches(batch_size=200_000, columns=cols):
             d = batch.to_pydict()
@@ -57,6 +57,16 @@ class FrenchPublicEquipment(Source):
                     r["pharmacies"] += w; r["pharmacy"] = 1
                 if dom == "F":
                     r["culture_sports"] += w
+                if typ.startswith("D1") and len(typ) == 4:
+                    r["hospital_services"] += w
+                if typ in {"D502", "D509"}:
+                    r["childcare"] += w
+                if typ in {"D401", "D402", "D403"}:
+                    r["eldercare"] += w
+                if typ == "F303":
+                    r["cinemas"] += w
+                if typ in {"E107", "E108", "E109"}:
+                    r["rail_stations"] += w
                 if typ == "D265": r["gp"] = 1
                 if typ == "C108": r["school"] = 1
                 if typ in {"A206", "A207"}: r["post"] = 1
@@ -64,7 +74,7 @@ class FrenchPublicEquipment(Source):
         out = {}
         for code, r in rows.items():
             score = sum(r[k] for k in ["food", "pharmacy", "gp", "school", "post", "library"])
-            out[code] = {"food_shops": round(r["food_shops"], 2), "pharmacies": round(r["pharmacies"], 2), "culture_sports": round(r["culture_sports"], 2), "essential_score": score}
+            out[code] = {"food_shops": round(r["food_shops"], 2), "pharmacies": round(r["pharmacies"], 2), "culture_sports": round(r["culture_sports"], 2), "hospital_services": round(r["hospital_services"], 2), "childcare": round(r["childcare"], 2), "eldercare": round(r["eldercare"], 2), "cinemas": round(r["cinemas"], 2), "rail_stations": round(r["rail_stations"], 2), "essential_score": score}
         print(f"    {total} equipment rows in {len(out)} communes; pharmacies {sum(r['pharmacies'] for r in out.values())}")
         if len(out) < 30_000 or sum(r["pharmacies"] for r in out.values()) < 18_000:
             raise ValueError("unexpected BPE commune totals")
