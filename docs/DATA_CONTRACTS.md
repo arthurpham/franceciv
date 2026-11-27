@@ -119,7 +119,9 @@ Postal access points combine bureaux de poste, agences postales and relais poste
 
 ### transit.json frequency layer
 
-`transit_frequency` counts scheduled GTFS stop calls on one representative Wednesday after applying `calendar.txt` and `calendar_dates.txt`. It is theoretical supply, not reliability, speed, crowding or observed operation. Coverage currently uses consolidated feeds for Île-de-France, Auvergne-Rhône-Alpes, Nouvelle-Aquitaine, Grand Est, Pays de la Loire, Bretagne, Normandie and Centre-Val de Loire. Regions without a consolidated reproducible feed are null rather than zero.
+`transit_frequency` counts scheduled GTFS stop calls after applying `calendar.txt` and `calendar_dates.txt`; frequency-based trips in `frequencies.txt` are expanded across their published headway windows. The pipeline chooses a representative Wednesday from the consolidated regional feeds, then uses the nearest valid Wednesday inside each supplemental feed's published validity range. It is theoretical supply, not reliability, speed, crowding or observed operation.
+
+Coverage combines consolidated feeds for Île-de-France, Auvergne-Rhône-Alpes, Nouvelle-Aquitaine, Grand Est, Pays de la Loire, Bretagne, Normandie and Centre-Val de Loire with supplemental local/regional feeds selected from catalog `covered_area` metadata for the other regions and overseas departments. Aggregate publications are preferred over their granular duplicates where network metadata shows that relationship; exact duplicate zip snapshots are skipped; coordinate/time trip signatures suppress feed publications whose service is overwhelmingly contained in another feed; supplemental stops inside consolidated-feed regions are suppressed; and stops outside mapped French departments are excluded. This prevents the major known double-counting paths, although GTFS catalog network labels are imperfect and residual publisher overlap cannot be ruled out. Departments with at least one extracted usable stop are treated as covered: cells with no extracted stop calls there are zero, while departments with no usable extracted GTFS remain null rather than zero.
 
 ### mobility.json
 

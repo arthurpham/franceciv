@@ -50,9 +50,9 @@ class Source:
         return fetch.OFFLINE
 
     def download(
-        self, url: str, rel_path: str, *, force: bool = False, headers: dict | None = None, expect_binary: bool = False
+        self, url: str, rel_path: str, *, force: bool = False, headers: dict | None = None, expect_binary: bool = False, require_public: bool = False
     ) -> Path:
-        return fetch.download(self.id, url, rel_path, force=force, headers=headers, expect_binary=expect_binary)
+        return fetch.download(self.id, url, rel_path, force=force, headers=headers, expect_binary=expect_binary, require_public=require_public)
 
     def download_prefix(self, url: str, rel_path: str, prefix: str, *, header_start: str = "", force: bool = False) -> Path:
         """Header + the block of lines starting with `prefix` only (see fetch.download_prefix)."""
