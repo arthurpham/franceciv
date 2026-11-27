@@ -89,6 +89,10 @@ def test_connectivity_contracts():
     vals = [v for v in lens["values"] if v is not None]
     assert len(vals) == connectivity["covered_cells"]
     assert all(0 <= v <= 1 for v in vals)
+    ev = connectivity["lenses"][1]
+    ev_vals = [v for v in ev["values"] if v is not None]
+    assert ev["id"] == "ev_charging" and len(ev_vals) > 2500 and max(ev_vals) > 50
+    assert connectivity["sources"] == ["fr_broadband", "fr_ev_charging"]
     infra = web("infrastructure.json")
     assert len(infra["stations"]) >= 500
     assert len(infra["ports"]) >= 30
