@@ -37,10 +37,11 @@ class FrenchLandConsumption(Source):
                 total = num(row.get("naf11art25"))
                 recent = num(row.get("naf21art25"))
                 housing = num(row.get("art11hab25"))
+                population = num(row.get("pop22"))
                 if not surface:
                     continue
                 rows[code] = {
-                    "artificialized": num(row.get("artcom1125")),
+                    "consumption_per_capita": total / population if total is not None and population else None,
                     "consumed_share": total / surface if total is not None else None,
                     "recent_consumed_share": recent / surface if recent is not None else None,
                     "housing_share": housing / total if housing is not None and total else None,
@@ -52,5 +53,6 @@ class FrenchLandConsumption(Source):
             "vintage": "Cerema national soil-artificialization observatory, 2011–2025 communal extract (COG 2025)",
             "_files": ["conso_com.csv"],
             "period": "2011-01-01 to 2025-01-01",
+            "units": {"consumption_per_capita": "m² per 2022 resident", "shares": "share"},
             "communes": rows,
         }

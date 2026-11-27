@@ -27,10 +27,10 @@ def parent_code(code):
     return code
 
 
-def lens(lens_id, name, emoji, unit, vals, desc, higher="neutral", source="fr_land_consumption"):
+def lens(lens_id, name, emoji, unit, vals, desc, higher="neutral", source="fr_land_consumption", fmt="pct"):
     return {
         "id": lens_id, "group": "environment_depth", "name": name, "icon": lens_id, "emoji": emoji,
-        "unit": unit, "format": "pct", "scale": "linear", "domain": [percentile(vals, 2), percentile(vals, 98)],
+        "unit": unit, "format": fmt, "scale": "linear", "domain": [percentile(vals, 2), percentile(vals, 98)],
         "ramp": RAMP, "higher_is": higher, "source": source, "description": desc, "values": vals,
     }
 
@@ -43,7 +43,7 @@ def build():
     proj = MapProjection(**world["projection"])
     weights_by_commune = shape_weights(world, grid, proj, boundaries["communes"])
 
-    keys = ["artificialized", "consumed_share", "recent_consumed_share", "housing_share"]
+    keys = ["consumption_per_capita", "consumed_share", "recent_consumed_share", "housing_share"]
     acc = {k: defaultdict(float) for k in keys}
     valid = {k: defaultdict(float) for k in keys}
     den = defaultdict(float)
@@ -76,7 +76,7 @@ def build():
 
     commune_note = " Commune values are distributed approximately over commune polygons at a 1 km lattice, so values are spatial indicators rather than parcel-level measurements."
     lenses = [
-        lens("artificialized_land", "Artificialized land", "🏗️", "share of commune land", vals["artificialized"], "Share of commune surface artificialized by 2025 in the Cerema land-registry observatory. Artificialization is a legal/land-use measure broader than only continuous built-up cover." + commune_note, higher="worse"),
+        lens("land_consumption_per_capita", "Land take per resident", "🏗️", "m² per resident", vals["consumption_per_capita"], "Natural, agricultural and forest land consumed between 2011 and 2025 divided by 2022 residents. This intensity indicator normalizes cumulative land take by current population; it is not the annual population-adjusted standard used in some observatory dashboards." + commune_note, higher="worse", fmt="float"),
         lens("land_consumption", "Land consumed since 2011", "🚜", "share of commune land", vals["consumed_share"], "Natural, agricultural and forest land consumed between 1 January 2011 and 1 January 2025 as a share of commune surface. This is cumulative land-take flow, not the total artificialized stock." + commune_note, higher="worse"),
         lens("recent_land_consumption", "Recent land consumption", "📈", "share of commune land", vals["recent_consumed_share"], "Natural, agricultural and forest land consumed between 1 January 2021 and 1 January 2025 as a share of commune surface. The short period makes this a recent-pressure indicator." + commune_note, higher="worse"),
         lens("housing_land_consumption", "Housing-driven land take", "🏘️", "share of land consumption", vals["housing_share"], "Share of 2011–2025 natural/agricultural/forest land consumption assigned to housing use in the Cerema land-registry typology. Null where there was no measured consumption." + commune_note),
@@ -99,5 +99,5 @@ def check(web_dir):
     doc = json.loads((web_dir / "environment_depth.json").read_text())
     assert len(doc["lenses"]) == 6 and doc["matched_land_consumption_communes"] > 30000
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
-    assert len(vals) > 3000 and 0 < sum(vals) / len(vals) < 0.3 and max(vals) < 1
+    assert len(vals) > 3000 and sum(vals) / len(vals) > 5 and max(vals) > 100
     return [("PASS", f"environment_depth.json: six artificialization and land-cover lenses over {len(vals)} cells")]

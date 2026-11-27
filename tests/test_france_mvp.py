@@ -606,3 +606,16 @@ def test_risk_depth_contract():
     assert data["noise_missing_departments"] == ["75", "92", "93", "94"]
     grid_size = len(web("world.json")["owner"])
     assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
+
+
+def test_environment_depth_contract():
+    data = web("environment_depth.json")
+    assert data["sources"] == ["fr_land_consumption", "fr_corine"]
+    assert len(data["lenses"]) == 6
+    by_id = {l["id"]: l for l in data["lenses"]}
+    assert {"land_consumption_per_capita", "land_consumption", "recent_land_consumption", "housing_land_consumption", "wetland_cover", "natural_land_cover"} == set(by_id)
+    vals = [v for v in by_id["land_consumption_per_capita"]["values"] if v is not None]
+    assert len(vals) > 3000 and sum(vals) / len(vals) > 5 and max(vals) > 100
+    assert data["matched_land_consumption_communes"] > 30000
+    grid_size = len(web("world.json")["owner"])
+    assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
