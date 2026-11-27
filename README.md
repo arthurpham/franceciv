@@ -71,6 +71,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - IGN BD CARTO named watercourse segments.
 - SNCF Gares & Connexions station traffic and station reference coordinates.
 - ARCEP Ma connexion internet commune technology-eligibility statistics.
+- transport.data.gouv.fr experimental national GTFS stop extraction, deduplicated across overlapping feeds.
 - OpenParcels commune medians derived from DGFiP/Etalab DVF transactions.
 - DREES localized potential accessibility (APL) to health professionals.
 - INSEE Melodi tourist-accommodation occupancy statistics.

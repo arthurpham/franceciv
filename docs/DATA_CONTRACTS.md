@@ -99,6 +99,12 @@ National BNAC/OpenStreetMap cycling-infrastructure lenses. Segment lengths are c
 
 INSEE census workplace-employment composition lenses. Commune job counts are summed within each map hex before calculating shares, so values describe where jobs are located rather than where workers live. Manufacturing uses NACE CA–CM; knowledge services use information/communication, finance/insurance and professional/scientific/technical divisions; public and care uses public administration, education, health and social work.
 
+
+
+### transit.json
+
+Experimental national GTFS stop availability. Rows are deduplicated by normalized stop name and approximately 100-metre rounded coordinates because overlapping feeds often publish the same physical stop. Values are stops per 10,000 residents. Stop presence does not measure service frequency, operating span, speed or reliability; catalog coverage can vary, and seasonal/tourist territories can score high because the denominator is resident population.
+
 ### quality_life.json
 
 DVF housing-price and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.

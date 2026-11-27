@@ -139,6 +139,14 @@ def test_economy_contract():
     assert "knowledge_jobs" in {l["id"] for l in data["lenses"]}
 
 
+def test_transit_contract():
+    data = web("transit.json")
+    assert data["sources"] == ["fr_transit_stops"] and len(data["lenses"]) == 1
+    vals = [v for v in data["lenses"][0]["values"] if v is not None]
+    assert len(vals) > 2500 and data["out_of_map_stops"] < 20000
+    assert any(v > 0 for v in vals) and "frequency" in data["lenses"][0]["description"]
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)
