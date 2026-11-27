@@ -466,5 +466,7 @@ def test_mobility_contract():
 def test_transit_frequency_contract():
     data = web("transit.json")
     vals = [v for v in data["lenses"][1]["values"] if v is not None]
-    assert len(vals) > 500 and max(vals) > 100
+    assert len(vals) > 2500 and max(vals) > 100
+    assert any(v == 0 for v in vals) and any(v > 0 for v in vals)
+    assert data["suppressed_overlap_stops"] >= 0 and data["outside_france_frequency_stops"] >= 0
     assert any(s["id"] == "fr_transit_frequency" for s in web("sources.json"))
