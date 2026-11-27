@@ -70,6 +70,10 @@ class FrenchElectricity(Source):
                 with open(path, encoding="utf-8") as f:
                     url = json.load(f).get("next")
                 page += 1
+            stale = page
+            while (self.raw_dir / f"{prefix}_page_{stale:02d}.json").exists():
+                (self.raw_dir / f"{prefix}_page_{stale:02d}.json").unlink()
+                stale += 1
 
     def process(self):
         rows = {}

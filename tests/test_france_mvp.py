@@ -229,7 +229,7 @@ def test_energy_system_contract():
     assert {"transmission_network_density", "high_voltage_network_density", "non_overhead_transmission_share", "transmission_circuit_stacking", "transformation_site_density", "hv_transformation_site_density", "grid_connection_point_density"} <= {l["id"] for l in data["lenses"]}
     stacking = next(l for l in data["lenses"] if l["id"] == "transmission_circuit_stacking")
     stacking_vals = [v for v in stacking["values"] if v is not None]
-    assert 0.5 < sum(stacking_vals) / len(stacking_vals) < 2.5
+    assert min(stacking_vals) >= 1 and 0.5 < sum(stacking_vals) / len(stacking_vals) < 2.5
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2000 and len([v for v in vals if v]) > 10
