@@ -152,7 +152,7 @@ def test_economy_contract():
 
 def test_transit_contract():
     data = web("transit.json")
-    assert data["sources"] == ["fr_transit_stops"] and len(data["lenses"]) == 1
+    assert data["sources"] == ["fr_transit_stops", "fr_transit_frequency"] and len(data["lenses"]) == 2
     vals = [v for v in data["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and data["out_of_map_stops"] < 20000
     assert any(v > 0 for v in vals) and "frequency" in data["lenses"][0]["description"]
@@ -461,3 +461,10 @@ def test_mobility_contract():
     assert len(vals) > 500 and max(vals) > 100_000
     assert len(heavy) > 500 and all(0 <= v <= 1 for v in heavy)
     assert any(s["id"] == "fr_road_traffic" for s in web("sources.json"))
+
+
+def test_transit_frequency_contract():
+    data = web("transit.json")
+    vals = [v for v in data["lenses"][1]["values"] if v is not None]
+    assert len(vals) > 500 and max(vals) > 100
+    assert any(s["id"] == "fr_transit_frequency" for s in web("sources.json"))

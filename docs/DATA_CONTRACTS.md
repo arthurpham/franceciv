@@ -117,6 +117,10 @@ First-class statistical geography. `epci.json` aggregates existing INSEE Compara
 
 Postal access points combine bureaux de poste, agences postales and relais poste. Libraries, France Services sites, déchèteries and police/gendarmerie stations are population-normalized counts of INSEE BPE equipment records. They describe recorded facility presence, not opening hours, capacity, staffing, response time, service range or quality. Counts use `NBEQUIDENT` where INSEE groups identical facilities and are aggregated by commune then hex.
 
+### transit.json frequency layer
+
+`transit_frequency` counts scheduled GTFS stop calls on one representative Wednesday after applying `calendar.txt` and `calendar_dates.txt`. It is theoretical supply, not reliability, speed, crowding or observed operation. Coverage currently uses consolidated feeds for Île-de-France, Auvergne-Rhône-Alpes, Nouvelle-Aquitaine, Grand Est, Pays de la Loire, Bretagne, Normandie and Centre-Val de Loire. Regions without a consolidated reproducible feed are null rather than zero.
+
 ### mobility.json
 
 Official annual-average-daily-traffic sections on the national road network. `road_traffic` is a length-weighted sampled average in vehicles/day and `heavy_vehicle_share` is traffic-weighted. Coverage excludes departmental and municipal roads; section measurement years can precede the 2024 reference year. Heavy-share outliers above 100% in the source are treated as invalid rather than plausible shares. The same geometry replaces schematic Natural Earth major-road links for mainland France; Corsica retains schematic geometry.
