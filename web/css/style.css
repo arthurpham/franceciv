@@ -455,6 +455,8 @@ body.panel-open #lens-area { right: calc(394px + var(--dock-right, 0px)); }
 
 /* ---------- minimap ---------- */
 #minimap-wrap { position: fixed; left: calc(12px + var(--dock-left, 0px)); bottom: 12px; z-index: 11; padding: 5px; }
+body.minimap-auto-hidden #minimap-wrap { visibility: hidden; pointer-events: none; }
+body.minimap-auto-hidden #lens-area { left: calc(12px + var(--dock-left, 0px)); }
 #minimap { display: block; cursor: pointer; border-radius: 3px; touch-action: none; }
 .minimap-toggle { display: none; }
 
