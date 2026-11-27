@@ -20,11 +20,11 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming and rainfall.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
-- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber and EV-charging lenses, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard and Agreste farm-structure lenses, INSEE hotel-tourism intensity, Mérimée protected-heritage lenses, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INPN Natura 2000 protected-nature lenses, and a physical river-flood exposure lens.
+- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber and EV-charging lenses, DVF housing-price lenses, DREES healthcare-access lenses, CORINE vineyard/orchard and Agreste farm-structure lenses, INSEE hotel-tourism intensity, Mérimée protected-heritage lenses, Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, INSEE everyday-services and sports/culture lenses, INPN Natura 2000 protected-nature lenses, and a physical river-flood exposure lens.
 
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
-- The original interactive map, city panels, minimap, sharing, searchable/favorite lens catalog, coverage-aware legends, and lens histogram UI, plus search and compact public-data cards for metropolitan and overseas communes, including EPCI/intercommunality names and populations.
+- The original interactive map, city panels, minimap, sharing, searchable/favorite lens heritage catalog, coverage-aware legends, and lens histogram UI, plus search and compact public-data cards for metropolitan and overseas communes, including EPCI/intercommunality names and populations.
 
 ## Explicitly not in the MVP yet
 
@@ -53,8 +53,8 @@ Open the printed local URL. The generated data in `web/data/` is committed, so n
 ## Rebuilding the data
 
 ```bash
-uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
-uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_stations fr_broadband fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
+uv run python -m pipeline fetch fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_public_equipment fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
+uv run python -m pipeline process fr_boundaries fr_aav natural_earth etopo fr_corine fr_eurostat fr_energy fr_climate fr_hydrography fr_rail_network fr_rail_stations fr_broadband fr_ev_charging fr_housing fr_healthcare fr_tourism fr_electricity fr_crime fr_schools fr_public_equipment fr_nature fr_flood fr_insee_stats fr_transport fr_unesco fr_elections fr_hazards fr_freight fr_culture fr_heritage fr_military
 uv run python -m pipeline build world france_core climate hydrography connectivity quality_life agriculture tourism electricity public_services nature flood citizens districts military resources infrastructure wonders trade communes heritage catalog
 ```
 
@@ -76,6 +76,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - INSEE Melodi tourist-accommodation occupancy statistics.
 - Enedis annual electricity consumption by commune and activity sector, aggregated by department.
 - Ministry of the Interior departmental recorded-crime statistics.
+- INSEE Base permanente des équipements 2024 detailed equipment registry.
 - Ministry of National Education school directory.
 - INPN Natura 2000 geometries through the IGN API Carto Nature module.
 - TRI/Géorisques 2020 rare-or-millennial river-overflow flood surfaces, rasterized through the official WMS.
@@ -89,7 +90,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - Ministry of Culture museum attendance and Muséofile directory; MESRI SISE university enrolment.
 - Ministry of the Armed Forces: 2012 defense-base stationed personnel, preserved through the data.gouv.fr Tabular API extraction.
 
-The in-app Almanac/source catalogue is generated from the same source registry used by the pipeline.
+The in-app Almanac/source heritage catalogue is generated from the same source registry used by the pipeline.
 
 ## Architecture
 
