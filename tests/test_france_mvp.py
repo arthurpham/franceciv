@@ -92,7 +92,13 @@ def test_connectivity_contracts():
     ev = connectivity["lenses"][1]
     ev_vals = [v for v in ev["values"] if v is not None]
     assert ev["id"] == "ev_charging" and len(ev_vals) > 2500 and max(ev_vals) > 50
-    assert connectivity["sources"] == ["fr_broadband", "fr_ev_charging"]
+    assert connectivity["sources"] == ["fr_broadband", "fr_ev_charging", "fr_mobile_network"]
+    mobile = next(l for l in connectivity["lenses"] if l["id"] == "mobile_operators")
+    fiveg = next(l for l in connectivity["lenses"] if l["id"] == "mobile_5g")
+    mv = [v for v in mobile["values"] if v is not None]
+    fv = [v for v in fiveg["values"] if v is not None]
+    assert len(connectivity["lenses"]) == 4 and len(mv) > 2500 and max(mv) <= 4
+    assert len(fv) > 2500 and all(0 <= v <= 1 for v in fv)
     infra = web("infrastructure.json")
     assert len(infra["stations"]) >= 500
     assert len(infra["ports"]) >= 30
