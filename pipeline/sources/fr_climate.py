@@ -85,7 +85,7 @@ class FrenchClimate(Source):
         xs = [x * 100 for x, _ in keys]
         ys = [y * 100 for _, y in keys]
         lons, lats = transform("EPSG:27572", "EPSG:4326", xs, ys)
-        lon_out, lat_out, temperature, warming, rainfall, rain_change, water_deficit = [], [], [], [], [], [], []
+        lon_out, lat_out, temperature, warming, rainfall, rain_change, water_deficit, water_deficit_change = [], [], [], [], [], [], [], []
         for key, lon, lat in zip(keys, lons, lats):
             # Keep the French meteorological grid and a small border margin; this drops sea/foreign fallback points.
             if not (-5.8 <= lon <= 10.3 and 41.0 <= lat <= 51.5):
@@ -100,6 +100,7 @@ class FrenchClimate(Source):
             norm_r = a[4][0] / a[4][1]
             recent_r = a[5][0] / a[5][1]
             norm_deficit = a[7][0] / a[7][1]
+            deficit_change = a[8][0] / a[8][1] - a[6][0] / a[6][1]
             lon_out.append(round(lon, 5))
             lat_out.append(round(lat, 5))
             temperature.append(round(norm_t, 2))
@@ -107,6 +108,7 @@ class FrenchClimate(Source):
             rainfall.append(round(norm_r, 1))
             rain_change.append(round(recent_r / base_r - 1, 4) if base_r else None)
             water_deficit.append(round(norm_deficit, 1))
+            water_deficit_change.append(round(deficit_change, 1))
         return {
             "vintage": "Météo-France SIM2 monthly reanalysis, 1961–2025",
             "_files": used,
@@ -118,4 +120,5 @@ class FrenchClimate(Source):
             "rainfall": rainfall,
             "rain_change": rain_change,
             "water_deficit": water_deficit,
+            "water_deficit_change": water_deficit_change,
         }

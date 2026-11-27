@@ -68,7 +68,7 @@ def test_committed_france_core_contract():
 def test_climate_and_hydrography_contracts():
     climate = web("climate.json")
     assert climate["covered_cells"] > 2500
-    assert {l["id"] for l in climate["lenses"]} == {"temperature", "warming", "rainfall", "rainfall_change", "water_deficit"}
+    assert {l["id"] for l in climate["lenses"]} == {"temperature", "warming", "rainfall", "rainfall_change", "water_deficit", "water_deficit_change"}
     n = len(web("world.json")["owner"])
     for lens in climate["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
