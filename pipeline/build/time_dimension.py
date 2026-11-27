@@ -307,7 +307,7 @@ def build():
     election_method = ("Definitive commune vote counts are summed to departments, then shown at every hex in the department. "
                        "Both runoffs opposed Emmanuel Macron and Marine Le Pen, so vote shares are directly comparable; colour scales stay fixed across years.")
     price_method = ("Terralyse commune medians are distributed over current commune polygons on a 1 km lattice and combined as a transaction-count-weighted mean, "
-                    "not as a true hex-level median. Hex estimates based on fewer than five spatially allocated sales are suppressed, matching the source's minimum-sale publication threshold. Sparse commune coverage reflects too few usable sales and is null rather than zero. "
+                    "not as a true hex-level median. Terralyse excludes new-build sales and dwellings outside its 20–500 m² and €1,000–50,000/m² filters, and does not publish a commune median below five sales. Hex estimates based on fewer than five spatially allocated sales are likewise suppressed. Sparse commune coverage reflects too few usable sales and is null rather than zero. "
                     "DVF excludes Alsace-Moselle and Mayotte. Municipal-arrondissement detail for Paris, Lyon and Marseille begins in 2021, so those parent communes are null in earlier years; colour scales stay fixed across years.")
     climate_method = ("SIM2 reanalysis grid points are averaged inside each hex over metropolitan France. These are individual weather-year snapshots, "
                       "not climate normals, so year-to-year variability is part of the measurement; overseas departments are outside SIM2 coverage. Colour scales stay fixed across years.")
@@ -342,7 +342,7 @@ def build():
                       source="fr_elections", time_label="Election year"),
         temporal_lens("housing_price_history", "quality", "Housing-price history", "💶", "euros / m²", "eur", "linear",
                       price_series, price_years, RAMP_QUALITY,
-                      "Median sale price per m² of dwellings sold in each year from 2014 to 2025. " + price_method,
+                      "Median sale price per m² of existing dwellings sold in each year from 2014 to 2025. " + price_method,
                       source="fr_housing_history", time_label="Sale year"),
         temporal_lens("residential_mobility_history", "society", "Residential mobility history", "🧭", "share of residents aged 1+", "pct", "linear",
                       mobility_series, MIGRATION_YEARS, RAMP_PEOPLE,

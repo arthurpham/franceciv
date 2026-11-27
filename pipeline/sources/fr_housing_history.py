@@ -32,8 +32,8 @@ class FrenchHousingHistory(Source):
         publisher="Terralyse, derived from DGFiP DVF",
         homepage="https://www.data.gouv.fr/datasets/prix-immobilier-par-commune-ventes-2014-a-2025-dvf-millesime-2026",
         license="Licence Ouverte 2.0 (Etalab)",
-        description="Annual median sale price per square metre and sale counts by commune for 2014–2025. Terralyse groups "
-        "DVF lines by transaction and covers communes with enough usable sales; sparse commune coverage is intentional "
+        description="Annual median sale price per square metre and sale counts by commune for 2014–2025, for existing dwellings. Terralyse groups "
+        "DVF lines by transaction, filters dwellings to 20–500 m² and €1,000–50,000/m², excludes new-build sales, and does not publish a median below five sales; sparse commune coverage is intentional "
         "missingness rather than zero-priced housing. Municipal-arrondissement rows in Paris, Lyon and Marseille are aggregated "
         "back to their parent communes with transaction-count weights. That arrondissement detail begins in 2021, so the three parent communes have no earlier annual rows. DVF excludes Alsace-Moselle and Mayotte.",
         used_for=["Housing-price history lens"],
