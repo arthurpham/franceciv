@@ -24,7 +24,7 @@ class FrenchMigration(Source):
         homepage="https://www.data.gouv.fr/datasets/migrations-residentielles-principaux-indicateurs-dossier-complet",
         license="Licence Ouverte 2.0 (Etalab)",
         description="Census principal indicators for residence one year earlier, published at commune level for the "
-        "2012, 2017 and 2023 census vintages. Values are census-weighted population estimates, not net migration balances.",
+        "2012, 2017 and 2023 census vintages. Values are census-weighted population estimates, not net migration balances; the extract contains no Mayotte commune rows.",
         used_for=["Residential-mobility history", "Interdepartmental in-migration history"],
     )
 

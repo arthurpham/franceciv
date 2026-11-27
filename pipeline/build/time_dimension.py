@@ -303,7 +303,7 @@ def build():
               "Missing or suppressed commune values make the affected hexes null rather than zero.")
     migration_method = ("INSEE census-weighted commune counts are distributed across current commune polygons on a 1 km lattice, "
                         "assuming uniform residence within each commune. These are gross one-year residential moves, not net migration balances. "
-                        "Missing or suppressed commune values make the affected hexes null rather than zero; colour scales stay fixed across years.")
+                        "Missing or suppressed commune values make the affected hexes null rather than zero; the extract contains no Mayotte commune rows. Colour scales stay fixed across years.")
     election_method = ("Definitive commune vote counts are summed to departments, then shown at every hex in the department. "
                        "Both runoffs opposed Emmanuel Macron and Marine Le Pen, so vote shares are directly comparable; colour scales stay fixed across years.")
     price_method = ("Terralyse commune medians are distributed over current commune polygons on a 1 km lattice and combined as a transaction-count-weighted mean, "
