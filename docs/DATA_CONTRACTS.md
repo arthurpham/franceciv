@@ -123,6 +123,10 @@ Physical river-flood and coastal-submersion exposure. Values are approximate hex
 
 Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `clay_shrink_swell`, `seismic_zone` and `radon_potential` are normalized area-weighted class indices, not probabilities, damage estimates or measurements. Clay low/medium/high and radon low/moderate/high classes are weighted ⅓, ⅔ and 1; seismic zones 1–5 are weighted 0.2–1. Values are raster-sampled hex estimates and may be null outside the published mainland raster coverage. Forest-fire, avalanche and ground-movement perimeter lenses are approximate hex-area shares inside official risk-prevention servitude perimeters; they are administrative exposure/regulation areas rather than probabilities, intensity measurements or damage estimates.
 
+### energy_system.json
+
+ODRÉ installed-generation-capacity lenses in kW per resident. Commune capacities are aggregated by map hex. Per-capita normalization is a spatial intensity measure, not local ownership or consumption: electricity is transmitted across the national grid. Hydro includes conventional, run-of-river, pumped-storage and tidal installations where present.
+
 ### electricity.json
 
 Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.
