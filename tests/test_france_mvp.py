@@ -108,7 +108,7 @@ def test_connectivity_contracts():
 
 def test_quality_of_life_contracts():
     quality = web("quality_life.json")
-    assert {l["id"] for l in quality["lenses"]} == {"house_price", "apartment_price", "gp_access", "nurse_access", "dentist_access", "midwife_access", "social_housing"}
+    assert {l["id"] for l in quality["lenses"]} == {"house_price", "apartment_price", "gp_access", "nurse_access", "dentist_access", "midwife_access", "social_housing", "energy_poor_housing", "efficient_housing"}
     n = len(web("world.json")["owner"])
     assert all(len(l["values"]) == n for l in quality["lenses"])
     by_id = {l["id"]: l for l in quality["lenses"]}
