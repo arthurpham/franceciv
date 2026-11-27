@@ -88,7 +88,7 @@ SDES 2019 interregional freight flows. Routes are schematic arcs between regiona
 
 ### climate.json
 
-Météo-France SIM2 climate lenses. Temperature and precipitation use 1991–2020 normals; warming/rainfall change compare 1996–2025 with 1961–1990. `water_deficit` is mean annual potential evapotranspiration minus total precipitation in the normal period; it is a climatic moisture-balance indicator before soil storage, irrigation, runoff and groundwater are considered.
+Météo-France SIM2 climate lenses. Temperature and precipitation use 1991–2020 normals; warming/rainfall change compare 1996–2025 with 1961–1990. `water_deficit` is mean annual potential evapotranspiration minus total precipitation in the normal period; it is a climatic moisture-balance indicator before soil storage, irrigation, runoff and groundwater are considered. `water_deficit_change` is the recent-period minus baseline change in that annual balance.
 
 ### connectivity.json
 

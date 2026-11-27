@@ -22,9 +22,9 @@ def percentile(vals, p):
 def aggregate(world, climate):
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
-    acc = defaultdict(lambda: {"n": 0, "temperature": 0.0, "warming": 0.0, "rainfall": 0.0, "rain_change": 0.0, "water_deficit": 0.0})
-    for lon, lat, t, w, r, rc, wd in zip(
-        climate["lon"], climate["lat"], climate["temperature"], climate["warming"], climate["rainfall"], climate["rain_change"], climate["water_deficit"]
+    acc = defaultdict(lambda: {"n": 0, "temperature": 0.0, "warming": 0.0, "rainfall": 0.0, "rain_change": 0.0, "water_deficit": 0.0, "water_deficit_change": 0.0})
+    for lon, lat, t, w, r, rc, wd, wc in zip(
+        climate["lon"], climate["lat"], climate["temperature"], climate["warming"], climate["rainfall"], climate["rain_change"], climate["water_deficit"], climate["water_deficit_change"]
     ):
         x, y = proj(lon, lat)
         cell = grid.cell_at(x, y)
@@ -38,8 +38,9 @@ def aggregate(world, climate):
         if rc is not None:
             a["rain_change"] += rc
         a["water_deficit"] += wd
+        a["water_deficit_change"] += wc
     out = {}
-    for key in ["temperature", "warming", "rainfall", "rain_change", "water_deficit"]:
+    for key in ["temperature", "warming", "rainfall", "rain_change", "water_deficit", "water_deficit_change"]:
         vals = []
         for i in range(grid.size):
             a = acc.get(i)
@@ -83,6 +84,8 @@ def build():
              f"Change in mean annual precipitation between {periods['recent'][0]}–{periods['recent'][1]} and {periods['baseline'][0]}–{periods['baseline'][1]}."),
         lens("water_deficit", "Climatic water deficit", "🏜️", "mm / year", "float", vals["water_deficit"],
              f"Mean annual potential evapotranspiration minus total precipitation, {periods['normal'][0]}–{periods['normal'][1]}. Positive values indicate a climatic moisture deficit before soil storage, irrigation, runoff and groundwater are considered."),
+        lens("water_deficit_change", "Water-deficit change", "🌵", "mm / year", "signed", vals["water_deficit_change"],
+             f"Change in annual potential evapotranspiration minus precipitation between {periods['recent'][0]}–{periods['recent'][1]} and {periods['baseline'][0]}–{periods['baseline'][1]}. Positive values indicate increasing climatic moisture deficit."),
     ]
     write_web("climate.json", {
         "version": 1,
@@ -98,7 +101,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "climate.json").read_text())
-    assert len(doc["lenses"]) == 5
+    assert len(doc["lenses"]) == 6
     assert all(len(l["values"]) for l in doc["lenses"])
     assert doc["covered_cells"] > 2500
-    return [("PASS", f"climate.json: 5 lenses over {doc['covered_cells']} cells")]
+    return [("PASS", f"climate.json: 6 lenses over {doc['covered_cells']} cells")]
