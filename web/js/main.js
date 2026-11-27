@@ -69,7 +69,7 @@ async function main() {
   }
   const w = prepareWorld(world, cities, { resources });
   const state = {
-    cities, lens: null, band: null, hoverCell: -1, selectedCity: null, selectedState: null, showResources: !!w.resources,
+    cities, lens: null, band: null, hoverCell: -1, selectedCity: null, selectedState: null, inspectCell: null, showResources: !!w.resources,
     highlight: null, // {cells?, cities?, states?, resources?, dimOthers?, color?} (render/overlays.js)
     resourceFilter: null, // {types?: Set<typeId>, minValue?: number}
   };
@@ -570,6 +570,7 @@ async function main() {
     if (!city) return clearSelection();
     state.selectedCity = city;
     state.selectedState = null;
+    state.inspectCell = null;
     app.panels.city(city, panelCtx());
     if (fly && city.cell != null) focusCity(city);
     announce(`${city.name} selected. ${city.full || ""}`);
@@ -580,7 +581,8 @@ async function main() {
     if (idx == null || !w.raw.states[idx]) return clearSelection();
     state.selectedCity = null;
     state.selectedState = idx;
-    app.panels.state(idx, { ...panelCtx(), inspectCell: cell });
+    state.inspectCell = Number.isInteger(cell) ? cell : null;
+    app.panels.state(idx, { ...panelCtx(), inspectCell: state.inspectCell });
     if (fly) focusState(idx);
     announce(`${stateName(idx)} selected.`);
     afterSelect();
@@ -590,6 +592,7 @@ async function main() {
     const had = state.selectedCity || state.selectedState != null;
     state.selectedCity = null;
     state.selectedState = null;
+    state.inspectCell = null;
     app.panels.close();
     if (had) announce("Selection closed.");
     afterSelect();
@@ -613,8 +616,8 @@ async function main() {
   installSheetSwipe(() => clearSelection());
 
   // --- URL state -------------------------------------------------------------------------------------------------
-  // #state= accepts a FIPS code ("48", "6"), a postal code ("TX", "tx") or a name ("Texas"). Links keep the form
-  // they were opened with; the app itself writes FIPS.
+  // #state= accepts a région code or name. Links keep the form they were opened with; the app itself writes the code.
+  // #hex= is the inspected hex within that région, when the panel has one.
   function stateFromHash(ref) {
     const t = String(ref ?? "").trim();
     if (!t) return -1;
@@ -632,6 +635,7 @@ async function main() {
       const sel = state.selectedCity ? { city: state.selectedCity.id }
         : state.selectedState != null ? {
           state: stateHashRef && stateHashRef.idx === state.selectedState ? stateHashRef.raw : w.raw.states[state.selectedState]?.fips,
+          hex: state.inspectCell,
         } : {};
       return {
         lens: state.lens?.id || null,
@@ -651,7 +655,9 @@ async function main() {
       if (city) {
         if (city !== state.selectedCity) selectCity(city, { fly: !p.at });
       } else if (sIdx >= 0) {
-        if (sIdx !== state.selectedState) selectState(sIdx, { fly: !p.at });
+        const hexNum = Number(p.hex);
+        const hex = Number.isInteger(hexNum) && hexNum >= 0 && hexNum < w.grid.size && w.raw.owner[hexNum] === sIdx ? hexNum : null;
+        if (sIdx !== state.selectedState || hex !== state.inspectCell) selectState(sIdx, { fly: !p.at, cell: hex });
       } else if (state.selectedCity || state.selectedState != null) clearSelection();
       if (p.at) {
         const [x, y, z] = p.at;
@@ -1072,7 +1078,10 @@ async function main() {
       else if (owner >= 0) {
         // On phones the bottom sheet would hide the state, so bring it into the visible part of the map.
         if (owner !== state.selectedState) selectState(owner, { fly: isMobile(), cell });
-        else if (!inspector.update(panelEl, cell)) selectState(owner, { cell });
+        else if (inspector.update(panelEl, cell)) {
+          state.inspectCell = cell;
+          url.schedule();
+        } else selectState(owner, { cell });
       } else if (state.selectedCity || state.selectedState != null) clearSelection();
     }, DOUBLE_MS);
     // A click changes what is on screen (a panel, a mode, a flight), so drop the tooltip until the pointer moves again.
