@@ -241,7 +241,7 @@ Commune-level GASPAR detail. Recognitions are administrative catastrophe-naturel
 `trust.json` is generated after the source catalog and is loaded by the Almanac's **Data trust** page. Its schema is:
 
 - `generated` — UTC build timestamp;
-- `summary` — source counts by freshness status, lens count, duplicate lens ids, mean coverage and the number of lenses under half coverage;
+- `summary` — source counts by freshness status, current grid/owned-cell counts, lens count, duplicate lens ids, mean coverage and the number of lenses under half coverage;
 - `sources[]` — one row per source with `vintage`, latest cache `retrieved` timestamp, `age_days`, declared `refresh_cadence_days`, freshness `status` (`fresh`, `attention`, `due`, `unknown`) and an input checksum fingerprint;
 - `layers[]` — one row per lens with data file, source id, non-null cell count, total/metropolitan/overseas coverage shares and time-series year count;
 - `reproducibility` — offline rebuild and validation commands plus a combined `source_fingerprint`.
