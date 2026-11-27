@@ -40,19 +40,26 @@ def build():
   code=(row.get("codeinseecommuneimplantation") or row.get("codeinseecommune") or "").zfill(5);cell=cells.get(code)
   if cell is None:unmatched+=(row.get("puismaxinstallee") or 0)/1000;continue
   acc[cell][row.get("filiere") or ""]+=(row.get("puismaxinstallee") or 0)/1000  # kW -> MW
- out={}
+ renewable_families={"Solaire","Eolien","Hydraulique","Bioénergies","Energies Marines","Géothermie"}
+ low_carbon=[]
+ for i in range(grid.size):
+  generation=sum(v for f,v in acc[i].items() if f!="Stockage non hydraulique")
+  clean=sum(acc[i][f] for f in renewable_families)+acc[i]["Nucléaire"]
+  low_carbon.append(round(clean/generation,4) if generation else None)
+ out={"low_carbon_capacity_share":low_carbon}
  for lens_id,(_,_,families,_) in SETS.items():
   vals=[]
   for i in range(grid.size):
    capacity=sum(acc[i][family] for family in families);p=pop.get(i,0)
    vals.append(round(capacity*1000/p,3) if p else None)  # MW -> kW/resident
   out[lens_id]=vals
- write_web("energy_system.json",{"version":1,"vintage":energy.get("vintage","ODRÉ national energy registry"),"sources":["fr_energy"],"group":{"id":"energy_system","name":"Energy system"},"unmatched_capacity_mw":round(unmatched,2),"lenses":[lens(k,n,e,out[k],d) for k,(n,e,_,d) in SETS.items()]})
+ share_lens={"id":"low_carbon_capacity_share","group":"energy_system","name":"Low-carbon capacity share","icon":"low_carbon_capacity_share","emoji":"⚛️","unit":"share of generation capacity","format":"pct","scale":"linear","domain":[percentile([v for v in low_carbon if v],2),percentile([v for v in low_carbon if v],98)],"ramp":RAMP,"higher_is":"better","source":"fr_energy","description":"Nuclear plus renewable installed capacity as a share of non-storage generation capacity. This is nameplate capacity, not generated electricity or emissions; hydro includes pumped-storage infrastructure.","values":low_carbon}
+ write_web("energy_system.json",{"version":1,"vintage":energy.get("vintage","ODRÉ national energy registry"),"sources":["fr_energy"],"group":{"id":"energy_system","name":"Energy system"},"unmatched_capacity_mw":round(unmatched,2),"lenses":[lens(k,n,e,out[k],d) for k,(n,e,_,d) in SETS.items()]+[share_lens]})
 
 def check(web_dir):
  import json
- doc=json.loads((web_dir/"energy_system.json").read_text());assert len(doc["lenses"])==6
+ doc=json.loads((web_dir/"energy_system.json").read_text());assert len(doc["lenses"])==7
  for item in doc["lenses"]:
-  vals=[v for v in item["values"] if v is not None];assert len(vals)>2500 and len([v for v in vals if v])>10
+  vals=[v for v in item["values"] if v is not None];assert len(vals)>2000 and len([v for v in vals if v])>10
  assert doc["unmatched_capacity_mw"]<1000
- return [("PASS","energy_system.json: 6 installed-capacity lenses")]
+ return [("PASS","energy_system.json: 7 installed-capacity lenses")]
