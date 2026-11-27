@@ -148,6 +148,28 @@ export function createLocationInspector(opts) {
     return entries;
   }
 
+  function distributionHtml(lens, value) {
+    if (lens.format === "category") return "";
+    const st = stats(lens);
+    if (st.count < 12) return "";
+    const min = st.values[0], max = st.values.at(-1);
+    if (!(max > min)) return "";
+    const bins = Array(18).fill(0);
+    for (const v of st.values) bins[Math.min(17, Math.floor(((v - min) / (max - min)) * 18))]++;
+    const peak = Math.max(...bins);
+    const bw = 120 / 18;
+    const bars = bins.map((n, i) => `<rect x="${(i * bw).toFixed(2)}" y="${(28 - (n / peak) * 24).toFixed(2)}" width="${(bw - .7).toFixed(2)}" height="${((n / peak) * 24).toFixed(2)}" rx="1"/>`).join("");
+    const marker = typeof value === "number" && Number.isFinite(value)
+      ? `<line x1="${(Math.max(0, Math.min(1, (value - min) / (max - min))) * 120).toFixed(2)}" x2="${(Math.max(0, Math.min(1, (value - min) / (max - min))) * 120).toFixed(2)}" y1="2" y2="31"/>`
+      : "";
+    const pct = typeof value === "number" && Number.isFinite(value) ? Math.round((upperBound(st.values, value) / st.count) * 100) : null;
+    const comparison = pct == null ? "No measured value at this location" : `Higher than ${pct}% of measured hexes`;
+    return `<div class="li-dist" title="Distribution of measured hex values for the active lens; the vertical line is this location.">
+      <div class="li-dist-caption"><span>${esc(formatLensValue(lens, min))}</span><b>${esc(comparison)}</b><span>${esc(formatLensValue(lens, max))}</span></div>
+      <svg viewBox="0 0 120 32" role="img" aria-label="Active lens distribution">${bars}${marker}</svg>
+    </div>`;
+  }
+
   function activeHtml(cell) {
     const active = opts.getActiveLens?.();
     if (!active?.id || !active.values) return `<div class="li-active empty">Terrain view — pick a row below to colour the map and pin that lens here.</div>`;
@@ -159,7 +181,7 @@ export function createLocationInspector(opts) {
       <span class="li-bigic">${glyph(active, 22)}</span>
       <span class="li-active-main"><span class="li-kicker">ACTIVE LENS</span><b>${esc(active.name)}</b><span>${esc(src)}</span></span>
       <span class="li-active-value">${missing ? "No data" : esc(formatLensValue(active, value))}${r ? `<small>#${int(r.rank)} of ${int(r.count)}</small>` : ""}</span>
-    </div>`;
+    </div>${distributionHtml(active, value)}`;
   }
 
   const ownedCell = (cell) => Number.isInteger(cell) && cell >= 0 && cell < w.grid.size && w.raw.owner?.[cell] >= 0;
