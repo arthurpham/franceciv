@@ -1,0 +1,38 @@
+name: Data freshness alert
+
+on:
+  schedule:
+    - cron: "7 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Evaluate source freshness
+        id: check
+        run: python scripts/check_data_freshness.py --markdown freshness-report.md
+      - name: Create or update stale-data issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if grep -q '^- Due: 0$' freshness-report.md && grep -q '^- Attention: 0$' freshness-report.md; then
+            echo 'All data sources are fresh; no issue needed.'
+            exit 0
+          fi
+          title="Franceciv data refresh due"
+          existing=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file freshness-report.md
+          else
+            gh issue create --title "$title" --body-file freshness-report.md --label data
+          fi
