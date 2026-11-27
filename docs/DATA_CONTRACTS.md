@@ -137,7 +137,7 @@ Enedis electricity-consumption lenses. Values are 2024 MWh per department reside
 
 ### public_services.json
 
-Recorded-crime, school-density and INSEE Base permanente des équipements lenses. Crime is department-level recorded crime and not victimization prevalence. Equipment lenses use detailed BPE 2024 rows aggregated by commune centroid to map hexes. `essential_services` is the population-weighted count of six categories present in a commune: food shops, pharmacy, general practitioner, primary school, post office/relais and library. Equipment counts use `NBEQUIDENT` where INSEE groups identical facilities; they measure presence/density, not quality or capacity. Paris, Lyon and Marseille arrondissement records are attributed to commune totals.
+Recorded-crime, school-density and INSEE Base permanente des équipements lenses. Crime is department-level recorded crime and not victimization prevalence. Equipment lenses use detailed BPE 2024 rows aggregated by commune centroid to map hexes. `essential_services` is the population-weighted count of six categories present in a commune: food shops, pharmacy, general practitioner, primary school, post office/relais and library. Equipment counts use `NBEQUIDENT` where INSEE groups identical facilities; they measure presence/density, not quality or capacity. `hospital_services` counts service records and multiple services can belong to one hospital; childcare uses total residents rather than target-age population; eldercare counts service records rather than beds; rail-station counts do not measure service frequency. Paris, Lyon and Marseille arrondissement records are attributed to commune totals.
 
 ### agriculture.json
 
