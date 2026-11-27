@@ -14,6 +14,7 @@ LAYERS = {
     "forest_fire": ("SUP_FEU", "fire"),
     "avalanche": ("SUP_AVALANCHE", "avalanche"),
     "ground_movement": ("SUP_MVT_TERRAIN", "movement"),
+    "industrial": ("SUP_INDUS", "industrial"),
 }
 ALPHA_THRESHOLD = 50
 
@@ -40,10 +41,10 @@ class FrenchRiskPerimeters(Source):
         publisher="Géorisques / DGPR",
         homepage="https://www.georisques.gouv.fr/",
         license="Licence Ouverte 2.0",
-        description="WMS raster samples of official French risk-prevention servitude perimeters for forest fire, avalanche and ground movement. "
+        description="WMS raster samples of official French risk-prevention servitude perimeters for forest fire, avalanche, ground movement and industrial risk. "
         "The pipeline downsamples filled polygon coverage to the CORINE raster registration. These are administrative prevention perimeters, "
         "not probabilistic hazard intensity, damage or loss models.",
-        used_for=["Forest-fire, avalanche and ground-movement prevention-perimeter lenses"],
+        used_for=["Forest-fire, avalanche, ground-movement and industrial-risk prevention-perimeter lenses"],
     )
 
     def fetch(self, force=False):
