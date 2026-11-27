@@ -91,7 +91,7 @@ export function createHashState(opts) {
     if (!tail) return base;
     return base ? `${base}&${tail}` : `#${tail}`;
   };
-  const sig = (core, ex) => `${core.lens || ""}|${core.city || ""}|${core.state || ""}|${ex.map((e) => e.join("=")).join("&")}`;
+  const sig = (core, ex) => `${core.lens || ""}|${core.city || ""}|${core.state || ""}|${core.hex || ""}|${ex.map((e) => e.join("=")).join("&")}`;
   const hashSig = (hash) => {
     const p = params(hash);
     const ex = [...extras.keys()].filter((k) => p.get(k)).map((k) => [k, p.get(k)]);

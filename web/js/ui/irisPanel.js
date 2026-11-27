@@ -22,12 +22,15 @@ export function initIrisPanel(opts = {}) {
     close,
     get isOpen() { return !el.hidden; },
     open(r) {
+      const cell = opts.cellAt?.(r.x, r.y);
+      const local = opts.inspector?.section(cell, { x: r.x, y: r.y });
       const facts = rows.map(([k, label, fmt]) => r[k] == null ? "" : `<div class="cp-row"><span>${label}</span><b>${fmt(r[k])}</b></div>`).join("");
       const kind = r.true_iris ? "IRIS NEIGHBORHOOD" : "COMMUNE-SCALE IRIS";
       el.innerHTML = `<button class="cp-close" aria-label="Close">×</button>
         <div class="cp-kicker">${kind}</div><h2>${esc(r.name)}</h2><div class="cp-sub">${esc(r.commune)} · ${int(r.population)} residents${r.type ? ` · type ${esc(r.type)}` : ""}</div>
-        <div class="cp-grid">${facts}</div>
+        <div class="cp-grid">${facts}</div>${local ? `<h3>${esc(local.title)}</h3>${local.html}` : ""}
         <p class="cp-note">INSEE 2022 census infra-communal population and IGN/INSEE Contours IRIS. Communes not divided into IRIS are represented as commune-scale pseudo-IRIS. Population statistics exclude Mayotte. Position and area are derived from polygon geometry.</p>`;
+      if (local) opts.inspector.wire(el, cell, { x: r.x, y: r.y });
       el.hidden = false;
       notify();
     },

@@ -13,8 +13,8 @@ const ROWS = [
     [["Minimap"], "Click or drag to jump"],
   ]],
   ["Explore", [
-    [["Click city"], "Open the city screen"],
-    [["Click land"], "Open that state"],
+    [["Click city"], "Open the city screen and local data"],
+    [["Click land"], "Open that state and inspect the hex"],
     [["/", `${MOD} K`], "Search cities, communes and regions"],
     [["L", "Shift L"], "Next / previous lens"],
     [["Legend"], "Hover or drag the scale to show only that range"],

@@ -47,6 +47,7 @@ export async function install(app) {
   };
   const origCityPanel = app.panels.city;
   let lastCtx = null;
+  app.on("lens", () => { if (cv.dock) app.locationInspector?.refresh(cv.dock); });
 
   // --- the quick panel: keep it, add an "Open City View" button -------------------------------------------------
   function addOpenButton(city) {
@@ -88,6 +89,7 @@ export async function install(app) {
   // The quick panel's callbacks, for when it was opened before this extension installed (a #city= link).
   const fallbackCtx = () => ({
     w: app.w, nation: app.data.nation, states: app.data.states, cities: app.data.cities,
+    inspector: app.locationInspector,
     onClose: () => app.clearSelection(),
     onPedia: () => app.pedia?.open?.("Yields"),
     onState: (idx) => app.selectState(idx, { fly: true }),
@@ -130,6 +132,7 @@ export async function install(app) {
         onSite: (s) => flyToSite(s),
         onSiteHover: (s) => layer.focus(s ? s.item.cell ?? -1 : cv.pinned),
         onPedia: () => app.pedia?.open?.("Yields"),
+        inspector: app.locationInspector,
         loadCounties: () => app.loadCounties(),
         loadData: (name) => app.loadData(name),
         onDistricts: (list) => {
@@ -397,6 +400,7 @@ export async function install(app) {
     }
     if (e.city) {
       if (e.city !== cv.city) openCityView(e.city);
+      else app.locationInspector?.update(cv.dock, e.city.cell);
       return true;
     }
     const m = cv.model;
@@ -412,7 +416,10 @@ export async function install(app) {
       }
       return true;
     }
-    if (m && m.mask.has(e.cell)) return true;
+    if (m && m.mask.has(e.cell)) {
+      app.locationInspector?.update(cv.dock, e.cell);
+      return true;
+    }
     // Outside the metro: the click only closes the City View (the camera stays where the user is looking).
     cv.restoreCam = false;
     app.setMode(null);

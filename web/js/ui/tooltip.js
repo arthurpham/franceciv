@@ -42,8 +42,8 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
     }
     if (res.length > 4) lines.push(`<span class="muted">+${res.length - 4} more</span>`);
   }
-  if (city) lines.push(`<span class="muted">Click to open the city</span>`);
-  else if (o >= 0) lines.push(`<span class="muted">Click to open ${esc(raw.states[o].name)}</span>`);
+  if (city) lines.push(`<span class="muted">Click to open the city and local data</span>`);
+  else if (o >= 0) lines.push(`<span class="muted">Click to open ${esc(raw.states[o].name)} and inspect this hex</span>`);
   show(mx, my, lines.join("<br>"));
 }
 
@@ -58,7 +58,7 @@ export function showHtmlTooltip(mx, my, content) {
 }
 
 export function showCityTooltip(mx, my, city) {
-  show(mx, my, `<b>${esc(city.full)}</b><br><span class="muted">Click to open the city</span>`);
+  show(mx, my, `<b>${esc(city.full)}</b><br><span class="muted">Click to open the city and local data</span>`);
 }
 
 function show(mx, my, html) {
