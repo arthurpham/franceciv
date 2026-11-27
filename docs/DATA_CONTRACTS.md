@@ -88,7 +88,7 @@ SDES 2019 interregional freight flows. Routes are schematic arcs between regiona
 
 ### connectivity.json
 
-Commune connectivity lenses. Fiber values are eligible premises shares from ARCEP; EV-charging values are consolidated public charge points per 10,000 residents. Commune values are aggregated to hexes by centroid. IRVE zero means no published public charge point, not missing data; arrondissement charge points are attributed to Paris, Lyon and Marseille commune totals.
+Commune connectivity lenses. Fiber values are eligible premises shares from ARCEP; EV-charging values are consolidated public charge points per 10,000 residents. Mobile lenses use ARCEP operator-reported physical site deployment: `mobile_operators` is the population-weighted number of operators with a local 4G-capable site, and `mobile_5g` is the population share in communes with a local 5G-capable site. Mobile values measure infrastructure presence, not theoretical signal coverage or measured quality; a commune without a site may still receive signal from neighbouring communes. Commune values are aggregated to hexes by centroid. IRVE zero means no published public charge point, not missing data; arrondissement charge points are attributed to Paris, Lyon and Marseille commune totals.
 
 ### flood.json
 
