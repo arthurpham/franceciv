@@ -9,6 +9,7 @@ import { openCityPanel, closeCityPanel } from "./ui/cityPanel.js";
 import { initCommunePanel } from "./ui/communePanel.js";
 import { initEpciPanel } from "./ui/epciPanel.js";
 import { initIrisPanel } from "./ui/irisPanel.js";
+import { initGeographyPanel } from "./ui/geographyPanel.js";
 import { createLocationInspector } from "./ui/locationInspector.js";
 import { openStatePanel } from "./ui/statePanel.js";
 import { installSheetSwipe } from "./ui/infoPanel.js";
@@ -730,26 +731,30 @@ async function main() {
   if (searchIc) searchIc.innerHTML = icon("search", "🔍", { size: 14 });
   document.querySelector(".search-kbd")?.setAttribute("title", "Press / or Ctrl K to search");
 
-  let communePanel, epciPanel, irisPanel;
-  const updateGeoPanelVisibility = () => { communeCardOpen = Boolean(communePanel?.isOpen || epciPanel?.isOpen || irisPanel?.isOpen); };
+  let communePanel, epciPanel, irisPanel, geographyPanel;
+  const updateGeoPanelVisibility = () => { communeCardOpen = Boolean(communePanel?.isOpen || epciPanel?.isOpen || irisPanel?.isOpen || geographyPanel?.isOpen); };
   const geoPanelOpts = { onVisibility: updateGeoPanelVisibility, inspector, cellAt: (x, y) => w.grid.cellAt(x, y) };
   communePanel = initCommunePanel(geoPanelOpts);
   epciPanel = initEpciPanel(geoPanelOpts);
   irisPanel = initIrisPanel(geoPanelOpts);
-  const closeGeoPanels = () => { communePanel.close(); epciPanel.close(); irisPanel.close(); };
+  geographyPanel = initGeographyPanel(geoPanelOpts);
+  const closeGeoPanels = () => { communePanel.close(); epciPanel.close(); irisPanel.close(); geographyPanel.close(); };
   events.on("select", (sel) => { if (sel) closeGeoPanels(); });
-  events.on("lens", () => ["commune-panel", "epci-panel", "iris-panel"].forEach((id) => inspector.refresh(document.getElementById(id))));
+  events.on("lens", () => ["commune-panel", "epci-panel", "iris-panel", "geography-panel"].forEach((id) => inspector.refresh(document.getElementById(id))));
   const search = initSearch({
     loadCommunes: () => loadData("communes"),
     loadEpcis: () => loadData("epci"),
     loadIris: () => loadData("iris_index"),
+    loadLivingBasins: () => loadData("living_basins"),
+    loadEmploymentZones: () => loadData("employment_zones"),
     cities,
     states: w.raw.states.map((s, i) => ({ name: states?.[i]?.name || s.name, abbr: s.abbr, population: states?.[i]?.population })),
     onPick(r) {
       if (r.kind === "city") { closeGeoPanels(); selectCity(r.city, { fly: true }); }
-      else if (r.kind === "commune") { clearSelection(); epciPanel.close(); irisPanel.close(); communePanel.open(r.commune); app.flyTo(r.commune.x, r.commune.y, 4.2); }
-      else if (r.kind === "epci") { clearSelection(); communePanel.close(); irisPanel.close(); epciPanel.open(r.epci); app.flyTo(r.epci.x, r.epci.y, 3.2); }
-      else if (r.kind === "iris") { clearSelection(); communePanel.close(); epciPanel.close(); irisPanel.open(r.iris); app.flyTo(r.iris.x, r.iris.y, 5.2); }
+      else if (r.kind === "commune") { clearSelection(); epciPanel.close(); irisPanel.close(); geographyPanel.close(); communePanel.open(r.commune); app.flyTo(r.commune.x, r.commune.y, 4.2); }
+      else if (r.kind === "epci") { clearSelection(); communePanel.close(); irisPanel.close(); geographyPanel.close(); epciPanel.open(r.epci); app.flyTo(r.epci.x, r.epci.y, 3.2); }
+      else if (r.kind === "iris") { clearSelection(); communePanel.close(); epciPanel.close(); geographyPanel.close(); irisPanel.open(r.iris); app.flyTo(r.iris.x, r.iris.y, 5.2); }
+      else if (r.kind === "living_basin" || r.kind === "employment_zone") { clearSelection(); communePanel.close(); epciPanel.close(); irisPanel.close(); geographyPanel.open(r.geography, r.kind === "living_basin" ? "BASSIN DE VIE" : "ZONE D'EMPLOI"); app.flyTo(r.geography.x, r.geography.y, 4.0); }
       else { closeGeoPanels(); selectState(r.index, { fly: true }); }
     },
   });

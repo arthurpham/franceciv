@@ -14,7 +14,7 @@ export function initSearch(opts) {
   if (!input || !box) return { focus() {}, close() {}, get isOpen() { return false; } };
   // The full placeholder only fits the wide search box; narrower ones say just "Search".
   const narrow = matchMedia("(max-width: 1120px)");
-  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities, communes, EPCI & neighborhoods");
+  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities, communes, EPCI, neighborhoods & functional areas");
   setPlaceholder();
   narrow.addEventListener?.("change", setPlaceholder);
 
@@ -64,7 +64,7 @@ export function initSearch(opts) {
 
   function render() {
     if (!results.length) {
-      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city, commune, EPCI, neighborhood or region matches “${esc(input.value.trim())}”</div>` : "";
+      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city, commune, EPCI, neighborhood, functional area or region matches “${esc(input.value.trim())}”</div>` : "";
       box.hidden = !input.value.trim();
       input.setAttribute("aria-expanded", String(!box.hidden));
       input.removeAttribute("aria-activedescendant");
@@ -73,7 +73,7 @@ export function initSearch(opts) {
     }
     box.innerHTML = results
       .map((e, i) => `<div class="sr-item ${i === sel ? "sel" : ""}" role="option" id="sr-${i}" aria-selected="${i === sel}" data-i="${i}">
-        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : ["commune", "epci", "iris"].includes(e.kind) ? icon("terrain", "📍", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
+        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : ["commune", "epci", "iris", "living_basin", "employment_zone"].includes(e.kind) ? icon("terrain", "📍", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
         <span class="sr-main"><b>${esc(e.label)}</b><span class="sr-sub">${esc(e.sub)}</span></span>
         <span class="sr-pop">${e.popText || (e.pop ? popShort(e.pop) : "")}</span></div>`)
       .join("");
@@ -94,6 +94,7 @@ export function initSearch(opts) {
     else if (e.kind === "commune") opts.onPick({ kind: "commune", commune: e.commune });
     else if (e.kind === "epci") opts.onPick({ kind: "epci", epci: e.epci });
     else if (e.kind === "iris") opts.onPick({ kind: "iris", iris: e.iris });
+    else if (e.kind === "living_basin" || e.kind === "employment_zone") opts.onPick({ kind: e.kind, geography: e.geography });
     else opts.onPick({ kind: "state", index: e.index });
   }
 
@@ -200,17 +201,35 @@ export function initSearch(opts) {
     }
   }
 
-  let communeLoad = null, epciLoad = null, irisLoad = null;
+
+  function addFunctionalGeographies(payload, kind, singular, plural) {
+    const rows = payload?.geographies || [];
+    for (const r of rows) {
+      const geography = Object.fromEntries((payload.columns || []).map((k, i) => [k, r[i]]));
+      entries.push({ kind, geography, name: geography.name, n: norm(geography.name), full: norm(`${geography.name} ${geography.departments || ""}`),
+        pop: geography.population || 0, popText: int(geography.population || 0), sub: `${geography.departments || "France"} · ${singular}`, label: geography.name });
+    }
+    if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
+      results = query(input.value);
+      sel = results.length ? 0 : -1;
+      render();
+    }
+  }
+
+  let communeLoad = null, epciLoad = null, irisLoad = null, basinLoad = null, zoneLoad = null;
   function ensureCommunes() {
     if (!communeLoad && opts.loadCommunes) communeLoad = opts.loadCommunes().then(addCommunes);
     if (!epciLoad && opts.loadEpcis) epciLoad = opts.loadEpcis().then(addEpcis);
     if (!irisLoad && opts.loadIris) irisLoad = opts.loadIris().then(addIris);
+    if (!basinLoad && opts.loadLivingBasins) basinLoad = opts.loadLivingBasins().then((p) => addFunctionalGeographies(p, "living_basin", "bassin de vie"));
+    if (!zoneLoad && opts.loadEmploymentZones) zoneLoad = opts.loadEmploymentZones().then((p) => addFunctionalGeographies(p, "employment_zone", "zone d'emploi"));
   }
 
   return {
     addCommunes,
     addEpcis,
     addIris,
+    addFunctionalGeographies,
     focus() {
       input.focus();
       input.select();

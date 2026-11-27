@@ -619,3 +619,15 @@ def test_environment_depth_contract():
     assert data["matched_land_consumption_communes"] > 30000
     grid_size = len(web("world.json")["owner"])
     assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
+
+
+def test_functional_geographies_contract():
+    basins = web("living_basins.json")
+    zones = web("employment_zones.json")
+    assert len(basins["geographies"]) > 1600 and len(zones["geographies"]) > 280
+    assert basins["matched_communes"] > 34000 and zones["matched_communes"] > 34000
+    columns = basins["columns"]
+    assert columns == zones["columns"]
+    assert {"code", "name", "population", "x", "y", "density", "home_price", "mobility"} <= set(columns)
+    assert all(len(row) == len(columns) for row in basins["geographies"][:50] + zones["geographies"][:50])
+    assert sum(row[2] for row in zones["geographies"]) > 65000000
