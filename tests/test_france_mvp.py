@@ -465,8 +465,39 @@ def test_mobility_contract():
 
 def test_transit_frequency_contract():
     data = web("transit.json")
-    vals = [v for v in data["lenses"][1]["values"] if v is not None]
-    assert len(vals) > 2500 and max(vals) > 100
-    assert any(v == 0 for v in vals) and any(v > 0 for v in vals)
+    values = data["lenses"][1]["values"]
+    vals = [v for v in values if v is not None]
+    assert len(vals) > 2500 and len([v for v in vals if v > 0]) > 2000 and max(vals) > 100
+    assert any(v == 0 for v in vals)
     assert data["suppressed_overlap_stops"] >= 0 and data["outside_france_frequency_stops"] >= 0
+    world = web("world.json")
+    for dep in ("59", "13", "31", "971"):
+        assert any(values[i] and values[i] > 0 for i, ci in enumerate(world["county"]) if ci >= 0 and world["counties"][ci]["geoid"] == dep)
     assert any(s["id"] == "fr_transit_frequency" for s in web("sources.json"))
+
+
+def test_gtfs_frequency_expansion(tmp_path):
+    import zipfile
+    from datetime import date
+    from pipeline.sources.fr_transit_frequency import parse_feed
+
+    path = tmp_path / "feed.zip"
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("calendar.txt", "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\ns1,0,0,1,0,0,0,0,20260101,20261231\n")
+        z.writestr("trips.txt", "route_id,service_id,trip_id\nr1,s1,t1\n")
+        z.writestr("stops.txt", "stop_id,stop_lat,stop_lon,location_type\na,48.0,2.0,0\nb,48.01,2.0,0\n")
+        z.writestr("stop_times.txt", "trip_id,arrival_time,departure_time,stop_id,stop_sequence\nt1,08:00:00,08:00:00,a,1\nt1,08:05:00,08:05:00,b,2\n")
+        z.writestr("frequencies.txt", "trip_id,start_time,end_time,headway_secs,exact_times\nt1,08:00:00,09:00:00,600,1\n")
+    with zipfile.ZipFile(path) as z:
+        rows, stats, _ = parse_feed(z, {"metadata": {}, "slug": "test", "kind": "supplement"}, date(2026, 12, 9))
+    assert stats["frequency_expanded_trips"] == 6 and stats["stop_calls"] == 12
+    assert sum(r["calls"] for r in rows) == 12
+
+
+def test_public_gtfs_url_validation():
+    import pytest
+    from pipeline.core.fetch import UnsafeURLError, validate_public_https_url
+
+    for url in ("http://example.com/feed.zip", "https://127.0.0.1/feed.zip", "https://user@example.com/feed.zip", "https://[::1]/feed.zip"):
+        with pytest.raises(UnsafeURLError):
+            validate_public_https_url(url)

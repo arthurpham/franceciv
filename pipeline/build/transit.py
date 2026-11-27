@@ -30,8 +30,8 @@ def build():
   counts[cell]+=1
  service=defaultdict(float);served=set();suppressed_overlap=0;outside_france=0
  consolidated_regions={"11","24","28","44","52","53","75","84"}
- shapes=[Shape([[proj(lon,lat) for lon,lat in ring] for ring in c["rings"]]) for c in bounds["communes"]]
- spatial=ShapeIndex(shapes,cell_km=40);communes=bounds["communes"]
+ shapes=[Shape([[proj(lon,lat) for lon,lat in ring] for ring in c["rings"]]) for c in bounds["counties"]]
+ spatial=ShapeIndex(shapes,cell_km=40);counties=bounds["counties"]
  def geography_of(lon,lat):
   for dep,spec in INSETS.items():
    if spec["true"][0]<=lon<=spec["true"][2] and spec["true"][1]<=lat<=spec["true"][3]:
@@ -39,7 +39,7 @@ def build():
   if not (-5.5<=lon<=10.2 and 41.0<=lat<=51.6):return None,"outside"
   x0,y0=proj(lon,lat);idx=spatial.locate(x0,y0)
   if idx<0:return None,"outside"
-  return communes[idx]["department"],communes[idx]["region"]
+  return counties[idx]["geoid"],counties[idx]["state_fips"]
  covered_departments=set()
  for row in frequency["rows"]:
   dep,region=geography_of(row["lon"],row["lat"])
