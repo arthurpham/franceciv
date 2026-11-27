@@ -74,7 +74,7 @@ def build():
         if cell is None:
             unmatched_eq += 1
             continue
-        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "rail": 0.0, "service_pop": 0})
+        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "service_pop": 0})
         a["food"] += row["food_shops"]
         a["pharm"] += row["pharmacies"]
         a["culture"] += row["culture_sports"]
@@ -82,14 +82,15 @@ def build():
         a["childcare"] += row.get("childcare", 0)
         a["eldercare"] += row.get("eldercare", 0)
         a["cinemas"] += row.get("cinemas", 0)
+        a["pools"] += row.get("swimming_pools", 0)
         a["rail"] += row.get("rail_stations", 0)
         # Population-weight the presence score so hexes represent residents' typical access,
         # not the arithmetic mean of tiny and large communes.
         a["service_pop"] += row["essential_score"] * commune_pop.get(code, 0)
-    essential, food, pharm, culture, hospital, childcare, eldercare, cinemas, rail = [], [], [], [], [], [], [], [], []
+    essential, food, pharm, culture, hospital, childcare, eldercare, cinemas, pools, rail = [], [], [], [], [], [], [], [], [], []
     for i in range(grid.size):
         pop = pop_acc.get(i, 0)
-        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "rail": 0.0, "service_pop": 0})
+        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "service_pop": 0})
         essential.append(round(a["service_pop"] / pop, 2) if pop else None)
         food.append(round(a["food"] * 10_000 / pop, 2) if pop else None)
         pharm.append(round(a["pharm"] * 10_000 / pop, 2) if pop else None)
@@ -98,6 +99,7 @@ def build():
         childcare.append(round(a["childcare"] * 10_000 / pop, 2) if pop else None)
         eldercare.append(round(a["eldercare"] * 10_000 / pop, 2) if pop else None)
         cinemas.append(round(a["cinemas"] * 100_000 / pop, 2) if pop else None)
+        pools.append(round(a["pools"] * 100_000 / pop, 2) if pop else None)
         rail.append(round(a["rail"] * 100_000 / pop, 2) if pop else None)
 
     write_web("public_services.json", {
@@ -117,6 +119,7 @@ def build():
             lens("childcare", "Childcare facilities", "🧒", "facilities per 10k residents", childcare, "fr_public_equipment", "Young-childcare establishments and micro-crèches in INSEE BPE 2024 per 10,000 residents. The denominator is total population, not the target under-3 population."),
             lens("eldercare", "Eldercare services", "🧓", "services per 10k residents", eldercare, "fr_public_equipment", "Elderly housing, home-care and support-service records in INSEE BPE 2024 per 10,000 residents. Counts reflect service records, not beds or capacity."),
             lens("cinemas", "Cinemas", "🎬", "screens/sites per 100k residents", cinemas, "fr_public_equipment", "Cinema records in INSEE BPE 2024 per 100,000 residents. Counts reflect BPE equipment records, not admissions or screen quality."),
+            lens("swimming_pools", "Swimming pools", "🏊", "facilities per 100k residents", pools, "fr_public_equipment", "Swimming-pool facility records in INSEE BPE 2024 per 100,000 residents. Counts reflect facility records, not water area, public opening hours or quality."),
             lens("rail_station_access", "Rail stations", "🚉", "stations per 100k residents", rail, "fr_public_equipment", "Passenger rail stations of national, regional or local interest in INSEE BPE 2024 per 100,000 residents. Station count does not measure train frequency or service quality."),
         ],
     })
@@ -125,7 +128,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "public_services.json").read_text())
-    assert len(doc["lenses"]) == 13
+    assert len(doc["lenses"]) == 14
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and max(vals) > 0.1
-    return [("PASS", f"public_services.json: 13 safety/school/equipment lenses over {len(vals)} cells")]
+    return [("PASS", f"public_services.json: 14 safety/school/equipment lenses over {len(vals)} cells")]
