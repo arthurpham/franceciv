@@ -37,39 +37,45 @@ class FrenchClimate(Source):
 
     def process(self):
         # Per Lambert-grid point: sums/counts for temperature and annual precipitation in the three periods.
-        # indexes: baseline T, normal T, recent T, baseline rain, normal rain, recent rain (sum,count pairs)
-        acc = defaultdict(lambda: [[0.0, 0] for _ in range(6)])
+        # indexes: baseline/normal/recent T, baseline/normal/recent rain, baseline/normal/recent water deficit
+        acc = defaultdict(lambda: [[0.0, 0] for _ in range(9)])
         used = []
         for year in YEARS:
             name = filename(year)
             path = self.raw_dir / name
-            annual = defaultdict(lambda: [0.0, 0.0, 0])
+            annual = defaultdict(lambda: [0.0, 0.0, 0, 0.0])
             with gzip.open(path, "rt", encoding="utf-8", newline="") as f:
                 for row in csv.DictReader(f, delimiter=";"):
                     try:
                         key = (int(row["LAMBX"]), int(row["LAMBY"]))
                         temp = float(row["T"])
                         rain = float(row["PRETOTM"])
+                        etp = float(row["ETP"])
                     except (KeyError, ValueError):
                         continue
                     a = annual[key]
                     a[0] += temp
                     a[1] += rain
                     a[2] += 1
-            for key, (tsum, rsum, months) in annual.items():
+                    a[3] += etp
+            for key, (tsum, rsum, months, esum) in annual.items():
                 if months != 12:
                     continue
                 tavg, rain = tsum / months, rsum
+                deficit = esum - rain
                 a = acc[key]
                 if 1961 <= year <= 1990:
                     a[0][0] += tavg; a[0][1] += 1
                     a[3][0] += rain; a[3][1] += 1
+                    a[6][0] += deficit; a[6][1] += 1
                 if 1991 <= year <= 2020:
                     a[1][0] += tavg; a[1][1] += 1
                     a[4][0] += rain; a[4][1] += 1
+                    a[7][0] += deficit; a[7][1] += 1
                 if 1996 <= year <= 2025:
                     a[2][0] += tavg; a[2][1] += 1
                     a[5][0] += rain; a[5][1] += 1
+                    a[8][0] += deficit; a[8][1] += 1
             used.append(name)
             print(f"    {year}: {len(annual)} grid points")
 
@@ -79,13 +85,13 @@ class FrenchClimate(Source):
         xs = [x * 100 for x, _ in keys]
         ys = [y * 100 for _, y in keys]
         lons, lats = transform("EPSG:27572", "EPSG:4326", xs, ys)
-        lon_out, lat_out, temperature, warming, rainfall, rain_change = [], [], [], [], [], []
+        lon_out, lat_out, temperature, warming, rainfall, rain_change, water_deficit = [], [], [], [], [], [], []
         for key, lon, lat in zip(keys, lons, lats):
             # Keep the French meteorological grid and a small border margin; this drops sea/foreign fallback points.
             if not (-5.8 <= lon <= 10.3 and 41.0 <= lat <= 51.5):
                 continue
             a = acc[key]
-            if min(a[0][1], a[1][1], a[2][1], a[3][1], a[4][1], a[5][1]) < 30:
+            if min(a[i][1] for i in range(9)) < 30:
                 continue
             base_t = a[0][0] / a[0][1]
             norm_t = a[1][0] / a[1][1]
@@ -93,12 +99,14 @@ class FrenchClimate(Source):
             base_r = a[3][0] / a[3][1]
             norm_r = a[4][0] / a[4][1]
             recent_r = a[5][0] / a[5][1]
+            norm_deficit = a[7][0] / a[7][1]
             lon_out.append(round(lon, 5))
             lat_out.append(round(lat, 5))
             temperature.append(round(norm_t, 2))
             warming.append(round(recent_t - base_t, 2))
             rainfall.append(round(norm_r, 1))
             rain_change.append(round(recent_r / base_r - 1, 4) if base_r else None)
+            water_deficit.append(round(norm_deficit, 1))
         return {
             "vintage": "Météo-France SIM2 monthly reanalysis, 1961–2025",
             "_files": used,
@@ -109,4 +117,5 @@ class FrenchClimate(Source):
             "warming": warming,
             "rainfall": rainfall,
             "rain_change": rain_change,
+            "water_deficit": water_deficit,
         }
