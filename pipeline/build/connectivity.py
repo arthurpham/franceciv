@@ -6,7 +6,7 @@ from ..core.geo import MapProjection
 from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_broadband", "fr_ev_charging"]
+REQUIRES = ["_world", "fr_boundaries", "fr_broadband", "fr_ev_charging", "fr_mobile_network"]
 PRODUCES = ["connectivity.json"]
 
 RAMP = ["#30223d", "#564f86", "#4f87a8", "#62b58f", "#d8e982"]
@@ -40,6 +40,7 @@ def build():
     bounds = load_interim("fr_boundaries")
     broadband = load_interim("fr_broadband")
     charging = load_interim("fr_ev_charging")
+    mobile = load_interim("fr_mobile_network")
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
     cell_by_commune = {}
@@ -69,12 +70,29 @@ def build():
             unmatched_ev += count
         else:
             ev_acc[cell] += count
+    commune_pop = {c["code"]: c.get("population") or 0 for c in bounds["communes"]}
+    mobile_ops_pop = defaultdict(float)
+    mobile5g_pop = defaultdict(float)
+    unmatched_mobile_sites = 0
+    for code, row in mobile["rows"].items():
+        cell = cell_by_commune.get(code)
+        if cell is None:
+            unmatched_mobile_sites += row["sites"]
+            continue
+        pop = commune_pop.get(code, 0)
+        mobile_ops_pop[cell] += row["operators4g"] * pop
+        if row["has5g"]:
+            mobile5g_pop[cell] += pop
     ev_vals = []
+    mobile_ops = []
+    mobile5g = []
     for i in range(grid.size):
         fiber, premises = acc.get(i, [0, 0])
         vals.append(round(fiber / premises, 4) if premises else None)
         pop = pop_acc.get(i, 0)
         ev_vals.append(round(ev_acc.get(i, 0) * 10_000 / pop, 2) if pop else None)
+        mobile_ops.append(round(mobile_ops_pop.get(i, 0) / pop, 2) if pop else None)
+        mobile5g.append(round(mobile5g_pop.get(i, 0) / pop, 4) if pop else None)
     lens = {
         "id": "fiber", "group": "connectivity", "name": "Fiber eligibility", "icon": "fiber", "emoji": "🌐",
         "unit": "share of connectable premises", "format": "pct", "scale": "linear",
@@ -91,10 +109,25 @@ def build():
         "description": "Public electric-vehicle charge points per 10,000 residents from the nightly consolidated national IRVE registry. Commune counts are aggregated by map hex; zero means no published public charge point, not missing data.",
         "values": ev_vals,
     }
+    mobile_ops_lens = {
+        "id": "mobile_operators", "group": "connectivity", "name": "4G site operators", "icon": "mobile_operators", "emoji": "📶",
+        "unit": "operators with 4G sites", "format": "float", "scale": "linear",
+        "domain": [0, 5], "ramp": RAMP, "higher_is": "neutral", "source": "fr_mobile_network",
+        "description": "Population-weighted number of mobile operators with at least one reported 4G-capable site physically located in each commune, ARCEP 2026 T2. This measures infrastructure presence and operator choice, not theoretical signal coverage.",
+        "values": mobile_ops,
+    }
+    mobile5g_lens = {
+        "id": "mobile_5g", "group": "connectivity", "name": "5G site presence", "icon": "mobile_5g", "emoji": "📡",
+        "unit": "share of residents", "format": "pct", "scale": "linear",
+        "domain": [percentile(mobile5g, 2), percentile(mobile5g, 98)], "ramp": RAMP, "higher_is": "neutral", "source": "fr_mobile_network",
+        "description": "Share of residents living in communes with at least one reported 5G-capable operator site, ARCEP 2026 T2. A commune without a local site can still have signal from neighbouring communes, so this is deployment presence rather than coverage.",
+        "values": mobile5g,
+    }
     write_web("connectivity.json", {
-        "version": 1, "vintage": f"ARCEP Ma connexion internet, {broadband['date']} / consolidated IRVE nightly export", "sources": ["fr_broadband", "fr_ev_charging"],
+        "version": 1, "vintage": f"ARCEP Ma connexion internet, {broadband['date']} / consolidated IRVE nightly export / ARCEP mobile sites 2026 T2", "sources": ["fr_broadband", "fr_ev_charging", "fr_mobile_network"],
         "group": {"id": "connectivity", "name": "Connectivity"}, "covered_cells": len(acc), "missing_communes": missing, "unmatched_ev_charge_points": unmatched_ev,
-        "lenses": [lens, ev_lens],
+        "unmatched_mobile_sites": unmatched_mobile_sites,
+        "lenses": [lens, ev_lens, mobile_ops_lens, mobile5g_lens],
     })
 
 
@@ -105,5 +138,8 @@ def check(web_dir):
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and all(0 <= v <= 1 for v in vals)
     ev = [v for v in doc["lenses"][1]["values"] if v is not None]
-    assert len(doc["lenses"]) == 2 and len(ev) > 2500 and max(ev) > 5
-    return [("PASS", f"connectivity.json: fiber and EV-charging lenses over {doc['covered_cells']} cells")]
+    assert len(doc["lenses"]) == 4 and len(ev) > 2500 and max(ev) > 5
+    mob = [v for v in doc["lenses"][2]["values"] if v is not None]
+    fiveg = [v for v in doc["lenses"][3]["values"] if v is not None]
+    assert len(mob) > 2500 and max(mob) <= 4 and len(fiveg) > 2500 and all(0 <= v <= 1 for v in fiveg)
+    return [("PASS", f"connectivity.json: fiber, EV-charging and mobile lenses over {doc['covered_cells']} cells")]
