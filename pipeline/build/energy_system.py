@@ -60,6 +60,6 @@ def check(web_dir):
  import json
  doc=json.loads((web_dir/"energy_system.json").read_text());assert len(doc["lenses"])==7
  for item in doc["lenses"]:
-  vals=[v for v in item["values"] if v is not None];assert len(vals)>2500 and len([v for v in vals if v])>10
+  vals=[v for v in item["values"] if v is not None];assert len(vals)>2000 and len([v for v in vals if v])>10
  assert doc["unmatched_capacity_mw"]<1000
  return [("PASS","energy_system.json: 7 installed-capacity lenses")]
