@@ -390,7 +390,7 @@ def test_heritage_contract():
 def test_public_services_contract():
     data = web("public_services.json")
     assert data["sources"] == ["fr_crime", "fr_schools", "fr_public_equipment"]
-    assert {l["id"] for l in data["lenses"]} == {"burglary", "violence", "primary_schools", "secondary_schools", "essential_services", "food_shops", "pharmacies", "culture_sports", "hospital_services", "childcare", "eldercare", "cinemas", "swimming_pools", "rail_station_access"}
+    assert {l["id"] for l in data["lenses"]} == {"burglary", "violence", "primary_schools", "secondary_schools", "essential_services", "food_shops", "pharmacies", "culture_sports", "hospital_services", "childcare", "eldercare", "cinemas", "swimming_pools", "rail_station_access", "post_offices", "libraries", "france_services", "recycling_centers", "law_enforcement"}
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2500 and max(vals) > 0
