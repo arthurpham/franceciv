@@ -127,6 +127,10 @@ Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `
 
 ODRÉ installed-generation-capacity lenses in kW per resident. Commune capacities are aggregated by map hex. Per-capita normalization is a spatial intensity measure, not local ownership or consumption: electricity is transmitted across the national grid. Hydro includes conventional, run-of-river, pumped-storage and tidal installations where present.
 
+### nature.json
+
+INPN/API Carto Nature protected-area lenses. Natura 2000 and national nature reserves are statutory protection designations. ZNIEFF type 1/2 polygons are ecological knowledge and land-planning inventories, not by themselves legal protection regimes. National/regional park perimeter shares do not imply uniform strict protection throughout the perimeter. Values are approximate sampled hex-area shares.
+
 ### electricity.json
 
 Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.

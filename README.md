@@ -20,7 +20,7 @@ The original browser engine, rendering art, interaction model and pipeline archi
   - AAV GDP remains an estimate: department GDP is allocated in proportion to workplace employment.
 - Population, prosperity, housing, election, natural-hazard and climate lenses, including income, poverty, unemployment, education, age, immigration, commuting, growth, homeownership, vacancy, 2022 presidential results, GASPAR catastrophe recognitions, temperature, warming, rainfall and climatic water deficit.
 - Power-generation and storage resources from the national ODRÉ registry: nuclear, hydro, pumped storage, tidal, gas/coal, wind, solar and batteries.
-- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber, EV-charging and mobile-site lenses, national cycling-infrastructure lenses, DVF housing-price lenses, DREES healthcare-access lenses, social-housing shares, housing energy-performance lenses, CORINE vineyard/orchard and Agreste farm-structure and workplace economic-composition lenses, INSEE hotel-tourism intensity, Mérimée protected-heritage lenses, ODRÉ installed-capacity and Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, Géorisques/BRGM natural-risk zoning and prevention-perimeter lenses, INSEE everyday-services and sports/culture lenses, INPN Natura 2000 protected-nature lenses, and physical river-flood/coastal-submersion exposure lenses.
+- Detailed named watercourses from IGN BD CARTO, schematic roads and official active SNCF railway geometry, real airports and ports, busy SNCF passenger stations, commune-derived fiber, EV-charging and mobile-site lenses, national cycling-infrastructure lenses, DVF housing-price lenses, DREES healthcare-access lenses, social-housing shares, housing energy-performance lenses, CORINE vineyard/orchard and Agreste farm-structure and workplace economic-composition lenses, INSEE hotel-tourism intensity, Mérimée protected-heritage lenses, ODRÉ installed-capacity and Enedis electricity-use lenses, recorded-crime lenses, school-density lenses, Géorisques/BRGM natural-risk zoning and prevention-perimeter lenses, INSEE everyday-services and sports/culture lenses, INPN Natura 2000, ZNIEFF, nature-reserve and park lenses, and physical river-flood/coastal-submersion exposure lenses.
 
 - UNESCO World Heritage wonders from the official UNESCO XML export, plus the most-visited Musées de France and largest universities from ministry open data.
 - Regional road, rail and inland-water freight routes from SDES 2019 goods-flow tables.
@@ -79,7 +79,7 @@ Downloads are cached under `data/raw/` with provenance manifests. Generated brow
 - Ministry of the Interior departmental recorded-crime statistics.
 - INSEE Base permanente des équipements 2024 detailed equipment registry.
 - Ministry of National Education school directory.
-- INPN Natura 2000 geometries through the IGN API Carto Nature module.
+- INPN Natura 2000, ZNIEFF, national nature reserve, national park and regional natural park geometries through the IGN API Carto Nature module.
 - TRI/Géorisques 2020 rare-or-millennial river-overflow and marine-submersion flood surfaces, rasterized through the official WMS.
 - NOAA ETOPO1 elevation and bathymetry.
 - Natural Earth 1:50m neighbouring countries, lakes and rivers; 1:10m roads, railroads and ports.

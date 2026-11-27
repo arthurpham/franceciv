@@ -406,7 +406,7 @@ def test_risk_contract():
 def test_nature_contract():
     data = web("nature.json")
     assert data["sources"] == ["fr_nature"]
-    assert {l["id"] for l in data["lenses"]} == {"natura2000", "natura_habitat", "natura_birds"}
+    assert {l["id"] for l in data["lenses"]} == {"natura2000", "natura_habitat", "natura_birds", "znieff", "nature_reserve", "park_area"}
     vals = [v for v in data["lenses"][0]["values"] if v is not None]
     nonzero = [v for v in vals if v]
     assert len(vals) > 2500 and len(nonzero) > 1000
