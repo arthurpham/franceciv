@@ -1,8 +1,9 @@
 """Connectivity lens: commune fiber eligibility aggregated to map hexes."""
 
+import math
 from collections import defaultdict
 
-from ..core.geo import MapProjection
+from ..core.geo import MapProjection, Shape
 from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 
@@ -10,11 +11,6 @@ REQUIRES = ["_world", "fr_boundaries", "fr_broadband", "fr_ev_charging", "fr_mob
 PRODUCES = ["connectivity.json"]
 
 RAMP = ["#30223d", "#564f86", "#4f87a8", "#62b58f", "#d8e982"]
-
-
-def percentile(vals, p):
-    xs = sorted(v for v in vals if v is not None)
-    return xs[min(len(xs) - 1, max(0, round((p / 100) * (len(xs) - 1))))] if xs else None
 
 
 def nearest_land(world, grid, x, y):
@@ -33,6 +29,45 @@ def nearest_land(world, grid, x, y):
             frontier = nxt
             if not frontier: break
     return exact
+
+
+SAMPLE_STEP_KM = 1.0
+
+
+def percentile(vals, p):
+    xs = sorted(v for v in vals if v is not None)
+    return xs[min(len(xs) - 1, max(0, round((p / 100) * (len(xs) - 1))))] if xs else None
+
+
+def shape_weights(world, grid, proj, communes):
+    """Normalized hex weights for every commune, approximating land-area overlap at 1 km."""
+    out = {}
+    fallback = 0
+    for c in communes:
+        counts = defaultdict(int)
+        shape = Shape([[proj(lon, lat) for lon, lat in ring] for ring in c.get("rings", [])])
+        if shape.rings:
+            x0, y0, x1, y1 = shape.bbox
+            x = math.floor(x0 / SAMPLE_STEP_KM) * SAMPLE_STEP_KM + SAMPLE_STEP_KM / 2
+            while x <= x1:
+                y = math.floor(y0 / SAMPLE_STEP_KM) * SAMPLE_STEP_KM + SAMPLE_STEP_KM / 2
+                while y <= y1:
+                    if shape.contains(x, y):
+                        cell = grid.cell_at(x, y)
+                        if cell >= 0 and world["owner"][cell] >= 0:
+                            counts[cell] += 1
+                    y += SAMPLE_STEP_KM
+                x += SAMPLE_STEP_KM
+        if not counts and c.get("lon") is not None:
+            fallback += 1
+            cell = nearest_land(world, grid, *proj(c["lon"], c["lat"]))
+            if cell >= 0 and world["owner"][cell] >= 0:
+                counts[cell] = 1
+        total = sum(counts.values())
+        if total:
+            out[c["code"]] = {cell: n / total for cell, n in counts.items()}
+    print(f"    commune spatial weights: {len(out)} communes, {fallback} centroid fallbacks")
+    return out
 
 
 def build():

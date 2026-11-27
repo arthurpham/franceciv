@@ -157,13 +157,15 @@ Natural-risk zoning lenses sampled from official Géorisques/BRGM WMS rasters. `
 
 ODRÉ installed-generation-capacity lenses in kW per resident. Commune capacities are aggregated by map hex. Per-capita normalization is a spatial intensity measure, not local ownership or consumption: electricity is transmitted across the national grid. Hydro includes conventional, run-of-river, pumped-storage and tidal installations where present.
 
+RTE transmission-network lenses are departmental statistics rather than exact infrastructure geometry. RTE no longer publishes precise public line and substation coordinates for security reasons. Circuit length counts each electrical circuit, so multi-circuit lines contribute multiple circuit-kilometres; pylon-route length counts the shared overhead corridor. Non-overhead share combines underground and submarine circuits. Transformation-site and connection-point densities count operating registry records per department area without exact public locations. A small number of registry rows have a blank department field; they are omitted rather than geocoded or guessed, so site densities slightly undercount the true network.
+
 ### nature.json
 
 INPN/API Carto Nature protected-area lenses. Natura 2000 and national nature reserves are statutory protection designations. ZNIEFF type 1/2 polygons are ecological knowledge and land-planning inventories, not by themselves legal protection regimes. National/regional park perimeter shares do not imply uniform strict protection throughout the perimeter. Values are approximate sampled hex-area shares.
 
 ### electricity.json
 
-Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.
+Enedis electricity-consumption lenses. Values are 2025 commune-level MWh per resident for total consumption and broad residential, tertiary, industrial, agricultural and small-professional customer categories, distributed approximately over commune polygons at a 1 km lattice. Small professionals (category PRO) cut across broad activity sectors and must not be added to those sector totals as an additional component. Residential-share and winter heating-thermosensitivity lenses are commune statistics population-weighted within hexes. The electric-heating lens uses the most recent residential rows still publishing that housing attribute (currently 2024) because the 2025 rows omit it. The uniform-within-commune distribution is a spatial approximation rather than meter locations or real within-commune population density. Enedis coverage gaps (including Corsica, overseas France and local-distribution areas) mean missing or low values are not always low use.
 
 ### public_services.json
 
