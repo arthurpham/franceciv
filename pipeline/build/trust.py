@@ -148,6 +148,7 @@ def build() -> None:
         "generated": now.isoformat(timespec="seconds"),
         "summary": {
             "sources": len(source_rows), **counts,
+            "grid_cells": len(world.get("owner") or []), "owned_cells": sum(o >= 0 for o in world.get("owner") or []),
             "lenses": len(layers), "valid_lens_shapes": len(valid_layers), "duplicate_lens_ids": duplicates,
             "mean_coverage": round(sum(l["coverage"] for l in valid_layers) / len(valid_layers), 4) if valid_layers else None,
             "coverage_under_half": sum((l.get("coverage") or 0) < 0.5 for l in valid_layers),
@@ -169,6 +170,9 @@ def check(web_dir):
     assert doc["version"] == 1 and isinstance(doc["sources"], list) and isinstance(doc["layers"], list)
     assert all(s["status"] in STATUS for s in doc["sources"])
     assert len(doc["sources"]) == len(json.loads((web_dir / "sources.json").read_text()))
+    world = json.loads((web_dir / "world.json").read_text())
+    assert doc["summary"]["grid_cells"] == len(world["owner"])
+    assert doc["summary"]["owned_cells"] == sum(o >= 0 for o in world["owner"])
     layers = json.loads((web_dir / "lenses.json").read_text())["lenses"]
     assert len(doc["layers"]) >= len(layers)
     assert all(l.get("shape") != "ok" or 0 <= l["coverage"] <= 1 for l in doc["layers"])

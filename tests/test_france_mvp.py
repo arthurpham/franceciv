@@ -637,6 +637,9 @@ def test_trust_report_contract():
     trust = web("trust.json")
     assert trust["version"] == 1
     assert trust["summary"]["sources"] == len(web("sources.json"))
+    world = web("world.json")
+    assert trust["summary"]["grid_cells"] == len(world["owner"])
+    assert trust["summary"]["owned_cells"] == sum(o >= 0 for o in world["owner"])
     assert trust["summary"]["lenses"] >= 160 and trust["summary"]["valid_lens_shapes"] == trust["summary"]["lenses"]
     assert not trust["summary"]["duplicate_lens_ids"]
     assert all(s["status"] in {"fresh", "attention", "due", "unknown"} for s in trust["sources"])
