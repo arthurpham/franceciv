@@ -15,6 +15,8 @@ SETS = {
     "wind_capacity": ("Wind capacity", "🌬️", {"Eolien"}, "Installed wind-electric capacity per resident from the ODRÉ national registry. Commune capacities are aggregated by map hex."),
     "hydro_capacity": ("Hydro capacity", "💧", {"Hydraulique"}, "Installed hydroelectric capacity per resident from the ODRÉ national registry, including conventional, run-of-river, pumped-storage and tidal installations where present. Commune capacities are aggregated by map hex."),
     "nuclear_capacity": ("Nuclear capacity", "☢️", {"Nucléaire"}, "Installed nuclear-electric capacity per resident from the ODRÉ national registry. Per-capita normalization is only a spatial intensity measure: electricity is transmitted nationally rather than consumed solely by nearby residents."),
+    "renewable_capacity": ("Renewable capacity", "🌱", {"Solaire", "Eolien", "Hydraulique", "Bioénergies", "Energies Marines", "Géothermie"}, "Installed renewable-electric capacity per resident from the ODRÉ national registry. Hydro includes pumped-storage and tidal installations where present, so the total is generation-capacity infrastructure rather than a strict annual renewable-generation measure."),
+    "storage_capacity": ("Non-hydro storage", "🔋", {"Stockage non hydraulique"}, "Installed non-hydraulic electricity-storage power per resident from the ODRÉ national registry. Values use the registry's maximum installed power field; energy duration in MWh is not available in this national extract."),
 }
 
 def percentile(vals,p):
@@ -49,8 +51,8 @@ def build():
 
 def check(web_dir):
  import json
- doc=json.loads((web_dir/"energy_system.json").read_text());assert len(doc["lenses"])==4
+ doc=json.loads((web_dir/"energy_system.json").read_text());assert len(doc["lenses"])==6
  for item in doc["lenses"]:
   vals=[v for v in item["values"] if v is not None];assert len(vals)>2500 and len([v for v in vals if v])>10
  assert doc["unmatched_capacity_mw"]<1000
- return [("PASS","energy_system.json: 4 installed-capacity lenses")]
+ return [("PASS","energy_system.json: 6 installed-capacity lenses")]

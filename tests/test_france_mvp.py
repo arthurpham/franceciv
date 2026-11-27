@@ -160,7 +160,7 @@ def test_transit_contract():
 
 def test_energy_system_contract():
     data = web("energy_system.json")
-    assert data["sources"] == ["fr_energy"] and len(data["lenses"]) == 4
+    assert data["sources"] == ["fr_energy"] and len(data["lenses"]) == 6
     assert data["unmatched_capacity_mw"] < 1000
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
