@@ -539,11 +539,11 @@ async function main() {
     if (!active?.time?.series || !active.time.years.includes(year) || active.activeYear === year) return;
     for (const lens of lensFile.lenses) {
       if (!lens.time?.series) continue;
-      // Temporal lenses share the selected year when they measure it; coarser series keep their current explicit
-      // year rather than silently interpolating or relabelling another vintage.
-      if (!lens.time.years.includes(year)) continue;
-      lens.activeYear = year;
-      lens.values = lens.time.series[String(year)] || lens.values;
+      // Temporal lenses share the selected year when they measure it. Coarser series return to their explicit
+      // default year rather than interpolating, relabelling another vintage, or keeping hidden cross-link state.
+      const next = lens.time.years.includes(year) ? year : lens.time.default || lens.time.years.at(-1);
+      lens.activeYear = next;
+      lens.values = lens.time.series[String(next)] || lens.values;
     }
     const restoreYearFocus = document.activeElement?.classList?.contains("lg-year");
     applyLens(w, state.lens, state.band);
