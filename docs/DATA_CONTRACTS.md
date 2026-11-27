@@ -109,6 +109,10 @@ INSEE census workplace-employment composition lenses. Commune job counts are sum
 
 Experimental national GTFS stop availability. Rows are deduplicated by normalized stop name and approximately 100-metre rounded coordinates because overlapping feeds often publish the same physical stop. Values are stops per 10,000 residents. Stop presence does not measure service frequency, operating span, speed or reliability; catalog coverage can vary, and seasonal/tourist territories can score high because the denominator is resident population.
 
+### epci.json, iris_index.json and neighborhoods.json
+
+First-class statistical geography. `epci.json` aggregates existing INSEE Comparateur EPCI rows and positions each EPCI at the population-weighted centroid of member communes. `iris_index.json` is the compact browser search/panel index of true IRIS. Whole-commune pseudo-IRIS are omitted there because they duplicate commune search, but they are included in the statistical partition used for the neighborhood lenses. Positions and areas are derived from Contours IRIS polygons. `neighborhoods.json` lenses aggregate IRIS population, age and immigration to hexes by assigning each whole IRIS by centroid; this is finer than department-level statistics but approximate at hex boundaries. The 2022 population extract excludes Mayotte; other overseas collectivities outside the current map frame are omitted until their insets exist.
+
 ### society.json
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.

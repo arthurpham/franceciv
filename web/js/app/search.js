@@ -14,7 +14,7 @@ export function initSearch(opts) {
   if (!input || !box) return { focus() {}, close() {}, get isOpen() { return false; } };
   // The full placeholder only fits the wide search box; narrower ones say just "Search".
   const narrow = matchMedia("(max-width: 1120px)");
-  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities, communes & regions");
+  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Search" : "Search cities, communes, EPCI & neighborhoods");
   setPlaceholder();
   narrow.addEventListener?.("change", setPlaceholder);
 
@@ -64,7 +64,7 @@ export function initSearch(opts) {
 
   function render() {
     if (!results.length) {
-      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city, commune or region matches “${esc(input.value.trim())}”</div>` : "";
+      box.innerHTML = input.value.trim() ? `<div class="sr-empty">No city, commune, EPCI, neighborhood or region matches “${esc(input.value.trim())}”</div>` : "";
       box.hidden = !input.value.trim();
       input.setAttribute("aria-expanded", String(!box.hidden));
       input.removeAttribute("aria-activedescendant");
@@ -73,7 +73,7 @@ export function initSearch(opts) {
     }
     box.innerHTML = results
       .map((e, i) => `<div class="sr-item ${i === sel ? "sel" : ""}" role="option" id="sr-${i}" aria-selected="${i === sel}" data-i="${i}">
-        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : e.kind === "commune" ? icon("terrain", "📍", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
+        <span class="sr-ic">${e.kind === "state" ? icon("terrain", "🗺️", { size: 16 }) : ["commune", "epci", "iris"].includes(e.kind) ? icon("terrain", "📍", { size: 16 }) : icon("pop", "🏙️", { size: 16 })}</span>
         <span class="sr-main"><b>${esc(e.label)}</b><span class="sr-sub">${esc(e.sub)}</span></span>
         <span class="sr-pop">${e.popText || (e.pop ? popShort(e.pop) : "")}</span></div>`)
       .join("");
@@ -90,7 +90,11 @@ export function initSearch(opts) {
     close();
     input.value = "";
     input.blur();
-    opts.onPick(e.kind === "city" ? { kind: "city", city: e.city } : e.kind === "commune" ? { kind: "commune", commune: e.commune } : { kind: "state", index: e.index });
+    if (e.kind === "city") opts.onPick({ kind: "city", city: e.city });
+    else if (e.kind === "commune") opts.onPick({ kind: "commune", commune: e.commune });
+    else if (e.kind === "epci") opts.onPick({ kind: "epci", epci: e.epci });
+    else if (e.kind === "iris") opts.onPick({ kind: "iris", iris: e.iris });
+    else opts.onPick({ kind: "state", index: e.index });
   }
 
   function close() {
@@ -167,13 +171,46 @@ export function initSearch(opts) {
     }
   }
 
-  let communeLoad = null;
+  function addEpcis(payload) {
+    const rows = payload?.epcis || [];
+    for (const r of rows) {
+      const epci = Object.fromEntries((payload.columns || []).map((k, i) => [k, r[i]]));
+      entries.push({ kind: "epci", epci, name: epci.name, n: norm(epci.name), full: norm(`${epci.name} ${epci.departments || ""}`),
+        pop: epci.population || 0, popText: int(epci.population || 0), sub: `${epci.departments || "France"} · EPCI`, label: epci.name });
+    }
+    if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
+      results = query(input.value);
+      sel = results.length ? 0 : -1;
+      render();
+    }
+  }
+
+  function addIris(payload) {
+    const rows = payload?.iris || [];
+    for (const r of rows) {
+      const iris = Object.fromEntries((payload.columns || []).map((k, i) => [k, r[i]]));
+      if (!iris.true_iris) continue; // whole-commune pseudo-IRIS duplicate commune search
+      entries.push({ kind: "iris", iris, name: iris.name, n: norm(iris.name), full: norm(`${iris.name} ${iris.commune}`),
+        pop: iris.population || 0, popText: int(iris.population || 0), sub: `${iris.commune} · IRIS`, label: iris.name });
+    }
+    if (input.value.trim() && (document.activeElement === input || !box.hidden)) {
+      results = query(input.value);
+      sel = results.length ? 0 : -1;
+      render();
+    }
+  }
+
+  let communeLoad = null, epciLoad = null, irisLoad = null;
   function ensureCommunes() {
     if (!communeLoad && opts.loadCommunes) communeLoad = opts.loadCommunes().then(addCommunes);
+    if (!epciLoad && opts.loadEpcis) epciLoad = opts.loadEpcis().then(addEpcis);
+    if (!irisLoad && opts.loadIris) irisLoad = opts.loadIris().then(addIris);
   }
 
   return {
     addCommunes,
+    addEpcis,
+    addIris,
     focus() {
       input.focus();
       input.select();

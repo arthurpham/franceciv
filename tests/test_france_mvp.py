@@ -436,3 +436,18 @@ def test_flood_contract():
     coastal = [v for v in data["lenses"][1]["values"] if v is not None]
     assert len([v for v in coastal if v]) > 70 and max(coastal) > 0.1
     assert any(s["id"] == "fr_flood" for s in web("sources.json"))
+
+
+def test_statistical_geography_contract():
+    epci = web("epci.json")
+    iris = web("iris_index.json")
+    neighborhoods = web("neighborhoods.json")
+    assert len(epci["epcis"]) > 1200 and len(iris["iris"]) > 15_000
+    assert sum(r[13] for r in iris["iris"]) > 15_000
+    assert neighborhoods["sources"] == ["fr_iris"] and len(neighborhoods["lenses"]) == 4
+    assert {l["id"] for l in neighborhoods["lenses"]} == {"neighborhood_density", "neighborhood_seniors", "neighborhood_immigration", "neighborhood_youth"}
+    density = [v for v in neighborhoods["lenses"][0]["values"] if v is not None]
+    seniors = [v for v in neighborhoods["lenses"][1]["values"] if v is not None]
+    assert len(density) > 2500 and 20 < sum(density) / len(density) < 1000
+    assert len(seniors) > 2500 and 0.05 < sum(seniors) / len(seniors) < 0.4
+    assert any(s["id"] == "fr_iris" for s in web("sources.json"))

@@ -7,6 +7,8 @@ import { showCellTooltip, showCityTooltip, showHtmlTooltip, hideTooltip } from "
 import { initLensDock, formatLensValue, lensValueAt } from "./ui/lenses.js";
 import { openCityPanel, closeCityPanel } from "./ui/cityPanel.js";
 import { initCommunePanel } from "./ui/communePanel.js";
+import { initEpciPanel } from "./ui/epciPanel.js";
+import { initIrisPanel } from "./ui/irisPanel.js";
 import { openStatePanel } from "./ui/statePanel.js";
 import { installSheetSwipe } from "./ui/infoPanel.js";
 import { initPedia } from "./ui/pedia.js";
@@ -52,13 +54,13 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society] = await Promise.all([
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
-    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true),
+    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true), loadJSON("neighborhoods", true),
   ]);
   if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
-  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society]) {
+  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods]) {
     if (!extra?.lenses?.length) continue;
     if (extra.group && !lensFile.groups.some((g) => g.id === extra.group.id)) lensFile.groups.push(extra.group);
     const known = new Set(lensFile.lenses.map((l) => l.id));
@@ -676,16 +678,25 @@ async function main() {
   if (searchIc) searchIc.innerHTML = icon("search", "🔍", { size: 14 });
   document.querySelector(".search-kbd")?.setAttribute("title", "Press / or Ctrl K to search");
 
-  const communePanel = initCommunePanel({ onVisibility: (open) => { communeCardOpen = open; } });
-  events.on("select", (sel) => { if (sel) communePanel.close(); });
+  let communePanel, epciPanel, irisPanel;
+  const updateGeoPanelVisibility = () => { communeCardOpen = Boolean(communePanel?.isOpen || epciPanel?.isOpen || irisPanel?.isOpen); };
+  communePanel = initCommunePanel({ onVisibility: updateGeoPanelVisibility });
+  epciPanel = initEpciPanel({ onVisibility: updateGeoPanelVisibility });
+  irisPanel = initIrisPanel({ onVisibility: updateGeoPanelVisibility });
+  const closeGeoPanels = () => { communePanel.close(); epciPanel.close(); irisPanel.close(); };
+  events.on("select", (sel) => { if (sel) closeGeoPanels(); });
   const search = initSearch({
     loadCommunes: () => loadData("communes"),
+    loadEpcis: () => loadData("epci"),
+    loadIris: () => loadData("iris_index"),
     cities,
     states: w.raw.states.map((s, i) => ({ name: states?.[i]?.name || s.name, abbr: s.abbr, population: states?.[i]?.population })),
     onPick(r) {
-      if (r.kind === "city") { communePanel.close(); selectCity(r.city, { fly: true }); }
-      else if (r.kind === "commune") { clearSelection(); communePanel.open(r.commune); app.flyTo(r.commune.x, r.commune.y, 4.2); }
-      else { communePanel.close(); selectState(r.index, { fly: true }); }
+      if (r.kind === "city") { closeGeoPanels(); selectCity(r.city, { fly: true }); }
+      else if (r.kind === "commune") { clearSelection(); epciPanel.close(); irisPanel.close(); communePanel.open(r.commune); app.flyTo(r.commune.x, r.commune.y, 4.2); }
+      else if (r.kind === "epci") { clearSelection(); communePanel.close(); irisPanel.close(); epciPanel.open(r.epci); app.flyTo(r.epci.x, r.epci.y, 3.2); }
+      else if (r.kind === "iris") { clearSelection(); communePanel.close(); epciPanel.close(); irisPanel.open(r.iris); app.flyTo(r.iris.x, r.iris.y, 5.2); }
+      else { closeGeoPanels(); selectState(r.index, { fly: true }); }
     },
   });
 
