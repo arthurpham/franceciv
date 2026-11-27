@@ -400,6 +400,7 @@ export async function install(app) {
     }
     if (e.city) {
       if (e.city !== cv.city) openCityView(e.city);
+      else app.locationInspector?.update(cv.dock, e.city.cell);
       return true;
     }
     const m = cv.model;
