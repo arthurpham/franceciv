@@ -394,8 +394,8 @@ def test_public_services_contract():
 
 def test_risk_contract():
     data = web("risk.json")
-    assert data["sources"] == ["fr_risk_zones"]
-    assert {l["id"] for l in data["lenses"]} == {"clay_shrink_swell", "seismic_zone", "radon_potential"}
+    assert data["sources"] == ["fr_risk_zones", "fr_risk_perimeters"]
+    assert {"clay_shrink_swell", "seismic_zone", "radon_potential", "forest_fire_perimeter", "avalanche_perimeter", "ground_movement_perimeter"} == {l["id"] for l in data["lenses"]}
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2500 and all(0 <= v <= 1 for v in vals)
