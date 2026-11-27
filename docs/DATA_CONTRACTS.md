@@ -117,6 +117,10 @@ First-class statistical geography. `epci.json` aggregates existing INSEE Compara
 
 Postal access points combine bureaux de poste, agences postales and relais poste. Libraries, France Services sites, déchèteries and police/gendarmerie stations are population-normalized counts of INSEE BPE equipment records. They describe recorded facility presence, not opening hours, capacity, staffing, response time, service range or quality. Counts use `NBEQUIDENT` where INSEE groups identical facilities and are aggregated by commune then hex.
 
+### mobility.json
+
+Official annual-average-daily-traffic sections on the national road network. `road_traffic` is a length-weighted sampled average in vehicles/day and `heavy_vehicle_share` is traffic-weighted. Coverage excludes departmental and municipal roads; section measurement years can precede the 2024 reference year. Heavy-share outliers above 100% in the source are treated as invalid rather than plausible shares. The same geometry replaces schematic Natural Earth major-road links for mainland France; Corsica retains schematic geometry.
+
 ### society.json
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.
