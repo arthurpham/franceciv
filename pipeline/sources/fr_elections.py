@@ -50,7 +50,7 @@ class FrenchElections(Source):
         title="2017 and 2022 presidential elections, definitive second-round results",
         publisher="Ministère de l'Intérieur",
         homepage="https://www.data.gouv.fr/datasets/election-presidentielle-des-10-et-24-avril-2022-resultats-definitifs-du-2nd-tour",
-        license="License not specified in the mirrored datasets",
+        license="Mixed: 2017 Licence Ouverte (Etalab); 2022 license not specified in the mirrored dataset",
         description="Definitive second-round results by commune for 2017 and 2022, mirrored by data.gouv. Rows carry "
         "registered voters, abstention, valid ballots, and Macron/Le Pen votes; both elections opposed the same two candidates.",
         used_for=["2022 election lenses", "Election history lenses"],
