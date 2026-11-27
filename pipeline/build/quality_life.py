@@ -7,7 +7,7 @@ from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 from .connectivity import nearest_land
 
-REQUIRES = ["_world", "fr_boundaries", "fr_housing", "fr_healthcare", "fr_social_housing"]
+REQUIRES = ["_world", "fr_boundaries", "fr_housing", "fr_healthcare", "fr_social_housing", "fr_housing_energy"]
 PRODUCES = ["quality_life.json"]
 
 RAMP = ["#2d213f", "#58508d", "#4f86a8", "#62b58f", "#f0d264"]
@@ -41,6 +41,7 @@ def build():
     housing = load_interim("fr_housing")
     healthcare = load_interim("fr_healthcare")
     social = load_interim("fr_social_housing")
+    energy = load_interim("fr_housing_energy")
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
     communes = {c["code"]: c for c in bounds["communes"]}
@@ -90,13 +91,24 @@ def build():
         lens("apartment_price", "Apartment prices", "🏢", "euros / m²", "eur", apartment, "fr_housing",
              "Transaction-count-weighted mean of commune median apartment sale prices per m², DVF sales in 2024–2025. Sparse rural coverage reflects few apartment sales."),
     ]
+    fg_rows=defaultdict(list);ab_rows=defaultdict(list)
+    for code,counts in energy["rows"].items():
+        cell=cells.get(code)
+        if cell is None:continue
+        total=sum(counts.values());weight=max(1,round(communes.get(code,{}).get("population") or 1))
+        if total:
+            fg_rows[cell].append(((counts.get("F",0)+counts.get("G",0))/total,weight))
+            ab_rows[cell].append(((counts.get("A",0)+counts.get("B",0))/total,weight))
+    energy_fg=weighted_series(grid.size,fg_rows);energy_ab=weighted_series(grid.size,ab_rows)
+    lenses.append(lens("energy_poor_housing","Energy-poor housing","🥶","share of DPE records","pct",energy_fg,"fr_housing_energy","Share of post-July-2021 existing-home DPE records rated F or G, population-weighted within map hexes. DPEs are triggered mainly by sales, rentals and works, so they are a biased sample rather than a census of all housing."))
+    lenses.append(lens("efficient_housing","Efficient housing","🌿","share of DPE records","pct",energy_ab,"fr_housing_energy","Share of post-July-2021 existing-home DPE records rated A or B, population-weighted within map hexes. DPEs are triggered mainly by sales, rentals and works, so they are a biased sample rather than a census of all housing."))
     lenses.append(lens("social_housing", "Social housing", "🏘️", "share of primary residences", "pct", social_share, "fr_social_housing",
                        "Population-weighted commune share of primary residences that are social housing in the 2023 RPLS. The published indicator excludes habitat spécifique and certain SEM stock and is not directly comparable with the legal SRU article-55 rate."))
     for pid, (lid, name, emoji, unit, desc) in labels.items():
         lenses.append(lens(lid, name, emoji, unit, "float", health_vals[pid], "fr_healthcare",
                            desc + " Commune APL values are population-weighted within each map hex; DREES coverage excludes Mayotte."))
     write_web("quality_life.json", {
-        "version": 1, "vintage": "DVF 2024–2025 / DREES APL 2024 / RPLS 2023", "sources": ["fr_housing", "fr_healthcare", "fr_social_housing"],
+        "version": 1, "vintage": "DVF 2024–2025 / DREES APL 2024 / RPLS 2023 / ADEME DPE", "sources": ["fr_housing", "fr_healthcare", "fr_social_housing", "fr_housing_energy"],
         "group": {"id": "quality", "name": "Quality of life"}, "lenses": lenses,
     })
 
@@ -104,7 +116,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "quality_life.json").read_text())
-    assert len(doc["lenses"]) == 7
+    assert len(doc["lenses"]) == 9
     n = len(json.loads((web_dir / "world.json").read_text())["owner"])
     assert all(len(l["values"]) == n for l in doc["lenses"])
     assert sum(v is not None for v in doc["lenses"][0]["values"]) > 2500
