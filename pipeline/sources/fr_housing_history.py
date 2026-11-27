@@ -59,13 +59,15 @@ class FrenchHousingHistory(Source):
         sales = sum(e["sales"] for e in entries)
 
         def weighted(key):
-            return sum((e.get(key) or 0) * e["sales"] for e in entries) / sales
+            present = [e for e in entries if e.get(key) is not None]
+            weight = sum(e["sales"] for e in present)
+            return round(sum(e[key] * e["sales"] for e in present) / weight, 2) if weight else None
 
         return {
-            "price": round(weighted("price"), 2),
+            "price": weighted("price"),
             "sales": sales,
-            "house_price": round(weighted("house_price"), 2) if any(e.get("house_price") is not None for e in entries) else None,
-            "apartment_price": round(weighted("apartment_price"), 2) if any(e.get("apartment_price") is not None for e in entries) else None,
+            "house_price": weighted("house_price"),
+            "apartment_price": weighted("apartment_price"),
         }
 
     def process(self):
