@@ -121,10 +121,19 @@ def test_quality_of_life_contracts():
     assert "Alsace-Moselle" in by_id["house_price"]["description"]
 
 
+def w_county_index(world, geoid):
+    return next(i for i, county in enumerate(world["counties"]) if county["geoid"] == geoid)
+
+
 def test_time_dimension_contract():
     data = web("time.json")
-    assert data["sources"] == ["fr_insee_stats"]
-    assert {l["id"] for l in data["lenses"]} == {"population_history", "housing_stock_history", "homeownership_history", "second_homes_history", "vacancy_history"}
+    assert data["sources"] == ["fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration"]
+    assert {l["id"] for l in data["lenses"]} == {
+        "population_history", "housing_stock_history", "homeownership_history", "second_homes_history", "vacancy_history",
+        "lepen_history", "macron_history", "abstention_history", "housing_price_history",
+        "residential_mobility_history", "interdepartmental_migration_history",
+        "temperature_history", "rainfall_history", "water_deficit_history",
+    }
     n = len(web("world.json")["owner"])
     for lens in data["lenses"]:
         meta = lens["time"]
@@ -153,6 +162,26 @@ def test_time_dimension_contract():
     mean = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in pop["time"]["series"][str(year)] if v is not None])
     assert mean(2023) > mean(1968)
     assert sum(v is not None for v in pop["time"]["series"]["1968"]) > 2500
+
+    by_id = {l["id"]: l for l in data["lenses"]}
+    assert by_id["lepen_history"]["time"]["years"] == [2017, 2022]
+    paris_idx = w_county_index(world, "75")
+    lepen = by_id["lepen_history"]["time"]["series"]
+    paris_cells = [i for i, county in enumerate(world["county"]) if county == paris_idx]
+    assert paris_cells and lepen["2022"][paris_cells[0]] > lepen["2017"][paris_cells[0]]
+
+    price = by_id["housing_price_history"]
+    assert price["time"]["years"] == list(range(2014, 2026))
+    assert price["source"] == "fr_housing_history"
+    assert min(sum(v is not None for v in vals) for vals in price["time"]["series"].values()) > 2000
+
+    mobility = by_id["residential_mobility_history"]["time"]["series"]
+    assert all(0 <= v <= 0.3 for vals in mobility.values() for v in vals if v is not None)
+    temperature = by_id["temperature_history"]["time"]["series"]
+    mean_temp = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in temperature[str(year)] if v is not None])
+    assert mean_temp(2025) > mean_temp(1985)
+    deficit_vals = [v for vals in by_id["water_deficit_history"]["time"]["series"].values() for v in vals if v is not None]
+    assert min(deficit_vals) < 0 < max(deficit_vals)
 
 
 def test_society_contract():

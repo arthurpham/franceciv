@@ -11,6 +11,7 @@ from rasterio.warp import transform
 from ..core.source import Source, SourceInfo
 
 YEARS = range(1961, 2026)
+ANNUAL_YEARS = [1985, 1995, 2005, 2015, 2025]
 URL = "https://meteofrance.s3.sbg.io.cloud.ovh.net/data/REF_CC/SIM_MENS/MENS_SIM2_{year}.csv.gz"
 FILE = "MENS_SIM2_{year}.csv.gz"
 
@@ -27,8 +28,8 @@ class FrenchClimate(Source):
         homepage="https://www.data.gouv.fr/datasets/donnees-changement-climatique-sim-mensuelle",
         license="Licence Ouverte 2.0 (Etalab)",
         description="Monthly Safran-Isba reanalysis on an approximately 8 km grid since 1961. The pipeline compares "
-        "1961–1990 with 1996–2025 and uses 1991–2020 climate normals for temperature and precipitation.",
-        used_for=["Temperature lens", "Warming lens", "Rainfall lens", "Rainfall-change data"],
+        "1961–1990 with 1996–2025, uses 1991–2020 climate normals for temperature and precipitation, and retains selected annual series.",
+        used_for=["Temperature lens", "Warming lens", "Rainfall lens", "Rainfall-change data", "Climate history lenses"],
     )
 
     def fetch(self, force=False):
@@ -39,6 +40,7 @@ class FrenchClimate(Source):
         # Per Lambert-grid point: sums/counts for temperature and annual precipitation in the three periods.
         # indexes: baseline/normal/recent T, baseline/normal/recent rain, baseline/normal/recent water deficit
         acc = defaultdict(lambda: [[0.0, 0] for _ in range(9)])
+        annual_values = defaultdict(dict)
         used = []
         for year in YEARS:
             name = filename(year)
@@ -63,6 +65,8 @@ class FrenchClimate(Source):
                     continue
                 tavg, rain = tsum / months, rsum
                 deficit = esum - rain
+                if year in ANNUAL_YEARS:
+                    annual_values[key][year] = (tavg, rain, deficit)
                 a = acc[key]
                 if 1961 <= year <= 1990:
                     a[0][0] += tavg; a[0][1] += 1
@@ -86,6 +90,9 @@ class FrenchClimate(Source):
         ys = [y * 100 for _, y in keys]
         lons, lats = transform("EPSG:27572", "EPSG:4326", xs, ys)
         lon_out, lat_out, temperature, warming, rainfall, rain_change, water_deficit, water_deficit_change = [], [], [], [], [], [], [], []
+        annual_temperature = {str(y): [] for y in ANNUAL_YEARS}
+        annual_rainfall = {str(y): [] for y in ANNUAL_YEARS}
+        annual_water_deficit = {str(y): [] for y in ANNUAL_YEARS}
         for key, lon, lat in zip(keys, lons, lats):
             # Keep the French meteorological grid and a small border margin; this drops sea/foreign fallback points.
             if not (-5.8 <= lon <= 10.3 and 41.0 <= lat <= 51.5):
@@ -109,6 +116,12 @@ class FrenchClimate(Source):
             rain_change.append(round(recent_r / base_r - 1, 4) if base_r else None)
             water_deficit.append(round(norm_deficit, 1))
             water_deficit_change.append(round(deficit_change, 1))
+            annual = annual_values.get(key, {})
+            for y in ANNUAL_YEARS:
+                vals = annual.get(y)
+                annual_temperature[str(y)].append(round(vals[0], 2) if vals else None)
+                annual_rainfall[str(y)].append(round(vals[1], 1) if vals else None)
+                annual_water_deficit[str(y)].append(round(vals[2], 1) if vals else None)
         return {
             "vintage": "Météo-France SIM2 monthly reanalysis, 1961–2025",
             "_files": used,
@@ -121,4 +134,8 @@ class FrenchClimate(Source):
             "rain_change": rain_change,
             "water_deficit": water_deficit,
             "water_deficit_change": water_deficit_change,
+            "annual_years": ANNUAL_YEARS,
+            "annual_temperature": annual_temperature,
+            "annual_rainfall": annual_rainfall,
+            "annual_water_deficit": annual_water_deficit,
         }
