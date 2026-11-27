@@ -73,6 +73,8 @@ def build():
     covered_pop = defaultdict(float)
     sector_pop = defaultdict(lambda: defaultdict(float))
     category_pop = defaultdict(lambda: defaultdict(float))
+    residential_share_total = defaultdict(float)
+    residential_share_part = defaultdict(float)
     heat_rows = defaultdict(list)
     sensitive_rows = defaultdict(list)
     matched = set()
@@ -98,6 +100,9 @@ def build():
                 for category, value in row.get("categories", {}).items():
                     category_acc[cell][category] += (value or 0) * weight
                     category_pop[category][cell] += pop * weight
+                if "RESIDENTIEL" in row.get("sectors", {}):
+                    residential_share_total[cell] += (row.get("consumption_mwh") or 0) * weight
+                    residential_share_part[cell] += (row["sectors"].get("RESIDENTIEL") or 0) * weight
             if pop:
                 heat_rows[cell].append((row.get("electric_heating_share"), pop * weight))
                 sensitive_rows[cell].append((row.get("heat_sensitive_share"), pop * weight))
@@ -116,8 +121,8 @@ def build():
     heat_vals = weighted_mean(heat_rows)
     sensitive_vals = weighted_mean(sensitive_rows)
     for i in range(grid.size):
-        total = consumption.get(i, 0)
-        residential_share.append(round(sector_acc[i]["RESIDENTIEL"] / total, 4) if total else None)
+        share_total = residential_share_total.get(i, 0)
+        residential_share.append(round(residential_share_part[i] / share_total, 4) if share_total else None)
         heat.append(heat_vals[i] if i < len(heat_vals) else None)
         sensitive.append(sensitive_vals[i] if i < len(sensitive_vals) else None)
 
