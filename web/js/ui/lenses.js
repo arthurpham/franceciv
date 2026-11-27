@@ -54,6 +54,7 @@ export function lensValueAt(lens, t) {
 
 const TERRAIN = { id: null, icon: "terrain", emoji: "🗺️", name: "Terrain" };
 const RECENT_KEY = "franceciv.recentLenses";
+const FAVORITES_KEY = "franceciv.favoriteLenses";
 const DEFAULT_RECENT = ["density", "income", "bachelors"];
 const BINS = 40;
 const HOVER_HALF = 0.08; // half-width of the hover band, in ramp units
@@ -70,6 +71,18 @@ const loadRecent = () => {
 const saveRecent = (ids) => {
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(ids)); } catch { /* private mode: fine */ }
 };
+const loadFavorites = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "null");
+    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+};
+const saveFavorites = (ids) => {
+  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(ids)); } catch { /* private mode: fine */ }
+};
+const normText = (s) => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 /**
  * opts: {lenses (lenses.json), sources (sources.json list), w (prepared world), onPick(lens|null), onBand(band|null)}
@@ -88,8 +101,30 @@ export function initLensDock(opts) {
   let recent = (loadRecent() || DEFAULT_RECENT).filter((id) => byId.has(id));
   for (const l of lenses) if (recent.length < 3 && !recent.includes(l.id)) recent.push(l.id);
   recent = recent.slice(0, 3);
+  let favorites = loadFavorites().filter((id) => byId.has(id));
+  let query = "";
   let restoreFocus = null;
   const histCache = new Map();
+  const coverageCache = new Map();
+
+  function coverage(lens) {
+    if (!lens?.id || !Array.isArray(lens.values)) return null;
+    if (coverageCache.has(lens.id)) return coverageCache.get(lens.id);
+    const owner = w.raw.owner;
+    let total = 0, present = 0;
+    for (let i = 0; i < lens.values.length && i < owner.length; i++) {
+      if (owner[i] < 0) continue;
+      total++;
+      if (lens.values[i] != null) present++;
+    }
+    const out = { present, total, share: total ? present / total : 0 };
+    coverageCache.set(lens.id, out);
+    return out;
+  }
+  const coverageLabel = (lens) => {
+    const c = coverage(lens);
+    return c ? `${Math.round(c.share * 100)}%` : "";
+  };
 
   // ---- quick row + picker -------------------------------------------------------------------------------------
   // CSS gradient stops: a smooth ramp, or hard-edged blocks for a categorical lens.
@@ -102,9 +137,10 @@ export function initLensDock(opts) {
       title="${esc(l.name)}${l.id ? " lens" : " (no lens)"}">${glyph(l, 15)}<span>${esc(l.name)}</span></button>`;
 
   function renderQuick() {
-    const row = [TERRAIN, ...recent.map((id) => byId.get(id)).filter(Boolean)];
+    const quickIds = [...favorites, ...recent].filter((id, k, a) => byId.has(id) && a.indexOf(id) === k).slice(0, 3);
+    const row = [TERRAIN, ...quickIds.map((id) => byId.get(id)).filter(Boolean)];
     quick.innerHTML = row.map(quickBtn).join("");
-    const inRow = !active || recent.includes(active.id);
+    const inRow = !active || quickIds.includes(active.id);
     moreBtn.classList.toggle("active", !inRow);
     moreBtn.innerHTML = `${icon("layers", "▤", { size: 15 })}<span>${inRow ? "Lenses" : esc(active.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
     moreBtn.title = "All lenses (L cycles)";
@@ -115,18 +151,40 @@ export function initLensDock(opts) {
     const groups = [...(lensFile?.groups || [])];
     const known = new Set(groups.map((g) => g.id));
     if (lenses.some((l) => !known.has(l.group))) groups.push({ id: "__other", name: "Other" });
-    const tile = (l) => `<button class="lp-tile ${isActive(l) ? "active" : ""}" data-id="${esc(l.id ?? "")}" aria-pressed="${isActive(l)}"
-        title="${esc(l.description || l.name)}">
-        <span class="lp-ic">${glyph(l, 20)}</span><span class="lp-nm">${esc(l.name)}</span>
+    const haystack = (l) => normText([
+      l.name, l.description, l.unit, l.group,
+      groups.find((g) => g.id === l.group)?.name,
+      sources.find((s) => s.id === l.source)?.publisher,
+      sources.find((s) => s.id === l.source)?.vintage,
+    ].filter(Boolean).join(" "));
+    const tile = (l) => {
+      const fav = l.id && favorites.includes(l.id);
+      const cov = coverageLabel(l);
+      return `<span class="lp-wrap"><button class="lp-tile ${isActive(l) ? "active" : ""}" data-id="${esc(l.id ?? "")}" aria-pressed="${isActive(l)}"
+        title="${esc(l.description || l.name)}${cov ? ` · ${cov} French land-cell coverage` : ""}">
+        <span class="lp-ic">${glyph(l, 20)}</span><span class="lp-txt"><span class="lp-nm">${esc(l.name)}</span>${cov ? `<span class="lp-cov">${cov} coverage</span>` : ""}</span>
         ${l.ramp ? `<i class="lp-ramp" style="background:linear-gradient(90deg, ${rampStops(l)})"></i>` : `<i class="lp-ramp terrain"></i>`}
-      </button>`;
-    const sec = (g, items) => !items.length ? "" : `<section class="lp-group"><h4>${icon(g.icon || `g-${g.id}`, "", { size: 14 })}${esc(g.name)}</h4>
+      </button>${l.id ? `<button class="lp-fav ${fav ? "on" : ""}" data-fav="${esc(l.id)}" aria-pressed="${!!fav}" title="${fav ? "Remove from" : "Add to"} favorite lenses" aria-label="${fav ? "Remove" : "Add"} ${esc(l.name)} ${fav ? "from" : "to"} favorites">${fav ? "★" : "☆"}</button>` : ""}</span>`;
+    };
+    const sec = (g, items) => !items.length ? "" : `<section class="lp-group"><h4>${icon(g.icon || `g-${g.id}`, "", { size: 14 })}${esc(g.name)} <span class="lp-count">${items.length}</span></h4>
         <div class="lp-tiles">${items.map(tile).join("")}</div></section>`;
+    const body = () => {
+      const qNow = normText(query);
+      const visible = qNow ? lenses.filter((l) => haystack(l).includes(qNow)) : lenses;
+      const favItems = visible.filter((l) => l.id && favorites.includes(l.id));
+      const base = !qNow || normText(TERRAIN.name).includes(qNow) ? sec({ id: "base", name: "Base map", icon: "terrain" }, [TERRAIN]) : "";
+      const favsec = favItems.length ? sec({ id: "favorites", name: "Favorites", icon: "star" }, favItems) : "";
+      const unfavorited = favItems.length ? visible.filter((l) => !favorites.includes(l.id)) : visible;
+      const rest = groups.map((g) => sec(g, unfavorited.filter((l) => (g.id === "__other" ? !known.has(l.group) : l.group === g.id)))).join("");
+      return base + favsec + rest || `<div class="lp-empty">No lens matches “${esc(query)}”.</div>`;
+    };
     picker.innerHTML = `<div class="lp-head"><span>Choose a lens</span><button class="icon-btn lp-close" aria-label="Close lens picker">${icon("close", "✕", { size: 12 })}</button></div>
-      <div class="lp-body">
-      ${sec({ id: "base", name: "Base map", icon: "terrain" }, [TERRAIN])}
-      ${groups.map((g) => sec(g, lenses.filter((l) => (g.id === "__other" ? !known.has(l.group) : l.group === g.id)))).join("")}
-      </div>`;
+      <div class="lp-tools"><input class="lp-search" type="search" value="${esc(query)}" placeholder="Search lenses, sources or years…" aria-label="Search lenses"></div>
+      <div class="lp-body">${body()}</div>`;
+    picker.querySelector(".lp-search").addEventListener("input", (e) => {
+      query = e.target.value;
+      picker.querySelector(".lp-body").innerHTML = body();
+    });
   }
 
   function pick(id, fromPicker) {
@@ -144,6 +202,16 @@ export function initLensDock(opts) {
   };
   picker.onclick = (e) => {
     if (e.target.closest(".lp-close")) return closePicker();
+    const favBtn = e.target.closest("button[data-fav]");
+    if (favBtn) {
+      const id = favBtn.dataset.fav;
+      favorites = favorites.includes(id) ? favorites.filter((x) => x !== id) : [id, ...favorites];
+      saveFavorites(favorites);
+      renderQuick();
+      renderPicker();
+      picker.querySelector(".lp-search")?.focus();
+      return;
+    }
     const b = e.target.closest("button[data-id]");
     if (!b) return;
     pick(b.dataset.id, true);
@@ -170,7 +238,7 @@ export function initLensDock(opts) {
     picker.hidden = false;
     legend.classList.add("behind");
     moreBtn.setAttribute("aria-expanded", "true");
-    (picker.querySelector(".lp-tile.active") || picker.querySelector(".lp-tile"))?.focus();
+    picker.querySelector(".lp-search")?.focus();
   }
   function closePicker(restore = true) {
     if (picker.hidden) return;
@@ -206,6 +274,13 @@ export function initLensDock(opts) {
     const name = src ? src.publisher && src.title.length > 44 ? src.publisher : src.title : lens.source;
     const vintage = src?.vintage || lensFile?.vintage || "";
     return [name, vintage].filter(Boolean).map(esc).join(" · ");
+  }
+
+  function coverageLine(lens) {
+    const c = coverage(lens);
+    if (!c) return "";
+    const missing = c.total - c.present;
+    return `<span class="lg-coverage" title="${c.present.toLocaleString()} of ${c.total.toLocaleString()} French land cells have a published value">${Math.round(c.share * 100)}% coverage${missing ? ` · ${missing.toLocaleString()} no-data cells` : ""}</span>`;
   }
 
   // Categorical lenses (format "category"): values are indices into lens.categories, whose colours are the ramp
@@ -246,7 +321,7 @@ export function initLensDock(opts) {
       <div class="desc">${esc(l.description || l.unit || "")}</div>
       ${noteHtml(l)}
       <div class="lg-cats" role="group" aria-label="${esc(l.name)} categories: click one to show only it">${sw}</div>
-      <div class="lg-meta"><span class="src">${sourceLine(l)}</span></div>
+      <div class="lg-meta"><span class="src">${sourceLine(l)}</span>${coverageLine(l)}</div>
       <div class="lg-hint" aria-live="polite">Click a category to show only it</div>`;
     legend.querySelector(".lg-close").onclick = () => opts.onPick(null);
     legend.classList.toggle("expanded", legendExpanded);
@@ -307,7 +382,7 @@ export function initLensDock(opts) {
       </div>
       <div class="ticks">${ticks}</div>
       ${l.unit ? `<div class="lg-unit">${esc(l.unit)}</div>` : ""}
-      <div class="lg-meta">${hib}<span class="src">${l.unit ? esc(l.unit) + " · " : ""}${sourceLine(l)}</span></div>
+      <div class="lg-meta">${hib}<span class="src">${l.unit ? esc(l.unit) + " · " : ""}${sourceLine(l)}</span>${coverageLine(l)}</div>
       <div class="lg-hint" aria-live="polite">Hover or drag the scale to show only that range</div>`;
     legend.querySelector(".lg-close").onclick = () => opts.onPick(null);
     legend.classList.toggle("expanded", legendExpanded);

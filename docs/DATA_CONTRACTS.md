@@ -80,7 +80,7 @@ Energy and agricultural resource sites. Items have `type`, `name`, `x`, `y`, `ce
 
 ### infrastructure.json
 
-Airports and ports. Airport passengers come from Eurostat `avia_paoa`, coordinates from OurAirports. Port tonnage comes from Eurostat maritime statistics with Natural Earth fallback positions. Labels are local French display-size buckets. `aav` is the containing AAV inferred from the point.
+Transport infrastructure. Airport passengers come from Eurostat `avia_paoa`, coordinates from OurAirports. Port tonnage comes from Eurostat maritime statistics with Natural Earth fallback positions. Passenger-station traffic comes from SNCF. Railway tile links use official active SNCF Réseau line geometry, with Natural Earth retained only for Corsica because it is outside the RFN export; ordinary lines are main-line display tier and connections/main/port tracks are secondary. Roads remain schematic Natural Earth geometry. Labels are local French display-size buckets. `aav` is the containing AAV inferred from the point.
 
 ### trade.json
 
