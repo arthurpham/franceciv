@@ -94,6 +94,11 @@ Commune connectivity lenses. Fiber values are eligible premises shares from ARCE
 
 National BNAC/OpenStreetMap cycling-infrastructure lenses. Segment lengths are computed from WGS84 geometries, attributed to current communes through INSEE municipal-merger mappings, split across boundary-crossing communes, and aggregated by commune centroid. `cycling_network` counts explicit cycling amenities; `protected_cycling` counts pistes cyclables, voies vertes, bus-bike corridors, mixed pedestrian/cycle facilities, protected shoulders and goulotte lanes. OpenStreetMap completeness varies by territory.
 
+
+### economy.json
+
+INSEE census workplace-employment composition lenses. Commune job counts are summed within each map hex before calculating shares, so values describe where jobs are located rather than where workers live. Manufacturing uses NACE CA–CM; knowledge services use information/communication, finance/insurance and professional/scientific/technical divisions; public and care uses public administration, education, health and social work.
+
 ### quality_life.json
 
 DVF housing-price and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.

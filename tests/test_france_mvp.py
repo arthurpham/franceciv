@@ -130,6 +130,15 @@ def test_cycling_contract():
     assert data["unmatched_network_km"] < 100
 
 
+def test_economy_contract():
+    data = web("economy.json")
+    assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 5
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and all(0 <= v <= 1 for v in vals)
+    assert "knowledge_jobs" in {l["id"] for l in data["lenses"]}
+
+
 def test_hex_grid_index_round_trip():
     g = HexGrid(8, 98, 107)
     i = g.index(42, 17)

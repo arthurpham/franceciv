@@ -52,13 +52,13 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, cycling] = await Promise.all([
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, cycling, economy] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
-    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("cycling", true),
+    loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("cycling", true), loadJSON("economy", true),
   ]);
   if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
-  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, cycling]) {
+  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, cycling, economy]) {
     if (!extra?.lenses?.length) continue;
     if (extra.group && !lensFile.groups.some((g) => g.id === extra.group.id)) lensFile.groups.push(extra.group);
     const known = new Set(lensFile.lenses.map((l) => l.id));
