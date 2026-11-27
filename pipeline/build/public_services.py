@@ -74,21 +74,31 @@ def build():
         if cell is None:
             unmatched_eq += 1
             continue
-        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "service_pop": 0})
+        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "rail": 0.0, "service_pop": 0})
         a["food"] += row["food_shops"]
         a["pharm"] += row["pharmacies"]
         a["culture"] += row["culture_sports"]
+        a["hospital"] += row.get("hospital_services", 0)
+        a["childcare"] += row.get("childcare", 0)
+        a["eldercare"] += row.get("eldercare", 0)
+        a["cinemas"] += row.get("cinemas", 0)
+        a["rail"] += row.get("rail_stations", 0)
         # Population-weight the presence score so hexes represent residents' typical access,
         # not the arithmetic mean of tiny and large communes.
         a["service_pop"] += row["essential_score"] * commune_pop.get(code, 0)
-    essential, food, pharm, culture = [], [], [], []
+    essential, food, pharm, culture, hospital, childcare, eldercare, cinemas, rail = [], [], [], [], [], [], [], [], []
     for i in range(grid.size):
         pop = pop_acc.get(i, 0)
-        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "service_pop": 0})
+        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "rail": 0.0, "service_pop": 0})
         essential.append(round(a["service_pop"] / pop, 2) if pop else None)
         food.append(round(a["food"] * 10_000 / pop, 2) if pop else None)
         pharm.append(round(a["pharm"] * 10_000 / pop, 2) if pop else None)
         culture.append(round(a["culture"] * 10_000 / pop, 2) if pop else None)
+        hospital.append(round(a["hospital"] * 100_000 / pop, 2) if pop else None)
+        childcare.append(round(a["childcare"] * 10_000 / pop, 2) if pop else None)
+        eldercare.append(round(a["eldercare"] * 10_000 / pop, 2) if pop else None)
+        cinemas.append(round(a["cinemas"] * 100_000 / pop, 2) if pop else None)
+        rail.append(round(a["rail"] * 100_000 / pop, 2) if pop else None)
 
     write_web("public_services.json", {
         "version": 1, "vintage": f"Interior Ministry crime {year}; current school directory; INSEE BPE 2024", "sources": ["fr_crime", "fr_schools", "fr_public_equipment"],
@@ -103,6 +113,11 @@ def build():
             lens("food_shops", "Food shops", "🥖", "per 10k residents", food, "fr_public_equipment", "Food retailers counted in the INSEE Base permanente des équipements 2024, per 10,000 residents. Commune counts are aggregated by map hex."),
             lens("pharmacies", "Pharmacies", "💊", "per 10k residents", pharm, "fr_public_equipment", "Pharmacies counted in the INSEE Base permanente des équipements 2024, per 10,000 residents."),
             lens("culture_sports", "Sports & culture", "🎭", "facilities per 10k residents", culture, "fr_public_equipment", "Sports, leisure and cultural facilities counted in the INSEE Base permanente des équipements 2024, per 10,000 residents. Counts reflect facility records, not floor area or quality."),
+            lens("hospital_services", "Hospital services", "🏥", "service records per 100k residents", hospital, "fr_public_equipment", "Hospital and specialized health-service records in INSEE BPE 2024 per 100,000 residents. Multiple service types can belong to the same hospital, so this measures recorded service presence rather than hospital count or capacity."),
+            lens("childcare", "Childcare facilities", "🧒", "facilities per 10k residents", childcare, "fr_public_equipment", "Young-childcare establishments and micro-crèches in INSEE BPE 2024 per 10,000 residents. The denominator is total population, not the target under-3 population."),
+            lens("eldercare", "Eldercare services", "🧓", "services per 10k residents", eldercare, "fr_public_equipment", "Elderly housing, home-care and support-service records in INSEE BPE 2024 per 10,000 residents. Counts reflect service records, not beds or capacity."),
+            lens("cinemas", "Cinemas", "🎬", "screens/sites per 100k residents", cinemas, "fr_public_equipment", "Cinema records in INSEE BPE 2024 per 100,000 residents. Counts reflect BPE equipment records, not admissions or screen quality."),
+            lens("rail_station_access", "Rail stations", "🚉", "stations per 100k residents", rail, "fr_public_equipment", "Passenger rail stations of national, regional or local interest in INSEE BPE 2024 per 100,000 residents. Station count does not measure train frequency or service quality."),
         ],
     })
 
@@ -110,7 +125,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "public_services.json").read_text())
-    assert len(doc["lenses"]) == 8
+    assert len(doc["lenses"]) == 13
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and max(vals) > 0.1
-    return [("PASS", f"public_services.json: 8 safety/school/equipment lenses over {len(vals)} cells")]
+    return [("PASS", f"public_services.json: 13 safety/school/equipment lenses over {len(vals)} cells")]
