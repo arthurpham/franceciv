@@ -20,7 +20,8 @@ function upperBound(values, x) {
 function vintageYear(vintage) {
   const text = String(vintage || "");
   // Prefer an explicit statistical period over a later geographic-reference year ("census 2023, geography 2026").
-  const range = text.match(/\b((?:19|20)\d{2})\s*[–-]\s*((?:19|20)?\d{2})\b/);
+  // Do not mistake ISO dates such as 2026-11-02 for year ranges.
+  const range = text.match(/\b((?:19|20)\d{2})\s*[–-]\s*((?:19|20)?\d{2})\b(?!-)/);
   if (range) return `${range[1]}–${range[2].length === 2 ? range[2] : range[2].slice(2)}`;
   return text.match(/\b(?:19|20)\d{2}\b/)?.[0] || "";
 }
