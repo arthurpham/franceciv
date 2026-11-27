@@ -68,8 +68,17 @@ async function main() {
     const known = new Set(lensFile.lenses.map((l) => l.id));
     lensFile.lenses.push(...extra.lenses.filter((l) => !known.has(l.id)));
   }
+  const denseSeriesValues = (vals) => {
+    if (Array.isArray(vals)) return vals;
+    const dense = Array(world.owner.length).fill(null);
+    for (const [i, v] of Object.entries(vals || {})) dense[Number(i)] = v;
+    return dense;
+  };
   for (const lens of lensFile.lenses) {
     if (!lens.time?.series) continue;
+    if (lens.time.encoding === "sparse-index-v1") {
+      for (const [year, vals] of Object.entries(lens.time.series)) lens.time.series[year] = denseSeriesValues(vals);
+    }
     lens.activeYear = lens.time.default || lens.time.years?.at(-1);
     lens.values = lens.time.series[String(lens.activeYear)] || lens.values;
   }

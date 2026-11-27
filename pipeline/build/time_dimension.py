@@ -220,6 +220,30 @@ def temporal_lens(lens_id, group, name, emoji, unit, fmt, scale, series, years, 
     }
 
 
+def compact_lens(lens):
+    # Dense per-cell arrays are dominated by null water/unowned cells. Store only populated
+    # cells as sparse index maps; main.js expands them once after loading.
+    out = dict(lens)
+    out.pop("values", None)
+    time_meta = dict(out["time"])
+    time_meta["encoding"] = "sparse-index-v1"
+    time_meta["series"] = {
+        year: {str(i): v for i, v in enumerate(vals) if v is not None}
+        for year, vals in time_meta["series"].items()
+    }
+    out["time"] = time_meta
+    return out
+
+
+def dense_values(vals, n):
+    if isinstance(vals, list):
+        return vals
+    out = [None] * n
+    for i, v in vals.items():
+        out[int(i)] = v
+    return out
+
+
 def build():
     world = load_interim("_world")
     bounds = load_interim("fr_boundaries")
@@ -353,7 +377,7 @@ def build():
             "migration_years": MIGRATION_YEARS,
             "climate_years": climate_years,
         },
-        "lenses": lenses,
+        "lenses": [compact_lens(lens) for lens in lenses],
     })
 
 
@@ -372,10 +396,13 @@ def check(web_dir):
     for lens in doc["lenses"]:
         time_meta = lens["time"]
         assert time_meta["default"] == time_meta["years"][-1]
-        assert len(lens["values"]) == n
+        assert "values" not in lens
+        assert time_meta["encoding"] == "sparse-index-v1"
         assert set(time_meta["series"]) == {str(y) for y in time_meta["years"]}
-        assert all(len(vals) == n for vals in time_meta["series"].values())
-        assert all(v is None or isinstance(v, (int, float)) for vals in time_meta["series"].values() for v in vals)
+        dense_series = {year: dense_values(vals, n) for year, vals in time_meta["series"].items()}
+        assert all(len(vals) == n for vals in dense_series.values())
+        assert all(v is None or isinstance(v, (int, float)) for vals in dense_series.values() for v in vals)
+        time_meta["series"] = dense_series
     pop = next(l for l in doc["lenses"] if l["id"] == "population_history")
     vals68 = [v for v in pop["time"]["series"]["1968"] if v is not None]
     vals23 = [v for v in pop["time"]["series"]["2023"] if v is not None]

@@ -135,12 +135,23 @@ def test_time_dimension_contract():
         "temperature_history", "rainfall_history", "water_deficit_history",
     }
     n = len(web("world.json")["owner"])
+
+    def dense(values):
+        if isinstance(values, list):
+            return values
+        out = [None] * n
+        for i, v in values.items():
+            out[int(i)] = v
+        return out
+
     for lens in data["lenses"]:
         meta = lens["time"]
         assert meta["years"] == sorted(meta["years"]) and meta["default"] == meta["years"][-1]
         assert set(meta["series"]) == {str(y) for y in meta["years"]}
+        assert meta["encoding"] == "sparse-index-v1"
+        assert "values" not in lens
+        meta["series"] = {year: dense(values) for year, values in meta["series"].items()}
         assert all(len(values) == n for values in meta["series"].values())
-        assert lens["values"] == meta["series"][str(meta["default"])]
     scales = data["methodology"]["inset_display_area_over_real_area"]
     assert scales["972"] > 10 and scales["973"] < 0.6 and scales["987"] < 0.1 and scales["977"] > 20
     world = web("world.json")
