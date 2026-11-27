@@ -18,6 +18,7 @@ const TABS = [
   ["economy", "Economy", "y-gold"],
   ["workforce", "Workforce", "y-production"],
   ["resources", "Resources", "resources"],
+  ["local", "Local data", "layers"],
   ["compare", "Compare", "layers"],
 ];
 
@@ -168,6 +169,17 @@ export function countiesTable(m, data) {
     ${rows.length > show.length ? `<p class="muted cv-note">and ${rows.length - show.length} more.</p>` : ""}
     <p class="cv-note">INSEE department census tables${vint}.</p>
   </div>`;
+}
+
+// --- local multi-layer data -----------------------------------------------------------------------------------------
+function localData(m, h) {
+  const local = h.inspector?.section(m.city.cell);
+  if (!local) return "";
+  return `
+  <section class="cv-sec" id="cv-local" data-sec="local" aria-labelledby="cv-h-local">
+    <h3 id="cv-h-local">${icon("layers", "▦", { size: 15 })}Local data inspector</h3>
+    ${local.html}
+  </section>`;
 }
 
 // --- districts -----------------------------------------------------------------------------------------------------
@@ -366,9 +378,10 @@ export function goToSection(el, id) {
 export function render(el, m, h) {
   el.classList.add("cv-dock");
   el.style.setProperty("--sc", css(m.stateRGB));
-  el.innerHTML = header(m) + citizens(m) + districts(m) + economy(m) + workforce(m) + resources(m) + compare(m) + footer(m);
+  el.innerHTML = header(m) + citizens(m) + districts(m) + economy(m) + workforce(m) + resources(m) + localData(m, h) + compare(m) + footer(m);
   el.scrollTop = 0;
 
+  h.inspector?.wire(el, m.city.cell);
   el.querySelector("[data-close]").onclick = () => h.onClose();
   el.querySelectorAll("[data-state]").forEach((b) => (b.onclick = () => h.onState(+b.dataset.state)));
   el.querySelector("[data-pedia]").onclick = (e) => { e.preventDefault(); h.onPedia(); };

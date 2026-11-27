@@ -180,7 +180,7 @@ export function createLocationInspector(opts) {
       <div class="li-context"><b>${esc(place(cell))}</b><span>8 km hex${Number.isFinite(elev) ? ` · ${int(elev)} m mean elevation` : ""}</span></div>
       <div class="li-tools">
         <input class="li-search" type="search" value="${esc(query)}" placeholder="Filter local layers…" aria-label="Filter local layers">
-        <label class="li-toggle" title="Include layers with no measured value at this hex"><input type="checkbox"${showMissing ? " checked" : ""}> no data</label>
+        <label class="li-toggle" title="Include layers with no measured value at this hex"><input type="checkbox"${showMissing ? " checked" : ""}> show no data</label>
       </div>
       <div class="li-results"></div>`;
     root.querySelector(".li-search").addEventListener("input", (e) => {
