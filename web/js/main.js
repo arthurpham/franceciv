@@ -655,7 +655,7 @@ async function main() {
       if (city) {
         if (city !== state.selectedCity) selectCity(city, { fly: !p.at });
       } else if (sIdx >= 0) {
-        const hexNum = Number(p.hex);
+        const hexNum = p.hex == null ? NaN : Number(p.hex);
         const hex = Number.isInteger(hexNum) && hexNum >= 0 && hexNum < w.grid.size && w.raw.owner[hexNum] === sIdx ? hexNum : null;
         if (sIdx !== state.selectedState || hex !== state.inspectCell) selectState(sIdx, { fly: !p.at, cell: hex });
       } else if (state.selectedCity || state.selectedState != null) clearSelection();
