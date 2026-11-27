@@ -369,6 +369,27 @@ def build() -> None:
         owner[i], water[i] = o, LAND
     print(f"    {len(slivers)} sliver water hexes turned into land: {[i for i, _ in slivers]}")
 
+    # Sparse Pacific archipelagos cannot be represented faithfully by majority area at an 8 km
+    # national hex resolution: individual islands are far smaller than a hex even when the inset
+    # frame itself is enlarged. Keep one representative land hex per commune centroid so Wallis-et-Futuna
+    # and French Polynesia remain visible and clickable; the inset frame still shows their scattered geography.
+    archipelago_cell_county = {}
+    state_by_fips = {s["fips"]: si for si, s in enumerate(states)}
+    county_pos = {c["geoid"]: ci for ci, c in enumerate(counties)}
+    represented = 0
+    for c in bounds["communes"]:
+        dep = c.get("department")
+        if dep not in {"986", "987"} or c.get("lon") is None:
+            continue
+        i = grid.cell_at(*proj(c["lon"], c["lat"]))
+        ci = county_pos.get(dep)
+        if i >= 0 and ci is not None and water[i] != LAND:
+            owner[i], water[i] = state_by_fips[dep], LAND
+            archipelago_cell_county[i] = ci
+            represented += 1
+    if represented:
+        print(f"    {represented} sparse-archipelago commune hexes represented cartographically")
+
     # Overseas territories are cartographic insets in a continuous projected plane. Real foreign
     # coastlines can project into the same screen space; clear a padded box around each territory
     # so every inset sits in clean ocean, like a conventional inset map.
@@ -380,7 +401,7 @@ def build() -> None:
         if not owned:
             continue
         pts = [grid.center(*grid.col_row(i)) for i in owned]
-        pad = HEX_RADIUS_KM * 2.2
+        pad = HEX_RADIUS_KM * 1.2
         xs, ys = [p[0] for p in pts], [p[1] for p in pts]
         box = (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad)
         inset_boxes[dep] = box
@@ -406,6 +427,8 @@ def build() -> None:
     borrowed = 0
     for i in range(grid.size):
         smp = county_samples[i]
+        if i in archipelago_cell_county:
+            smp[0] = archipelago_cell_county[i]
         if smp and max(smp) < 0:
             nb = [k for j in grid.neighbours(i) if owner[j] == owner[i] for k in county_samples[j] if k >= 0]
             if nb:
@@ -424,7 +447,33 @@ def build() -> None:
         pool = same or valid
         county[i] = smp[0] if smp[0] in pool else Counter(pool).most_common(1)[0][0]
         off_state += not same
+    # Compact departments can fall between the coarse hex lattice even though they are large and
+    # important statistical units (Paris is smaller than one 8 km hex). Give any otherwise unrepresented
+    # county the hex containing its most populous commune; this is a cartographic representation rule,
+    # not a claim that the whole hex belongs to that county.
+    represented_counties = {c for c in county if c >= 0}
+    county_pos = {c["geoid"]: ci for ci, c in enumerate(counties)}
+    small_counties = 0
+    for c in counties:
+        ci = county_pos[c["geoid"]]
+        if ci in represented_counties:
+            continue
+        members = [co for co in bounds["communes"] if co.get("department") == c["geoid"] and co.get("lon") is not None]
+        if not members:
+            continue
+        seat = max(members, key=lambda co: co.get("population") or 0)
+        i = grid.cell_at(*proj(seat["lon"], seat["lat"]))
+        if i < 0:
+            continue
+        owner[i], water[i], county[i] = state_by_fips[c["state_fips"]], LAND, ci
+        samples = county_samples[i]
+        if len(samples) < len(offsets):
+            samples.extend([-1] * (len(offsets) - len(samples)))
+        samples[0] = ci
+        small_counties += 1
     print(f"    {borrowed} French hexes borrowed a neighbour's county; {off_state} have no county in their own state")
+    if small_counties:
+        print(f"    {small_counties} compact counties represented by their most populous commune hex")
 
     # --- elevation, water depth classes and relief -------------------------------------------------
     elev = [0] * grid.size

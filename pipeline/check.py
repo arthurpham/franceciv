@@ -356,7 +356,7 @@ def _check_city_view(r: Report, what: str, c: dict, ctx: dict | None, ids: set) 
         if owner and any(not 0 <= v < ctx["n"] or owner[v] < 0 for v in fp):
             r.fail(f"{what}: footprint has cells that are not French land")
     cs = c.get("counties")
-    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"(?:\d{2}|97[1-6]|2A|2B)", g) for g in cs)):
+    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"(?:\d{2}|97[1-8]|98[6-8]|2A|2B)", g) for g in cs)):
         r.fail(f"{what}: counties must be a list of French department codes")
     ps = c.get("pop_series")
     if ps is not None and not (isinstance(ps, dict) and ps and all(re.fullmatch(r"\d{4}", str(y)) for y in ps)
@@ -672,7 +672,7 @@ def check_counties(r: Report, doc, ctx: dict | None, city_ids: set | None) -> No
                     errs[f"{k} not text"] += 1
             elif not is_num(v) or (fmt[k] == "pct" and not 0 <= v <= 1) or (k in ("population", "land_km2", "density") and v < 0):
                 errs[f"{k} out of range"] += 1
-        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"(?:\d{2}|97[1-6]|2A|2B)", rec["geoid"])):
+        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"(?:\d{2}|97[1-8]|98[6-8]|2A|2B)", rec["geoid"])):
             errs["geoid not a French department code"] += 1
         if city_ids is not None and rec["aav"] is not None and rec["aav"] not in city_ids:
             errs["aav not a cities.json id"] += 1

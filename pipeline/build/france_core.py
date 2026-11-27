@@ -347,9 +347,13 @@ def build():
             agg["jobs"].update(e["jobs"])
         jobs = dict(agg["jobs"])
         rcomp = reg_comp.get(s["fips"], {})
+        has_jobs = any(jobs.values())
         yields = {
-            "food": jobs.get("agriculture"), "production": round(jobs.get("manufacturing", 0) + jobs.get("construction", 0) + jobs.get("mining", 0)),
-            "gold": agg["gdp"] if have_gdp else None, "science": round(jobs.get("professional", 0) + jobs.get("information", 0)), "culture": jobs.get("arts"),
+            "food": jobs.get("agriculture") if has_jobs else None,
+            "production": round(jobs.get("manufacturing", 0) + jobs.get("construction", 0) + jobs.get("mining", 0)) if has_jobs else None,
+            "gold": agg["gdp"] if have_gdp else None,
+            "science": round(jobs.get("professional", 0) + jobs.get("information", 0)) if has_jobs else None,
+            "culture": jobs.get("arts") if has_jobs else None,
         }
         states.append({
             "fips": s["fips"], "abbr": s["abbr"], "name": s["name"], "population": agg["population"] or None,
@@ -379,6 +383,8 @@ def build():
         ranked = sorted((s for s in states if s["yields"].get(key) is not None), key=lambda s: s["yields"][key], reverse=True)
         for rank, s in enumerate(ranked, 1):
             s["ranks"][key] = rank
+        for s in states:
+            s["ranks"].setdefault(key, None)
     for si, s in enumerate(states):
         cells = [i for i, o in enumerate(world["owner"]) if o == si]
         land = {}
@@ -668,13 +674,15 @@ def build():
                 vals.append(None)
                 continue
             amount = 0.0
+            covered = False
             for k, n in weights[i].items():
                 dep = county_ids[k]
                 total = dep_econ[dep].get(key)
-                if total and totals.get(k):
+                if total is not None and totals.get(k):
                     amount += total * n / totals[k]
+                    covered = True
             land_share = sum(weights[i].values()) / len(world["county_samples"][i]) if world["county_samples"][i] else 1.0
-            vals.append(round(amount / (hex_area * land_share), digits) if amount else 0)
+            vals.append(round(amount / (hex_area * land_share), digits) if covered else None)
         return vals
 
     defs=[

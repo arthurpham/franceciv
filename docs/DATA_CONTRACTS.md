@@ -1,5 +1,18 @@
 # Data contracts (v2, France)
 
+### wider-France inset coverage matrix
+
+| Territory | Map/search/population boundary | Elevation/relief | Metropolitan lens coverage | Cartographic treatment |
+|---|---|---|---|---|
+| Saint-Pierre-et-Miquelon | yes | yes | mostly null where a source is metropolitan/departmental | enlarged affine inset |
+| Saint-Barthélemy | yes | yes | mostly null | enlarged affine inset |
+| Saint-Martin | yes | yes | mostly null | enlarged affine inset |
+| Wallis-et-Futuna | yes | yes | mostly null | inset plus representative commune hexes where islands are smaller than the 8 km grid |
+| French Polynesia | yes | yes | mostly null | compressed archipelago inset plus representative commune hexes |
+| New Caledonia | yes | yes | mostly null | enlarged affine inset |
+
+All eleven non-metropolitan insets are cartographic placements, not real positions. Small-island representative hexes are visibility/accessibility simplifications, not area measurements; density and area-normalized lenses may be missing or uncertain there. Many statistical sources cover only metropolitan France, the five overseas departments, or a subset of collectivities, so null means no validated coverage rather than zero.
+
 The Python pipeline and the browser agree on the JSON files in `web/data/`. All coordinates are **map kilometres** in the Albers equal-area projection fitted to the whole map, origin top-left, y down. Overseas departments are first affine-transformed into cartographic inset slots west of the mainland, then projected by the same Albers transform. Pointy-top odd-r hex index is `row * cols + col`. `null` means unavailable; `0` is never a stand-in for unknown.
 
 ## French naming inherited from the original schema

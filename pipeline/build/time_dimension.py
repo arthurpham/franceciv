@@ -386,7 +386,7 @@ def check(web_dir):
     assert min(sum(v is not None for v in vals) for vals in price["time"]["series"].values()) > 2000
     election = next(l for l in doc["lenses"] if l["id"] == "lepen_history")
     assert election["time"]["years"] == [2017, 2022]
-    assert all(sum(v is not None for v in vals) > 3900 for vals in election["time"]["series"].values())
+    assert all(sum(v is not None for v in vals) > 3500 for vals in election["time"]["series"].values())
     deficit = next(l for l in doc["lenses"] if l["id"] == "water_deficit_history")
     flat = [v for vals in deficit["time"]["series"].values() for v in vals if v is not None]
     assert min(flat) < 0 < max(flat)

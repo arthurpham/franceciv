@@ -5,14 +5,14 @@ The original browser engine, rendering art, interaction model and pipeline archi
 
 **Live website: [www.arthurpham.com/franceciv](https://www.arthurpham.com/franceciv/).**
 
-**Current status: France MVP.** It renders metropolitan France, Corsica and five overseas department-region insets at 8 km hex resolution, with régions, départements, INSEE aires d'attraction des villes, terrain, land cover, population, GDP and employment-derived yields.
+**Current status: France MVP.** It renders metropolitan France, Corsica and eleven overseas department/collectivity insets at 8 km hex resolution, with régions, départements, INSEE aires d'attraction des villes, terrain, land cover, population, GDP and employment-derived yields.
 
 ![France drawn as a 4X strategy map](docs/images/france-mvp.png)
 
 ## What works in the MVP
 
 - Painted hex terrain from ETOPO1 elevation and CORINE Land Cover 2018 land cover; overseas elevation is included, while CORINE land-cover lenses remain metropolitan-only.
-- 18 régions and 101 départements from Etalab contour files, with Guadeloupe, Martinique, Guyane, La Réunion and Mayotte affine-placed as cartographic insets.
+- 24 régions/collectivities and 107 départements or single-territory collectivities from Etalab contour files. Guadeloupe, Martinique, Guyane, La Réunion, Mayotte, Saint-Pierre-et-Miquelon, Saint-Barthélemy, Saint-Martin, Wallis-et-Futuna, French Polynesia and New Caledonia are affine-placed as cartographic insets; sparse Pacific archipelagos use representative commune hexes at the 8 km resolution.
 - 699 city banners covering INSEE 2020 aires d'attraction des villes (AAV), including overseas AAVs and cross-border AAVs restricted to their French communes; small areas appear through zoom-dependent de-cluttering and search.
 - Five yields: Food, Production, Gold, Science and Culture.
   - Gold is Eurostat NUTS-3 GDP in current euros.

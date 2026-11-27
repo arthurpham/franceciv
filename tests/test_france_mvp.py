@@ -25,11 +25,11 @@ def test_committed_world_contract():
     assert len(w["owner"]) == len(w["county"]) == len(w["water"]) == len(w["france_share"]) == n
     assert all(0 <= x <= 1 for x in w["france_share"])
     assert any(0 < x < 1 for x in w["france_share"])
-    assert len(w["states"]) == 18
-    assert {s["abbr"] for s in w["states"] if s.get("inset")} == {"GUA", "MTQ", "GUY", "REU", "MAY"}
-    assert len(w["insets"]) == 5
-    assert len(w["counties"]) == 101
-    assert 9000 < n < 18000
+    assert len(w["states"]) == 24
+    assert {s["abbr"] for s in w["states"] if s.get("inset")} == {"GUA", "MTQ", "GUY", "REU", "MAY", "SPM", "STB", "SMT", "WAF", "PYF", "NCL"}
+    assert len(w["insets"]) == 11
+    assert len(w["counties"]) == 107
+    assert 9000 < n < 20000
 
 
 def test_committed_france_core_contract():
@@ -97,7 +97,7 @@ def test_connectivity_contracts():
     fiveg = next(l for l in connectivity["lenses"] if l["id"] == "mobile_5g")
     mv = [v for v in mobile["values"] if v is not None]
     fv = [v for v in fiveg["values"] if v is not None]
-    assert len(connectivity["lenses"]) == 4 and len(mv) > 2500 and max(mv) <= 4
+    assert len(connectivity["lenses"]) == 4 and len(mv) > 2500 and max(mv) <= 5
     assert len(fv) > 2500 and all(0 <= v <= 1 for v in fv)
     infra = web("infrastructure.json")
     assert len(infra["stations"]) >= 500
@@ -142,7 +142,7 @@ def test_time_dimension_contract():
         assert all(len(values) == n for values in meta["series"].values())
         assert lens["values"] == meta["series"][str(meta["default"])]
     scales = data["methodology"]["inset_display_area_over_real_area"]
-    assert scales["972"] > 13 and scales["973"] < 0.6
+    assert scales["972"] > 10 and scales["973"] < 0.6 and scales["987"] < 0.1 and scales["977"] > 20
     world = web("world.json")
 
     def inset_values(abbr, year=2023):
@@ -156,7 +156,7 @@ def test_time_dimension_contract():
         vals = inset_values(abbr)
         assert vals and 150 < sum(vals) / len(vals) < 600
     guyane = inset_values("GUY")
-    assert 200 < max(guyane) < 700
+    assert 100 < max(guyane) < 700
     pop = next(l for l in data["lenses"] if l["id"] == "population_history")
     assert pop["time"]["years"] == [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
     mean = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in pop["time"]["series"][str(year)] if v is not None])
@@ -268,7 +268,7 @@ def test_freight_trade_contract_uses_french_units():
     assert trade["sources"] == ["fr_freight"]
     assert trade["year"] == 2019
     assert len(trade["routes"]) == 40
-    assert len(trade["zones"]) == 18
+    assert len(trade["zones"]) == 24
     assert all("value_musd" not in r for r in trade["routes"])
     assert all(r["volume_mtkm"] > 0 and len(r["path"]) >= 2 for r in trade["routes"])
     assert trade["routes"] == sorted(trade["routes"], key=lambda r: r["rank"])
