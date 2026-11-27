@@ -102,6 +102,10 @@ Physical river-flood exposure. Values are approximate hex-area shares derived fr
 
 Enedis electricity-consumption lenses. Values are 2024 MWh per department resident for total consumption and broad residential, tertiary, industrial and agricultural sectors. Department values reflect where metered load is located; Enedis coverage gaps (including Corsica and local-distribution areas) mean low values are not always low use.
 
+### public_services.json
+
+Recorded-crime, school-density and INSEE Base permanente des équipements lenses. Crime is department-level recorded crime and not victimization prevalence. Equipment lenses use detailed BPE 2024 rows aggregated by commune centroid to map hexes. `essential_services` is the population-weighted count of six categories present in a commune: food shops, pharmacy, general practitioner, primary school, post office/relais and library. Equipment counts use `NBEQUIDENT` where INSEE groups identical facilities; they measure presence/density, not quality or capacity. Paris, Lyon and Marseille arrondissement records are attributed to commune totals.
+
 ### agriculture.json
 
 CORINE vineyard/orchard land-cover shares plus Agreste 2020 farm density and average farm size. Agreste values are commune census statistics aggregated to hexes by commune centroid. Blank commune cells conflate no farm and statistical suppression, so they are omitted from both numerator and denominator rather than zero-filled. Utilised agricultural area is assigned to the farm headquarters commune and may include land worked elsewhere.
