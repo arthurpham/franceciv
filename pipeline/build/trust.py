@@ -119,6 +119,11 @@ def _layer_rows(world):
                 continue
             seen[lid] = path.name
             vals = _time_values(lens)
+            if isinstance(vals, dict) and lens.get("time", {}).get("encoding") == "sparse-index-v1":
+                sparse = vals
+                vals = [None] * len(owner)
+                for key, value in sparse.items():
+                    vals[int(key)] = value
             if not isinstance(vals, list) or len(vals) != len(owner):
                 rows.append({"id": lid, "name": lens.get("name"), "file": path.name, "source": lens.get("source"), "shape": "invalid"})
                 continue
