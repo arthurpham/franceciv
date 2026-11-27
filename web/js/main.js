@@ -864,7 +864,8 @@ async function main() {
     beforeCopy: () => url.flush(),
     fileName: () => {
       const sel = shareInfo().selection;
-      return `france-${state.lens?.id || "terrain"}${sel ? "-" + slug(sel.name) : ""}.png`;
+      const year = state.lens?.time && state.lens.activeYear ? `-${state.lens.activeYear}` : "";
+      return `france-${state.lens?.id || "terrain"}${year}${sel ? "-" + slug(sel.name) : ""}.png`;
     },
     onToast: toast,
   });
