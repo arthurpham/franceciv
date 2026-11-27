@@ -86,6 +86,10 @@ Transport infrastructure. Airport passengers come from Eurostat `avia_paoa`, coo
 
 SDES 2019 interregional freight flows. Routes are schematic arcs between regional anchors: tonne-kilometres and tonnes are real aggregate statistics, but paths are not physical truck/rail routes. Rail suppression is represented explicitly. Fields use metric units; obsolete `value_musd` must not be emitted.
 
+### connectivity.json
+
+Commune connectivity lenses. Fiber values are eligible premises shares from ARCEP; EV-charging values are consolidated public charge points per 10,000 residents. Commune values are aggregated to hexes by centroid. IRVE zero means no published public charge point, not missing data; arrondissement charge points are attributed to Paris, Lyon and Marseille commune totals.
+
 ### flood.json
 
 Physical river-flood exposure. Values are approximate hex-area shares derived from official TRI/Géorisques rare-or-millennial river-overflow WMS rasters. They are not parcel-level risk determinations, damage estimates, or a substitute for regulatory hazard maps.
