@@ -588,3 +588,21 @@ def test_water_circular_contract():
     assert data["matched_recycling_communes"] > 4000
     grid_size = len(web("world.json")["owner"])
     assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
+
+
+def test_risk_depth_contract():
+    data = web("risk_depth.json")
+    assert data["sources"] == ["fr_noise", "fr_air_quality", "fr_risk_perimeters"]
+    assert len(data["lenses"]) == 8
+    by_id = {l["id"]: l for l in data["lenses"]}
+    assert {"industrial_risk_perimeter", "road_noise_exposure", "intense_road_noise", "rail_noise_exposure", "intense_rail_noise", "nitrogen_dioxide", "fine_particles", "coarse_particles"} == set(by_id)
+    for lens_id in ("road_noise_exposure", "intense_road_noise", "rail_noise_exposure", "intense_rail_noise", "industrial_risk_perimeter"):
+        vals = [v for v in by_id[lens_id]["values"] if v is not None]
+        assert len(vals) > 2500 and len([v for v in vals if v]) > 40 and max(vals) < 1
+    for lens_id in ("nitrogen_dioxide", "fine_particles", "coarse_particles"):
+        vals = [v for v in by_id[lens_id]["values"] if v is not None]
+        assert len(vals) > 2500 and max(vals) > 8
+    assert data["noise_polygon_count"] > 200000 and data["noise_area_km2"] > 1000
+    assert data["noise_missing_departments"] == ["75", "92", "93", "94"]
+    grid_size = len(web("world.json")["owner"])
+    assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
