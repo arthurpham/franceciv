@@ -12,11 +12,11 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
-from ..core.geo import R_EARTH_KM, MapProjection, Shape
+from ..core.geo import R_EARTH_KM, MapProjection
 from ..core.hexgrid import HexGrid
 from ..core.insets import PARAMS, REGION_TO_DEP, real_inverse_bounds
 from ..core.store import load_interim, load_interim_payload, write_web
-from .connectivity import nearest_land
+from .connectivity import nearest_land, shape_weights, SAMPLE_STEP_KM
 
 REQUIRES = ["_world", "fr_boundaries", "fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration"]
 PRODUCES = ["time.json"]
@@ -30,7 +30,6 @@ POP_YEARS = [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
 HOUSING_YEARS = [2012, 2017, 2023]
 ELECTION_YEARS = [2017, 2022]
 MIGRATION_YEARS = [2012, 2017, 2023]
-SAMPLE_STEP_KM = 1.0
 
 
 def percentile(vals, p):
@@ -40,39 +39,6 @@ def percentile(vals, p):
     k = (len(xs) - 1) * p / 100
     lo, hi = math.floor(k), math.ceil(k)
     return xs[lo] if lo == hi else xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
-
-
-def shape_weights(world, grid, proj, communes):
-    """Normalized hex weights for every commune, approximating land-area overlap at 1 km."""
-    out = {}
-    fallback = 0
-    for c in communes:
-        counts = defaultdict(int)
-        shape = Shape([[proj(lon, lat) for lon, lat in ring] for ring in c.get("rings", [])])
-        if shape.rings:
-            x0, y0, x1, y1 = shape.bbox
-            x = math.floor(x0 / SAMPLE_STEP_KM) * SAMPLE_STEP_KM + SAMPLE_STEP_KM / 2
-            while x <= x1:
-                y = math.floor(y0 / SAMPLE_STEP_KM) * SAMPLE_STEP_KM + SAMPLE_STEP_KM / 2
-                while y <= y1:
-                    if shape.contains(x, y):
-                        cell = grid.cell_at(x, y)
-                        if cell >= 0 and world["owner"][cell] >= 0:
-                            counts[cell] += 1
-                    y += SAMPLE_STEP_KM
-                x += SAMPLE_STEP_KM
-        if not counts and c.get("lon") is not None:
-            fallback += 1
-            cell = nearest_land(world, grid, *proj(c["lon"], c["lat"]))
-            if cell >= 0 and world["owner"][cell] >= 0:
-                counts[cell] = 1
-        total = sum(counts.values())
-        if total:
-            out[c["code"]] = {cell: n / total for cell, n in counts.items()}
-    print(f"    commune spatial weights: {len(out)} communes, {fallback} centroid fallbacks")
-    return out
-
-
 def aggregate_measure(rows, weights, measure, years):
     sums = {y: defaultdict(float) for y in years}
     incomplete = {y: set() for y in years}

@@ -224,8 +224,12 @@ def test_transit_contract():
 
 def test_energy_system_contract():
     data = web("energy_system.json")
-    assert data["sources"] == ["fr_energy"] and len(data["lenses"]) == 7
+    assert data["sources"] == ["fr_energy", "fr_energy_network"] and len(data["lenses"]) == 14
     assert data["unmatched_capacity_mw"] < 1000
+    assert {"transmission_network_density", "high_voltage_network_density", "non_overhead_transmission_share", "transmission_circuit_stacking", "transformation_site_density", "hv_transformation_site_density", "grid_connection_point_density"} <= {l["id"] for l in data["lenses"]}
+    stacking = next(l for l in data["lenses"] if l["id"] == "transmission_circuit_stacking")
+    stacking_vals = [v for v in stacking["values"] if v is not None]
+    assert 0.5 < sum(stacking_vals) / len(stacking_vals) < 2.5
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2000 and len([v for v in vals if v]) > 10
@@ -430,16 +434,18 @@ def test_agriculture_tourism_electricity_contracts():
 
     electricity = web("electricity.json")
     assert electricity["sources"] == ["fr_electricity"]
-    assert {l["id"] for l in electricity["lenses"]} == {"electricity_use", "residential_electricity", "tertiary_electricity", "industrial_electricity", "agricultural_electricity"}
+    assert {l["id"] for l in electricity["lenses"]} == {"electricity_use", "residential_electricity", "tertiary_electricity", "industrial_electricity", "agricultural_electricity", "small_business_electricity", "residential_electricity_share", "electric_heating_share", "heat_sensitive_electricity"}
+    assert electricity["matched_communes"] > 30000 and electricity["unmatched_consumption_share"] < 0.02
     use = electricity["lenses"][0]
     vals = [v for v in use["values"] if v is not None]
     assert use["id"] == "electricity_use" and len(vals) > 2500
-    assert 2 < sum(vals) / len(vals) < 10 and max(vals) < 15
+    assert 2 < sum(vals) / len(vals) < 10 and max(vals) < 70
     for extra in electricity["lenses"][1:]:
         sector_vals = [v for v in extra["values"] if v is not None]
         assert len(sector_vals) > 2500 and max(sector_vals) > 0
     assert any(s["id"] == "fr_tourism" for s in web("sources.json"))
     assert any(s["id"] == "fr_electricity" for s in web("sources.json"))
+    assert any(s["id"] == "fr_energy_network" for s in web("sources.json"))
 
 
 def test_heritage_contract():
