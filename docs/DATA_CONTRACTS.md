@@ -95,6 +95,12 @@ Commune connectivity lenses. Fiber values are eligible premises shares from ARCE
 National BNAC/OpenStreetMap cycling-infrastructure lenses. Segment lengths are computed from WGS84 geometries, attributed to current communes through INSEE municipal-merger mappings, split across boundary-crossing communes, and aggregated by commune centroid. `cycling_network` counts explicit cycling amenities; `protected_cycling` counts pistes cyclables, voies vertes, bus-bike corridors, mixed pedestrian/cycle facilities, protected shoulders and goulotte lanes. OpenStreetMap completeness varies by territory.
 
 
+### economy.json
+
+INSEE census workplace-employment composition lenses. Commune job counts are summed within each map hex before calculating shares, so values describe where jobs are located rather than where workers live. Manufacturing uses NACE CA–CM; knowledge services use information/communication, finance/insurance and professional/scientific/technical divisions; public and care uses public administration, education, health and social work.
+
+
+
 ### transit.json
 
 Experimental national GTFS stop availability. Rows are deduplicated by normalized stop name and approximately 100-metre rounded coordinates because overlapping feeds often publish the same physical stop. Values are stops per 10,000 residents. Stop presence does not measure service frequency, operating span, speed or reliability; catalog coverage can vary, and seasonal/tourist territories can score high because the denominator is resident population.
