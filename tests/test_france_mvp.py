@@ -132,6 +132,8 @@ def test_time_dimension_contract():
         assert set(meta["series"]) == {str(y) for y in meta["years"]}
         assert all(len(values) == n for values in meta["series"].values())
         assert lens["values"] == meta["series"][str(meta["default"])]
+    scales = data["methodology"]["inset_display_area_over_real_area"]
+    assert scales["972"] > 13 and scales["973"] < 0.6
     pop = next(l for l in data["lenses"] if l["id"] == "population_history")
     assert pop["time"]["years"] == [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
     mean = lambda year: (lambda vals: sum(vals) / len(vals))([v for v in pop["time"]["series"][str(year)] if v is not None])

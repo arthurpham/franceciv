@@ -12,8 +12,9 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 
-from ..core.geo import MapProjection, Shape
+from ..core.geo import R_EARTH_KM, MapProjection, Shape
 from ..core.hexgrid import HexGrid
+from ..core.insets import PARAMS, REGION_TO_DEP, real_inverse_bounds
 from ..core.store import load_interim, load_interim_payload, write_web
 from .connectivity import nearest_land
 
@@ -82,13 +83,32 @@ def aggregate_measure(rows, weights, measure, years):
     return sums, incomplete
 
 
+def lonlat_area(bounds):
+    """Spherical ground area of a lon/lat rectangle, matching the spherical Albers projection."""
+    x0, y0, x1, y1 = bounds
+    return R_EARTH_KM ** 2 * math.radians(abs(x1 - x0)) * abs(math.sin(math.radians(y1)) - math.sin(math.radians(y0)))
+
+
+def inset_area_scales():
+    """Displayed inset ground area divided by the territory's real ground area."""
+    scales = {}
+    for region, dep in REGION_TO_DEP.items():
+        spec = PARAMS[dep]
+        real_area = lonlat_area(real_inverse_bounds(spec))
+        scales[region] = lonlat_area(spec["target"]) / real_area if real_area else 1.0
+    return scales
+
+
 def land_area_by_cell(world, grid):
     hex_area = 1.5 * math.sqrt(3) * grid.radius ** 2
+    scales = inset_area_scales()
     out = []
     for i in range(grid.size):
         samples = world["county_samples"][i]
         land_share = sum(1 for k in samples if k >= 0) / len(samples) if samples else 1.0
-        out.append(hex_area * land_share)
+        owner = world["owner"][i]
+        region = world["states"][owner] if owner >= 0 else None
+        out.append(hex_area * land_share / scales.get(region, 1.0))
     return out
 
 
@@ -158,6 +178,7 @@ def build():
 
     method = ("INSEE comparateur commune values are distributed across current commune polygons on a 1 km lattice, "
               "assuming a uniform distribution inside each commune, with a centroid fallback for very small or sparsely sampled polygons; colour scales stay fixed across years. "
+              "Overseas inset display areas are converted back to ground area using each territory's affine scale. "
               "Missing or suppressed commune values make the affected hexes null rather than zero.")
     lenses = [
         temporal_lens("population_history", "people", "Population history", "👥", "people / km²", "int", "log",
@@ -184,6 +205,7 @@ def build():
         "methodology": {
             "spatial_distribution": "1 km lattice over current commune polygons; uniform within each commune",
             "sample_step_km": SAMPLE_STEP_KM,
+            "inset_display_area_over_real_area": {dep: round(lonlat_area(PARAMS[dep]["target"]) / lonlat_area(real_inverse_bounds(PARAMS[dep])), 6) for dep in PARAMS},
             "population_years": POP_YEARS,
             "housing_years": HOUSING_YEARS,
         },
