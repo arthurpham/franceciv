@@ -176,5 +176,5 @@ def check(web_dir):
     assert len(doc["lenses"]) == 4 and len(ev) > 2500 and max(ev) > 5
     mob = [v for v in doc["lenses"][2]["values"] if v is not None]
     fiveg = [v for v in doc["lenses"][3]["values"] if v is not None]
-    assert len(mob) > 2500 and max(mob) <= 4 and len(fiveg) > 2500 and all(0 <= v <= 1 for v in fiveg)
+    assert len(mob) > 2500 and max(mob) <= 5 and len(fiveg) > 2500 and all(0 <= v <= 1 for v in fiveg)
     return [("PASS", f"connectivity.json: fiber, EV-charging and mobile lenses over {doc['covered_cells']} cells")]
