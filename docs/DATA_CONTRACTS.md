@@ -113,6 +113,10 @@ Experimental national GTFS stop availability. Rows are deduplicated by normalize
 
 First-class statistical geography. `epci.json` aggregates existing INSEE Comparateur EPCI rows and positions each EPCI at the population-weighted centroid of member communes. `iris_index.json` is the compact browser search/panel index of true IRIS. Whole-commune pseudo-IRIS are omitted there because they duplicate commune search, but they are included in the statistical partition used for the neighborhood lenses. Positions and areas are derived from Contours IRIS polygons. `neighborhoods.json` lenses aggregate IRIS population, age and immigration to hexes by assigning each whole IRIS by centroid; this is finer than department-level statistics but approximate at hex boundaries. The 2022 population extract excludes Mayotte; other overseas collectivities outside the current map frame are omitted until their insets exist.
 
+### public_services.json — additional equipment detail
+
+Postal access points combine bureaux de poste, agences postales and relais poste. Libraries, France Services sites, déchèteries and police/gendarmerie stations are population-normalized counts of INSEE BPE equipment records. They describe recorded facility presence, not opening hours, capacity, staffing, response time, service range or quality. Counts use `NBEQUIDENT` where INSEE groups identical facilities and are aggregated by commune then hex.
+
 ### society.json
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.

@@ -74,7 +74,7 @@ def build():
         if cell is None:
             unmatched_eq += 1
             continue
-        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "service_pop": 0})
+        a = eq_acc.setdefault(cell, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "post": 0.0, "libraries": 0.0, "france_services": 0.0, "recycling": 0.0, "law": 0.0, "service_pop": 0})
         a["food"] += row["food_shops"]
         a["pharm"] += row["pharmacies"]
         a["culture"] += row["culture_sports"]
@@ -84,13 +84,18 @@ def build():
         a["cinemas"] += row.get("cinemas", 0)
         a["pools"] += row.get("swimming_pools", 0)
         a["rail"] += row.get("rail_stations", 0)
+        a["post"] += row.get("post_offices", 0)
+        a["libraries"] += row.get("libraries", 0)
+        a["france_services"] += row.get("france_services", 0)
+        a["recycling"] += row.get("recycling_centers", 0)
+        a["law"] += row.get("law_enforcement", 0)
         # Population-weight the presence score so hexes represent residents' typical access,
         # not the arithmetic mean of tiny and large communes.
         a["service_pop"] += row["essential_score"] * commune_pop.get(code, 0)
-    essential, food, pharm, culture, hospital, childcare, eldercare, cinemas, pools, rail = [], [], [], [], [], [], [], [], [], []
+    essential, food, pharm, culture, hospital, childcare, eldercare, cinemas, pools, rail, post, libraries, france_services, recycling, law = [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     for i in range(grid.size):
         pop = pop_acc.get(i, 0)
-        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "service_pop": 0})
+        a = eq_acc.get(i, {"food": 0, "pharm": 0, "culture": 0, "hospital": 0.0, "childcare": 0.0, "eldercare": 0.0, "cinemas": 0.0, "pools": 0.0, "rail": 0.0, "post": 0.0, "libraries": 0.0, "france_services": 0.0, "recycling": 0.0, "law": 0.0, "service_pop": 0})
         essential.append(round(a["service_pop"] / pop, 2) if pop else None)
         food.append(round(a["food"] * 10_000 / pop, 2) if pop else None)
         pharm.append(round(a["pharm"] * 10_000 / pop, 2) if pop else None)
@@ -101,6 +106,11 @@ def build():
         cinemas.append(round(a["cinemas"] * 100_000 / pop, 2) if pop else None)
         pools.append(round(a["pools"] * 100_000 / pop, 2) if pop else None)
         rail.append(round(a["rail"] * 100_000 / pop, 2) if pop else None)
+        post.append(round(a["post"] * 10_000 / pop, 2) if pop else None)
+        libraries.append(round(a["libraries"] * 10_000 / pop, 2) if pop else None)
+        france_services.append(round(a["france_services"] * 100_000 / pop, 2) if pop else None)
+        recycling.append(round(a["recycling"] * 100_000 / pop, 2) if pop else None)
+        law.append(round(a["law"] * 100_000 / pop, 2) if pop else None)
 
     write_web("public_services.json", {
         "version": 1, "vintage": f"Interior Ministry crime {year}; current school directory; INSEE BPE 2024", "sources": ["fr_crime", "fr_schools", "fr_public_equipment"],
@@ -121,6 +131,11 @@ def build():
             lens("cinemas", "Cinemas", "🎬", "screens/sites per 100k residents", cinemas, "fr_public_equipment", "Cinema records in INSEE BPE 2024 per 100,000 residents. Counts reflect BPE equipment records, not admissions or screen quality."),
             lens("swimming_pools", "Swimming pools", "🏊", "facilities per 100k residents", pools, "fr_public_equipment", "Swimming-pool facility records in INSEE BPE 2024 per 100,000 residents. Counts reflect facility records, not water area, public opening hours or quality."),
             lens("rail_station_access", "Rail stations", "🚉", "stations per 100k residents", rail, "fr_public_equipment", "Passenger rail stations of national, regional or local interest in INSEE BPE 2024 per 100,000 residents. Station count does not measure train frequency or service quality."),
+            lens("post_offices", "Postal access points", "📮", "per 10k residents", post, "fr_public_equipment", "Post offices, postal agencies and relais poste in INSEE BPE 2024 per 10,000 residents. Access-point density does not capture opening hours or service range."),
+            lens("libraries", "Libraries", "📚", "per 10k residents", libraries, "fr_public_equipment", "Libraries in INSEE BPE 2024 per 10,000 residents. Counts reflect BPE equipment records, not collection size, opening hours or digital services."),
+            lens("france_services", "France Services", "🏛️", "sites per 100k residents", france_services, "fr_public_equipment", "France Services one-stop public-service centers in INSEE BPE 2024 per 100,000 residents. Presence does not measure the range or quality of services available on site."),
+            lens("recycling_centers", "Recycling centers", "♻️", "centers per 100k residents", recycling, "fr_public_equipment", "Déchèteries in INSEE BPE 2024 per 100,000 residents. Counts reflect staffed waste-drop-off facility records, not capacity, accepted materials or opening hours."),
+            lens("law_enforcement", "Police & gendarmerie", "🚓", "stations per 100k residents", law, "fr_public_equipment", "Police and gendarmerie stations in INSEE BPE 2024 per 100,000 residents. Station density does not measure staffing, response times or territorial coverage quality."),
         ],
     })
 
@@ -128,7 +143,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "public_services.json").read_text())
-    assert len(doc["lenses"]) == 14
+    assert len(doc["lenses"]) == 19
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and max(vals) > 0.1
-    return [("PASS", f"public_services.json: 14 safety/school/equipment lenses over {len(vals)} cells")]
+    return [("PASS", f"public_services.json: 19 safety/school/equipment lenses over {len(vals)} cells")]
