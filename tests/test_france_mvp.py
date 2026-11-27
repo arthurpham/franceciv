@@ -171,9 +171,10 @@ def test_time_dimension_contract():
     assert paris_cells and lepen["2022"][paris_cells[0]] > lepen["2017"][paris_cells[0]]
 
     price = by_id["housing_price_history"]
-    assert price["time"]["years"] == list(range(2014, 2026))
+    assert price["time"]["years"] == list(range(2021, 2026))
     assert price["source"] == "fr_housing_history"
     assert min(sum(v is not None for v in vals) for vals in price["time"]["series"].values()) > 2000
+    assert min(v for vals in price["time"]["series"].values() for v in vals if v is not None) >= 1000
 
     mobility = by_id["residential_mobility_history"]["time"]["series"]
     assert all(0 <= v <= 0.3 for vals in mobility.values() for v in vals if v is not None)
