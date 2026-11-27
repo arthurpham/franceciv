@@ -108,7 +108,7 @@ def test_connectivity_contracts():
 
 def test_quality_of_life_contracts():
     quality = web("quality_life.json")
-    assert {l["id"] for l in quality["lenses"]} == {"house_price", "apartment_price", "gp_access", "nurse_access", "dentist_access", "midwife_access"}
+    assert {l["id"] for l in quality["lenses"]} == {"house_price", "apartment_price", "gp_access", "nurse_access", "dentist_access", "midwife_access", "social_housing"}
     n = len(web("world.json")["owner"])
     assert all(len(l["values"]) == n for l in quality["lenses"])
     by_id = {l["id"]: l for l in quality["lenses"]}
@@ -116,6 +116,8 @@ def test_quality_of_life_contracts():
     gps = [v for v in by_id["gp_access"]["values"] if v is not None]
     assert len(houses) > 2500 and 500 < sum(houses) / len(houses) < 6000
     assert len(gps) > 2500 and 1 < sum(gps) / len(gps) < 5
+    social = [v for v in by_id["social_housing"]["values"] if v is not None]
+    assert len(social) > 2500 and 0.02 < sum(social) / len(social) < 0.20
     assert "Alsace-Moselle" in by_id["house_price"]["description"]
 
 
