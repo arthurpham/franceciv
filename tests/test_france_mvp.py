@@ -326,8 +326,8 @@ def test_agriculture_tourism_electricity_contracts():
 
 def test_public_services_contract():
     data = web("public_services.json")
-    assert data["sources"] == ["fr_crime", "fr_schools"]
-    assert {l["id"] for l in data["lenses"]} == {"burglary", "violence", "primary_schools", "secondary_schools"}
+    assert data["sources"] == ["fr_crime", "fr_schools", "fr_public_equipment"]
+    assert {l["id"] for l in data["lenses"]} == {"burglary", "violence", "primary_schools", "secondary_schools", "essential_services", "food_shops", "pharmacies", "culture_sports"}
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2500 and max(vals) > 0
@@ -335,6 +335,9 @@ def test_public_services_contract():
     assert 0.1 < sum(v for v in burglary if v is not None) / sum(v is not None for v in burglary) < 2
     assert any(s["id"] == "fr_crime" for s in web("sources.json"))
     assert any(s["id"] == "fr_schools" for s in web("sources.json"))
+    essential = next(l for l in data["lenses"] if l["id"] == "essential_services")
+    evs = [v for v in essential["values"] if v is not None]
+    assert len(evs) > 2500 and max(evs) == 6
 
 
 def test_risk_contract():
