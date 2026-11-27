@@ -189,8 +189,17 @@ class FrenchTransitFrequency(Source):
         out.discard("")
         return out
 
+    def consolidated_reference_date(self):
+        starts = []
+        for d in self.catalog():
+            for r in d.get("resources", []):
+                if r.get("id") in CONSOLIDATED and (r.get("metadata") or {}).get("start_date"):
+                    starts.append(iso(r["metadata"]["start_date"]))
+        return max(starts) if starts else date.today()
+
     def select_resources(self):
         creg, dreg, ereg = self.geography_lookup()
+        reference_date = self.consolidated_reference_date()
         per_dataset = []
         for d in self.catalog():
             regions = self.covered_regions(d, creg, dreg, ereg)
@@ -200,7 +209,7 @@ class FrenchTransitFrequency(Source):
             for r in d.get("resources", []):
                 stats = (r.get("metadata") or {}).get("stats") or {}
                 end_date = ((r.get("metadata") or {}).get("end_date"))
-                currently_valid = not end_date or iso(end_date) >= date.today()
+                currently_valid = not end_date or iso(end_date) >= reference_date
                 if r.get("format") == "GTFS" and r.get("type") == "main" and r.get("original_url") and r.get("is_available", True) and stats.get("trips_count") and currently_valid:
                     networks = [norm_network(x) for x in ((r.get("metadata") or {}).get("networks") or []) if norm_network(x)]
                     rs.append({"resource": r, "networks": sorted(set(networks)), "trips": stats.get("trips_count") or 0, "regions": regions, "dataset": d["title"]})
