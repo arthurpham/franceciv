@@ -235,3 +235,15 @@ Commune-level GASPAR detail. Recognitions are administrative catastrophe-naturel
 ## Browser boundaries
 
 `web/js` renders the contracts above; it must not hard-code replacement statistics. User-facing geography labels are Region, Department, Urban area/AAV and Commune. Internal variables named `state`, `county` or `metro` may remain only because they implement the inherited schema. User-facing text, source notes, tooltips and caveats must describe French geography, French/European sources, euros and metric units. Concepts that have no comparable French public dataset (for example census religion, health-insurance coverage, veteran status, disaster-assistance geography, or employer pay microdata) are intentionally absent rather than approximated.
+
+### automation and trust report
+
+`trust.json` is generated after the source catalog and is loaded by the Almanac's **Data trust** page. Its schema is:
+
+- `generated` — UTC build timestamp;
+- `summary` — source counts by freshness status, lens count, duplicate lens ids, mean coverage and the number of lenses under half coverage;
+- `sources[]` — one row per source with `vintage`, latest cache `retrieved` timestamp, `age_days`, declared `refresh_cadence_days`, freshness `status` (`fresh`, `attention`, `due`, `unknown`) and an input checksum fingerprint;
+- `layers[]` — one row per lens with data file, source id, non-null cell count, total/metropolitan/overseas coverage shares and time-series year count;
+- `reproducibility` — offline rebuild and validation commands plus a combined `source_fingerprint`.
+
+Freshness cadences are maintainer refresh policy, not upstream publication guarantees. `attention` starts at 80% of the cadence and `due` after it. Coverage is measured on owned hexes at the lens default/latest year; overseas coverage is separated so structural source gaps are visible. These are report fields, not rendering rules.

@@ -631,3 +631,18 @@ def test_functional_geographies_contract():
     assert {"code", "name", "population", "x", "y", "density", "home_price", "mobility"} <= set(columns)
     assert all(len(row) == len(columns) for row in basins["geographies"][:50] + zones["geographies"][:50])
     assert sum(row[2] for row in zones["geographies"]) > 65000000
+
+
+def test_trust_report_contract():
+    trust = web("trust.json")
+    assert trust["version"] == 1
+    assert trust["summary"]["sources"] == len(web("sources.json"))
+    assert trust["summary"]["lenses"] >= 160 and trust["summary"]["valid_lens_shapes"] == trust["summary"]["lenses"]
+    assert not trust["summary"]["duplicate_lens_ids"]
+    assert all(s["status"] in {"fresh", "attention", "due", "unknown"} for s in trust["sources"])
+    assert all(s["refresh_cadence_days"] > 0 and (s["age_days"] is None or s["age_days"] >= 0) for s in trust["sources"])
+    layers = {l["id"]: l for l in trust["layers"] if l.get("shape") == "ok"}
+    assert {"density", "transit_frequency", "forest"} <= set(layers)
+    assert all(0 <= l["coverage"] <= 1 for l in layers.values())
+    assert layers["forest"]["metropolitan_coverage"] > 0.9
+    assert trust["reproducibility"]["source_fingerprint"]
