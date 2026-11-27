@@ -571,3 +571,20 @@ def test_public_gtfs_url_validation():
     for url in ("http://example.com/feed.zip", "https://127.0.0.1/feed.zip", "https://user@example.com/feed.zip", "https://[::1]/feed.zip"):
         with pytest.raises(UnsafeURLError):
             validate_public_https_url(url)
+
+
+def test_water_circular_contract():
+    data = web("water_circular.json")
+    assert data["sources"] == ["fr_water_services", "fr_water_quality", "fr_circular_economy"]
+    assert len(data["lenses"]) == 13
+    by_id = {l["id"]: l for l in data["lenses"]}
+    assert {"drinking_service_price", "wastewater_treatment_compliance", "drinking_water_limit_compliance", "recycling_center_density", "repair_service_density"} <= set(by_id)
+    for lens_id in ("microbial_water_compliance", "physicochemical_water_compliance", "water_network_efficiency", "sewer_connection_rate", "wastewater_treatment_compliance", "drinking_water_limit_compliance", "drinking_water_full_compliance"):
+        vals = [v for v in by_id[lens_id]["values"] if v is not None]
+        assert len(vals) > 2500 and all(0 <= v <= 1 for v in vals)
+    price = [v for v in by_id["drinking_service_price"]["values"] if v is not None]
+    assert 1 < min(price) < max(price) < 5
+    assert data["quality_samples"] > 200000 and data["matched_quality_communes"] > 30000
+    assert data["matched_recycling_communes"] > 4000
+    grid_size = len(web("world.json")["owner"])
+    assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
