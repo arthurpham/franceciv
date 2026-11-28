@@ -759,7 +759,7 @@ async function main() {
   epciPanel = initEpciPanel(geoPanelOpts);
   irisPanel = initIrisPanel(geoPanelOpts);
   geographyPanel = initGeographyPanel(geoPanelOpts);
-  app.registerOverlay({
+  overlays.push({
     id: "commute-flows", z: 80,
     draw(ctx, cam) {
       const f = state.commuteFlows;
