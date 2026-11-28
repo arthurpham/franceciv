@@ -222,27 +222,33 @@ def temporal_lens(lens_id, group, name, emoji, unit, fmt, scale, series, years, 
     }
 
 
-def compact_lens(lens):
+def compact_lens(lens, owner):
     # Dense per-cell arrays are dominated by null water/unowned cells. Store only populated
     # cells as sparse index maps; main.js expands them once after loading.
     out = dict(lens)
     out.pop("values", None)
     time_meta = dict(out["time"])
-    time_meta["encoding"] = "sparse-index-v1"
+    time_meta["encoding"] = "land-index-v1"
     time_meta["series"] = {
-        year: {str(i): v for i, v in enumerate(vals) if v is not None}
+        year: [v for i, v in enumerate(vals) if owner[i] >= 0]
         for year, vals in time_meta["series"].items()
     }
     out["time"] = time_meta
     return out
 
 
-def dense_values(vals, n):
-    if isinstance(vals, list):
-        return vals
-    out = [None] * n
-    for i, v in vals.items():
-        out[int(i)] = v
+def dense_values(vals, owner):
+    if isinstance(vals, dict):
+        out = [None] * len(owner)
+        for i, v in vals.items():
+            out[int(i)] = v
+        return out
+    out = [None] * len(owner)
+    k = 0
+    for i, owned in enumerate(owner):
+        if owned >= 0:
+            out[i] = vals[k] if k < len(vals) else None
+            k += 1
     return out
 
 
@@ -419,7 +425,7 @@ def build():
             "climate_years": climate_years,
             "vital_years": VITAL_YEARS,
         },
-        "lenses": [compact_lens(lens) for lens in lenses],
+        "lenses": [compact_lens(lens, world["owner"]) for lens in lenses],
     })
 
 
@@ -441,9 +447,9 @@ def check(web_dir):
         time_meta = lens["time"]
         assert time_meta["default"] == time_meta["years"][-1]
         assert "values" not in lens
-        assert time_meta["encoding"] == "sparse-index-v1"
+        assert time_meta["encoding"] == "land-index-v1"
         assert set(time_meta["series"]) == {str(y) for y in time_meta["years"]}
-        dense_series = {year: dense_values(vals, n) for year, vals in time_meta["series"].items()}
+        dense_series = {year: dense_values(vals, world["owner"]) for year, vals in time_meta["series"].items()}
         assert all(len(vals) == n for vals in dense_series.values())
         assert all(v is None or isinstance(v, (int, float)) for vals in dense_series.values() for v in vals)
         time_meta["series"] = dense_series

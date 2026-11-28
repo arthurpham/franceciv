@@ -181,18 +181,24 @@ def test_time_dimension_contract():
     n = len(web("world.json")["owner"])
 
     def dense(values):
-        if isinstance(values, list):
-            return values
         out = [None] * n
-        for i, v in values.items():
-            out[int(i)] = v
+        if isinstance(values, dict):
+            for i, v in values.items():
+                out[int(i)] = v
+        else:
+            k = 0
+            owner = web("world.json")["owner"]
+            for i, owned in enumerate(owner):
+                if owned >= 0:
+                    out[i] = values[k] if k < len(values) else None
+                    k += 1
         return out
 
     for lens in data["lenses"]:
         meta = lens["time"]
         assert meta["years"] == sorted(meta["years"]) and meta["default"] == meta["years"][-1]
         assert set(meta["series"]) == {str(y) for y in meta["years"]}
-        assert meta["encoding"] == "sparse-index-v1"
+        assert meta["encoding"] == "land-index-v1"
         assert "values" not in lens
         meta["series"] = {year: dense(values) for year, values in meta["series"].items()}
         assert all(len(values) == n for values in meta["series"].values())
