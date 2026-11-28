@@ -10,7 +10,7 @@ from ..core.geo import MapProjection
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, write_web
 
-REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "cities.json", "states.json"]
+REQUIRES = ["_world", "fr_boundaries", "fr_aav", "fr_energy", "fr_corine", "fr_inao", "cities.json", "states.json"]
 PRODUCES = ["resources.json"]
 
 TYPES = [
@@ -23,6 +23,10 @@ TYPES = [
     {"id": "wind", "name": "Wind power", "category": "energy", "emoji": "🌬️", "icon": "r-wind", "color": "#9fd8cb", "unit": "MW", "source": "fr_energy", "description": "Wind capacity in service grouped by map hex, at least 50 MW."},
     {"id": "solar", "name": "Solar power", "category": "energy", "emoji": "☀️", "icon": "r-solar", "color": "#ffc93c", "unit": "MW", "source": "fr_energy", "description": "Ground-mounted solar capacity in service grouped by map hex, at least 50 MW."},
     {"id": "battery", "name": "Batteries", "category": "energy", "emoji": "🔋", "icon": "r-battery", "color": "#7bc96f", "unit": "MW", "source": "fr_energy", "description": "Battery discharge capacity in service grouped by map hex, at least 30 MW."},
+    {"id": "vineyard", "name": "AOC vineyard", "category": "agri", "emoji": "🍇", "icon": "l-farmland", "color": "#7b2d55", "unit": "% of land", "source": "fr_inao", "description": "Hexes with substantial CORINE vineyard cover inside at least one INAO wine-appellation commune; value is vineyard share of land."},
+    {"id": "cheese", "name": "AOP cheese", "category": "agri", "emoji": "🧀", "icon": "y-food", "color": "#d6b65a", "unit": "appellations", "source": "fr_inao", "description": "Hexes with substantial CORINE pasture cover inside at least one INAO cheese-appellation commune; value is distinct appellations."},
+    {"id": "cereals", "name": "Cropland", "category": "agri", "emoji": "🌾", "icon": "l-farmland", "color": "#c9a227", "unit": "% of land", "source": "fr_corine", "description": "Hexes where CORINE arable land covers at least 55% of sampled land; value is arable share of land."},
+    {"id": "pasture", "name": "Pasture", "category": "agri", "emoji": "🐄", "icon": "y-food", "color": "#6f9e4f", "unit": "% of land", "source": "fr_corine", "description": "Hexes where CORINE pasture covers at least 45% of sampled land; value is pasture share of land."},
 ]
 MIN_MW = {"nuclear": 100, "hydro": 100, "pumped_storage": 100, "tidal": 100, "gas_plant": 300, "coal_plant": 100, "wind": 50, "solar": 50, "battery": 30}
 HEX_GROUPED = {"wind", "solar", "battery"}
@@ -152,6 +156,61 @@ def build():
         items.append({"type": k, "name": plant_name, "x": round(x, 1), "y": round(y, 1), "cell": cell,
                       "value": round(g["mw"]), "detail": detail, "state": state, "aav": aav})
 
+    # Agricultural terroir/land-cover resources. One item represents a whole qualifying hex;
+    # overlapping placement and zoom-level thinning are handled by the frontend renderer.
+    from .world import HEX_RADIUS_KM, WORLDCOVER_STEP_KM, hex_lattice
+    corine = load_interim("fr_corine")
+    inao = load_interim("fr_inao")
+    lattice = hex_lattice(HEX_RADIUS_KM, WORLDCOVER_STEP_KM)
+    rows = corine["crop_detail_rows"]
+    base_rows = corine["rows"]
+    x0, dx, y0, dy, ncols = corine["x0"], corine["dx"], corine["y0"], corine["dy"], corine["cols"]
+    commune_cell = {}
+    for c in bounds["communes"]:
+        if c.get("lon") is None or c.get("lat") is None:
+            continue
+        lon, lat = c["lon"], c["lat"]
+        # Boundary centroids are already in inset pseudo-coordinates for overseas communes.
+        cx, cy = proj(lon, lat)
+        cell = nearest_land(world, grid, cx, cy)
+        if cell >= 0:
+            commune_cell[c["code"]] = cell
+    inao_cell = defaultdict(lambda: {"wine": set(), "cheese": set()})
+    for code, row in inao["rows"].items():
+        cell = commune_cell.get(code)
+        if cell is not None:
+            inao_cell[cell]["wine"].update(row.get("wine", []))
+            inao_cell[cell]["cheese"].update(row.get("cheese", []))
+    for i in range(grid.size):
+        if world["owner"][i] < 0:
+            continue
+        cx, cy = grid.center(*grid.col_row(i))
+        land = vine = crop = pasture_n = 0
+        for ox, oy in lattice:
+            lon, lat = proj.inverse(cx + ox, cy + oy)
+            cix, rix = round((lon - x0) / dx), round((lat - y0) / dy)
+            if not (0 <= cix < ncols and 0 <= rix < len(base_rows)):
+                continue
+            base = base_rows[rix][cix]
+            if base in {".", "w"}:
+                continue
+            land += 1
+            crop += base == "c"
+            pasture_n += base == "p"
+            vine += rows[rix][cix] == "v"
+        if not land:
+            continue
+        state = state_abbr.get(bounds["states"][world["owner"][i]].get("fips")) if world["owner"][i] < len(bounds["states"]) else None
+        x, y = cx, cy
+        if vine / land >= 0.08 and inao_cell[i]["wine"]:
+            items.append({"type": "vineyard", "name": "AOC vineyard country", "x": round(x, 1), "y": round(y, 1), "cell": i, "value": round(vine * 100 / land, 1), "detail": f"{len(inao_cell[i]['wine'])} wine appellations; CORINE vineyard share is sampled land cover, not production volume", "state": state, "aav": None})
+        if pasture_n / land >= 0.25 and inao_cell[i]["cheese"]:
+            items.append({"type": "cheese", "name": "AOP cheese country", "x": round(x, 1), "y": round(y, 1), "cell": i, "value": len(inao_cell[i]["cheese"]), "detail": "Distinct INAO cheese appellations; pasture share is a landscape proxy, not dairy production volume", "state": state, "aav": None})
+        if crop / land >= 0.55:
+            items.append({"type": "cereals", "name": "Cropland", "x": round(x, 1), "y": round(y, 1), "cell": i, "value": round(crop * 100 / land, 1), "detail": "CORINE arable-land share; crop type is not differentiated", "state": state, "aav": None})
+        if pasture_n / land >= 0.45:
+            items.append({"type": "pasture", "name": "Pasture", "x": round(x, 1), "y": round(y, 1), "cell": i, "value": round(pasture_n * 100 / land, 1), "detail": "CORINE pasture share of sampled land", "state": state, "aav": None})
+
     order = {t["id"]: n for n, t in enumerate(TYPES)}
     items.sort(key=lambda i: (order[i["type"]], -(i["value"] or 0), i["name"]))
     national = {}
@@ -168,8 +227,9 @@ def build():
     states_doc = json.loads((WEB_DATA / "states.json").read_text())
     for st in states_doc:
         summary = states.get(st["abbr"], {})
-        by_type = {k: v["value"] for k, v in summary.items()}
-        sites = {k: v["count"] for k, v in summary.items()}
+        energy_keys = {t["id"] for t in TYPES if t["category"] == "energy"}
+        by_type = {k: v["value"] for k, v in summary.items() if k in energy_keys}
+        sites = {k: v["count"] for k, v in summary.items() if k in energy_keys}
         st["energy"] = {"unit": "MW", "by_type": by_type, "sites": sites, "total": sum(by_type.values()), "note": "Mapped installations meeting capacity thresholds; zero means no mapped site, not missing data."}
     write_web("states.json", states_doc)
     # resources.json is the declared output and must be written last: states.json is an
