@@ -536,11 +536,14 @@ def test_statistical_geography_contract():
 
 def test_mobility_contract():
     data = web("mobility.json")
-    assert data["sources"] == ["fr_road_traffic"] and len(data["lenses"]) == 2
+    assert data["sources"] == ["fr_road_traffic"] and len(data["lenses"]) == 3
     vals = [v for v in data["lenses"][0]["values"] if v is not None]
     heavy = [v for v in data["lenses"][1]["values"] if v is not None]
     assert len(vals) > 500 and max(vals) > 100_000
     assert len(heavy) > 500 and all(0 <= v <= 1 for v in heavy)
+    dist = next(l for l in data["lenses"] if l["id"] == "national_road_distance")["values"]
+    measured_dist = [v for v in dist if v is not None]
+    assert len(measured_dist) > 2500 and min(measured_dist) == 0 and max(measured_dist) < 300
     assert any(s["id"] == "fr_road_traffic" for s in web("sources.json"))
 
 
