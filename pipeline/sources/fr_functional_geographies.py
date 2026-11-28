@@ -27,6 +27,7 @@ def workbook_from_xlsx(data):
             payload = zi.read(item.filename)
             if item.filename.startswith("xl/worksheets/"):
                 payload = re.sub(rb' s="\d+"', b"", payload)
+                payload = re.sub(rb' style="\d+"', b"", payload)
             zo.writestr(item, payload)
     out.seek(0)
     return openpyxl.load_workbook(out, data_only=True)

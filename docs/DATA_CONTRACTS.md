@@ -164,6 +164,10 @@ INSEE Melodi detailed commune census tables for unemployment, higher education, 
 
 ISPF/INSEE commune-level geographic workbooks from the 2022 French Polynesia census. The lenses cover age, education, unemployment, agricultural employment, homeownership, second homes, vacancy, intercommunal commuting, car access and boat access. Commune counts or ratios are distributed over commune polygons and summed within hexes. They cover only French Polynesia; the rest of France is null because these are territory-specific census tables.
 
+### wallis_futuna.json
+
+INSEE/STSEE indicators from the 2023 Wallis-et-Futuna census publication. The lenses cover population change, median age, children, residents 65+, employment and unemployment. Population change is circonscription-level; age and labour-market indicators are published only at island level, so Alo and Sigave share the Futuna value. Values cover only Wallis-et-Futuna; the rest of France is null because these are territory-specific census tables.
+
 ### quality_life.json
 
 DVF housing-price/market and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `housing_liquidity` is sales per 10,000 residents over roughly two years, not dwelling turnover; `apartment_sale_share` describes transacted stock rather than the full dwelling stock. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.
