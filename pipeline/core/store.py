@@ -53,7 +53,55 @@ def load_interim(name: str) -> Any:
     return load_interim_payload(name)["data"]
 
 
+_LAND_INDICES = None
+
+
+def land_indices() -> list[int] | None:
+    """French land-cell indices in the committed world grid, cached for builder output packing."""
+    global _LAND_INDICES
+    if _LAND_INDICES is not None:
+        return _LAND_INDICES
+    path = WEB_DATA / "world.json"
+    if not path.exists():
+        return None
+    try:
+        world = json.loads(path.read_text())
+        owner = world.get("owner")
+        if not isinstance(owner, list):
+            return None
+        _LAND_INDICES = [i for i, v in enumerate(owner) if isinstance(v, int) and v >= 0]
+        return _LAND_INDICES
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def pack_sparse_lenses(data: Any) -> Any:
+    """Use land-index transport for large lens arrays when it is materially smaller.
+
+    Lens values are always null outside French land cells, and those cells are most of the hex grid.
+    Keeping only values in owner>=0 order preserves exact values while removing that repeated null
+    padding. Unlike key-index sparse objects, arrays remain gzip-friendly for static hosting.
+    """
+    if not isinstance(data, dict) or not isinstance(data.get("lenses"), list):
+        return data
+    land = land_indices()
+    if not land:
+        return data
+    for lens in data["lenses"]:
+        vals = lens.get("values")
+        if not isinstance(vals, list) or len(vals) < 500 or lens.get("encoding") in {"sparse-index-v1", "land-index-v1"}:
+            continue
+        if max(land, default=-1) >= len(vals):
+            continue
+        packed = [vals[i] for i in land]
+        dense_text = json.dumps(vals, separators=(",", ":"), allow_nan=False)
+        packed_text = json.dumps(packed, separators=(",", ":"), allow_nan=False)
+        if len(packed_text) < len(dense_text) * 0.8:
+            lens["encoding"] = "land-index-v1"
+            lens["values"] = packed
+    return data
+
 def write_web(name: str, data: Any) -> None:
-    text = json.dumps(data, separators=(",", ":"), allow_nan=False)
+    text = json.dumps(pack_sparse_lenses(data), separators=(",", ":"), allow_nan=False)
     atomic_write_text(WEB_DATA / name, text)
     print(f"    → web/data/{name} ({len(text) / 1e3:.0f} kB)")

@@ -9,19 +9,50 @@ from pipeline.core.hexgrid import HexGrid
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def web(name):
-    return json.load(open(ROOT / "web" / "data" / name, encoding="utf-8"))
-
-
 def dense_lens_values(lens):
     vals = lens["values"]
+    owner = web("world.json")["owner"]
+    if lens.get("encoding") == "land-index-v1":
+        dense = [None] * len(owner)
+        k = 0
+        for i, owner_index in enumerate(owner):
+            if owner_index >= 0:
+                dense[i] = vals[k] if k < len(vals) else None
+                k += 1
+        return dense
     if isinstance(vals, list):
         return vals
-    n = len(web("world.json")["owner"])
-    dense = [None] * n
+    dense = [None] * len(owner)
     for key, value in vals.items():
         dense[int(key)] = value
     return dense
+
+
+def web(name):
+    doc = json.load(open(ROOT / "web" / "data" / name, encoding="utf-8"))
+    if isinstance(doc, dict) and isinstance(doc.get("lenses"), list):
+        for lens in doc["lenses"]:
+            if isinstance(lens, dict) and (isinstance(lens.get("values"), dict) or lens.get("encoding") == "land-index-v1"):
+                lens["values"] = dense_lens_values(lens)
+    return doc
+
+
+def test_land_index_transport_contract():
+    owner = web("world.json")["owner"]
+    land_count = sum(v >= 0 for v in owner)
+    packed = 0
+    for path in (ROOT / "web" / "data").glob("*.json"):
+        doc = json.load(open(path, encoding="utf-8"))
+        if not isinstance(doc, dict) or not isinstance(doc.get("lenses"), list):
+            continue
+        for lens in doc["lenses"]:
+            if lens.get("encoding") != "land-index-v1":
+                continue
+            packed += 1
+            assert len(lens["values"]) == land_count
+            dense = dense_lens_values(lens)
+            assert len(dense) == len(owner) and all(v is None for i, v in enumerate(dense) if owner[i] < 0)
+    assert packed > 100
 
 
 def test_projection_round_trip():

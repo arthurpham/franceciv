@@ -1,0 +1,77 @@
+name: Monthly data refresh
+
+on:
+  schedule:
+    # 05:40 UTC on the first day of each month.
+    - cron: "40 5 1 * *"
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Run the full pipeline instead of the high-frequency incremental refresh"
+        required: true
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Compute cache month
+        id: date
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore pipeline data cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/raw
+            data/interim
+          key: franceciv-pipeline-${{ steps.date.outputs.month }}
+          restore-keys: franceciv-pipeline-
+      - name: Refresh data
+        env:
+          PYTHONPATH: .
+        run: |
+          if [ "${{ inputs.full }}" = "true" ] || [ ! -f data/interim/_world.json ]; then
+            uv run python -m pipeline all
+          else
+            scripts/refresh_high_frequency.sh
+          fi
+      - name: Create or update refresh PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: bot/monthly-data-refresh-${{ steps.date.outputs.month }}
+        run: |
+          if [ -z "$(git status --porcelain web/data)" ]; then
+            echo "No data changes after refresh."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add web/data
+          git commit -m "Refresh monthly high-frequency data"
+          git push --force-with-lease origin "$BRANCH"
+          existing=$(gh pr list --state open --head "$BRANCH" --json number --jq '.[0].number // empty')
+          summary="Automated monthly refresh of high-cadence sources (EV charging, mobile coverage, electricity, energy network, transit, water quality and housing history). Validation: pytest and pipeline check completed in the workflow."
+          if [ -n "$existing" ]; then
+            gh pr comment "$existing" --body "$summary"
+          else
+            gh pr create --title "Monthly data refresh ${{ steps.date.outputs.month }}" --body "$summary" --base main --head "$BRANCH"
+          fi
