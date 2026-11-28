@@ -175,6 +175,7 @@ def test_time_dimension_contract():
         "lepen_history", "macron_history", "abstention_history", "housing_price_history",
         "residential_mobility_history", "interdepartmental_migration_history",
         "temperature_history", "rainfall_history", "water_deficit_history",
+        "births_history", "deaths_history", "natural_balance_history",
     }
     n = len(web("world.json")["owner"])
 
