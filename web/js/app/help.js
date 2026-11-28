@@ -14,7 +14,7 @@ const ROWS = [
   ]],
   ["Explore", [
     [["Click city"], "Open the city screen and local data"],
-    [["Click land"], "Open that state and inspect the hex"],
+    [["Click land"], "Open that region and inspect the hex"],
     [["/", `${MOD} K`], "Search cities, communes and regions"],
     [["L", "Shift L"], "Next / previous lens"],
     [["Legend"], "Hover or drag the scale to show only that range"],
@@ -40,7 +40,7 @@ export function initHelp() {
       </section>`).join("")}</div>
     <p class="help-foot">Every number traces back to public data: open the <b>Almanac</b> for sources.
       The link in the address bar always reopens this exact view.
-      Source code: <a href="usaciv-source.zip" download>usaciv-source.zip</a> (MIT; run it with uv, see its README).</p>`;
+      Source code: <a href="https://github.com/arthurpham/franceciv">github.com/arthurpham/franceciv</a> (MIT; run it with uv, see its README).</p>`;
 
   const close = () => {
     if (modal.hidden) return;

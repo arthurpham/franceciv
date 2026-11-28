@@ -151,7 +151,7 @@ export function mount(ctx) {
     .sort((a, b) => b.total - a.total);
   const stacks = stackedBars(sBody, {
     rows: stateRows, keys: mwTypes.map((t) => ({ key: t.id, label: t.name, color: t.color })), fmt: (v) => mw(v),
-    ariaLabel: "Mapped power capacity by state",
+    ariaLabel: "Mapped power capacity by region",
     onHover: (x) => {
       if (!x) return link.hover(null);
       const sIdx = x.row.idx;
@@ -176,7 +176,7 @@ export function mount(ctx) {
   }).join("")}`).join("");
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["fr_energy"], [
-    "Only sites above each type's threshold are mapped (for example gas plants grouped by commune at 300 MW or more, and wind or solar grouped by map hex at 50 MW or more), so totals are <b>not</b> state or national capacity.",
+    "Only sites above each type's threshold are mapped (for example gas plants grouped by commune at 300 MW or more, and wind or solar grouped by map hex at 50 MW or more), so totals are <b>not</b> regional or national capacity.",
     "Capacity is registry rated capacity (MW), not how much electricity a site produces: a 1,000 MW solar farm generates far less in a year than a 1,000 MW nuclear plant.",
     "Different resource types use different public units and thresholds; they cannot be added to MW.",
     "Power sites are grouped by the region containing their mapped point; a few border sites can sit close to a neighbouring region's hexes.",

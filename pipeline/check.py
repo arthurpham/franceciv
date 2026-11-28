@@ -552,7 +552,7 @@ def check_lenses(r: Report, doc, ctx: dict | None, source_ids: set | None) -> No
         if ctx["owner"]:
             off = [i for i, v in enumerate(vals) if v is not None and ctx["owner"][i] < 0]
             if off:
-                r.fail(f"{what}: {len(off)} values on non-US cells (must be null)")
+                r.fail(f"{what}: {len(off)} values on non-French cells (must be null)")
         if lens["format"] == "pct" and any(is_num(v) and not -1e-9 <= v <= 1 + 1e-9 for v in vals):
             r.fail(f"{what}: format pct but some values are outside 0..1 (pct lenses are fractions)")
         if lens["format"] == "category":

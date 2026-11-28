@@ -563,7 +563,7 @@ function renderSites() {
   const sec = section("sites", "Sites",
     "Every site glyph at the four zoom tiers, at the size the map uses (<code>ext/layers/model.js SITE_RULES</code>): " +
     "forts by component and tier (<code>render/art/sites.js drawFort</code>; a gold ring = joint base, greyed = caretaker " +
-    "status), wonders by kind and motif (each wonder's motif is set by its id; gold star = top three of its rule), ports by tonnage tier, airports by FAA hub " +
+    "status), wonders by kind and motif (each wonder's motif is set by its id; gold star = top three of its rule), ports by tonnage tier, airports by size class " +
     "class, trade-route markers, and a plaque.");
   const grass = "rgb(150,170,92)";
   const groups = [

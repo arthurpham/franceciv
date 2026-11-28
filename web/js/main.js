@@ -602,7 +602,7 @@ async function main() {
   const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "Region";
 
   function describeCanvas() {
-    const parts = ["Hex map of metropolitan France", state.lens ? `coloured by the ${state.lens.name} lens${state.lens.activeYear ? ` in ${state.lens.activeYear}` : ""}` : "showing terrain"];
+    const parts = ["Hex map of France and its overseas collectivities", state.lens ? `coloured by the ${state.lens.name} lens${state.lens.activeYear ? ` in ${state.lens.activeYear}` : ""}` : "showing terrain"];
     if (state.selectedCity) parts.push(`${state.selectedCity.name} selected`);
     else if (state.selectedState != null) parts.push(`${stateName(state.selectedState)} selected`);
     canvas.setAttribute("aria-label", parts.join(", "));

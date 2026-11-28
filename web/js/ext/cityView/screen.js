@@ -156,7 +156,7 @@ export function countiesTable(m, data) {
   const col = Object.fromEntries(data.columns.map((k, j) => [k, j]));
   const want = new Set(c.counties || []);
   const rows = data.rows.filter((r) => want.has(r[col.geoid])).sort((a, b) => (b[col.population] || 0) - (a[col.population] || 0));
-  if (!rows.length) return `<p class="muted cv-note">No county rows for this metro.</p>`;
+  if (!rows.length) return `<p class="muted cv-note">No department rows for this urban area.</p>`;
   const maxPop = rows[0][col.population] || 1;
   const show = rows.slice(0, 8);
   const vint = data.vintage ? ` (${esc(data.vintage)})` : "";
@@ -209,13 +209,13 @@ function economy(m) {
   const gi = m.gdpInds;
   const maxShare = gi.length ? Math.max(...gi.map((d) => Math.max(d.share, d.natShare))) : 1;
   const gdpRow = (d) => d.undisclosed
-    ? `<div class="cv-ind und" title="Eurostat withholds some county figures to protect individual businesses: ${esc(d.missing.map((k) => nat.industries?.[k] || k).join(", ") || "several industries")}. This is the metro's GDP minus every disclosed industry.">
+    ? `<div class="cv-ind und" title="Eurostat withholds some department figures to protect individual businesses: ${esc(d.missing.map((k) => nat.industries?.[k] || k).join(", ") || "several industries")}. This is the metro's GDP minus every disclosed industry.">
       <span class="cv-ind-ic" style="--bg:${esc(d.color)}">${icon(d.icon, "?", { size: 13 })}</span>
       <span class="cv-ind-n">${esc(d.short)}</span>
       <span class="cv-ind-v">${money(d.value)} <small>${pct(d.share, 0)}</small></span>
       ${bar(d.share / maxShare, "#7c8494", 0)}
     </div>`
-    : `<div class="cv-ind" title="${esc(d.label)}: ${money(d.value)} (${pct(d.share)} of the metro's GDP; France ${pct(d.natShare)})${d.estimated ? ". Includes an estimate for small counties whose figure Eurostat withholds." : ""}">
+    : `<div class="cv-ind" title="${esc(d.label)}: ${money(d.value)} (${pct(d.share)} of the metro's GDP; France ${pct(d.natShare)})${d.estimated ? ". Includes an estimate for small departments whose figure Eurostat withholds." : ""}">
       <span class="cv-ind-ic" style="--bg:${esc(d.color)}">${icon(d.icon, "•", { size: 13 })}</span>
       <span class="cv-ind-n">${esc(d.short)}${lqBadge(d.lq)}</span>
       <span class="cv-ind-v">${d.estimated ? "≈" : ""}${money(d.value)} <small>${pct(d.share, 0)}</small></span>

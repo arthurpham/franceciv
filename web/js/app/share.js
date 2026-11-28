@@ -162,7 +162,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
     ctx.font = `13px ${SANS}`;
     ctx.fillStyle = "#b9ab88";
     spaced(ctx, 2);
-    ctx.fillText(sel.kind === "state" ? "STATE" : "CITY", rx, cy - 30);
+    ctx.fillText(sel.kind === "state" ? "REGION" : "CITY", rx, cy - 30);
     spaced(ctx, 0);
     ctx.font = `bold 24px ${SERIF}`;
     ctx.fillStyle = "#f3e6c4";
