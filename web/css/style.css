@@ -637,3 +637,5 @@ body.minimap-auto-hidden #lens-area { left: calc(12px + var(--dock-left, 0px)); 
 .lg-corr:hover { color: var(--gold-bright); }
 .lg-corr b.pos { color: #8fd28a; } .lg-corr b.neg { color: #ef8f7a; }
 .lg-correlations p { margin: 4px 0 0; color: var(--ink-dim); font-size: 10px; line-height: 1.35; }
+
+#lang-switch{display:inline-flex;gap:2px;margin-right:6px}.lang-btn{min-width:28px;padding:3px 6px;font-size:10px}.lang-btn[aria-pressed="true"]{background:rgba(226,181,93,.25);color:#ffe7aa}

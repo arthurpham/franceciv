@@ -24,6 +24,7 @@ import { resourceFilterSig, layerActive, layerError, Z as LAYER_Z } from "./rend
 import { installExtensions } from "./ext/index.js";
 import { initShare } from "./app/share.js";
 import { initHelp } from "./app/help.js";
+import { initI18n, installLanguageSwitch, tr } from "./i18n.js";
 
 const { drawStatic, drawOverlay, OCEAN_BG } = mapRender;
 
@@ -56,13 +57,15 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
-  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData, waterCircular, riskDepth, environmentDepth, censusDetail, newCaledonia, polynesia, wallisFutuna, mayotte, northernCom, trust] = await Promise.all([
+  installLanguageSwitch();
+  const i18nReady = initI18n();
+  const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData, waterCircular, riskDepth, environmentDepth, brownfields, terroir, commuting, privateEmployment, censusDetail, newCaledonia, polynesia, wallisFutuna, mayotte, northernCom, trust] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
     loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true), loadJSON("neighborhoods", true), loadJSON("mobility", true), loadJSON("time", true), loadJSON("water_circular", true), loadJSON("risk_depth", true), loadJSON("environment_depth", true), loadJSON("brownfields", true), loadJSON("terroir", true), loadJSON("commuting", true), loadJSON("private_employment", true), loadJSON("census_detail", true), loadJSON("new_caledonia", true), loadJSON("polynesia", true), loadJSON("wallis_futuna", true), loadJSON("mayotte", true), loadJSON("northern_com", true), loadJSON("trust", true),
   ]);
   if (hydrography?.rivers?.length) world.rivers = [...(world.rivers || []), ...hydrography.rivers];
   const lensFile = lenses && Array.isArray(lenses.lenses) ? lenses : { vintage: "", groups: [], lenses: [] };
-  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData, waterCircular, riskDepth, environmentDepth, censusDetail, newCaledonia, polynesia, wallisFutuna, mayotte, northernCom]) {
+  for (const extra of [climate, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData, waterCircular, riskDepth, environmentDepth, brownfields, terroir, commuting, privateEmployment, censusDetail, newCaledonia, polynesia, wallisFutuna, mayotte, northernCom]) {
     if (!extra?.lenses?.length) continue;
     if (extra.group && !lensFile.groups.some((g) => g.id === extra.group.id)) lensFile.groups.push(extra.group);
     const known = new Set(lensFile.lenses.map((l) => l.id));
@@ -91,6 +94,22 @@ async function main() {
     }
     lens.activeYear = lens.time.default || lens.time.years?.at(-1);
     lens.values = lens.time.series[String(lens.activeYear)] || lens.values;
+  }
+  await i18nReady;
+  // Lens ids and units stay canonical for state, URLs and formatting; display text is localized once here,
+  // so canvas labels, legends, tooltips, cards and search all use the same language without scraping generated DOM.
+  for (const group of lensFile.groups) if (group.name) group.name = tr(group.name);
+  for (const lens of lensFile.lenses) {
+    if (lens.name) lens.name = tr(lens.name);
+    if (lens.description) lens.description = tr(lens.description);
+  }
+  if (Array.isArray(sources)) for (const source of sources) {
+    if (source?.title) source.title = tr(source.title);
+    if (source?.description) source.description = tr(source.description);
+  }
+  if (resources?.types) for (const type of resources.types) {
+    if (type?.name) type.name = tr(type.name);
+    if (type?.description) type.description = tr(type.description);
   }
   const w = prepareWorld(world, cities, { resources });
   const state = {
