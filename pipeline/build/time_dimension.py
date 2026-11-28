@@ -30,6 +30,7 @@ POP_YEARS = [1968, 1975, 1982, 1990, 1999, 2007, 2012, 2017, 2023]
 HOUSING_YEARS = [2012, 2017, 2023]
 ELECTION_YEARS = [2017, 2022]
 MIGRATION_YEARS = [2012, 2017, 2023]
+VITAL_YEARS = list(range(2016, 2026))
 
 
 def percentile(vals, p):
@@ -263,12 +264,21 @@ def build():
     owner_homes, owner_missing = aggregate_measure(rows, weights, "RP_PROP", HOUSING_YEARS)
     second_homes, second_missing = aggregate_measure(rows, weights, "RSEC", HOUSING_YEARS)
     vacant, vacant_missing = aggregate_measure(rows, weights, "LVAC", HOUSING_YEARS)
+    births, births_missing = aggregate_measure(rows, weights, "NAIS", VITAL_YEARS)
+    deaths, deaths_missing = aggregate_measure(rows, weights, "DECES", VITAL_YEARS)
+    natural = {y: defaultdict(float) for y in VITAL_YEARS}
+    for y in VITAL_YEARS:
+        for cell in set(births[y]) | set(deaths[y]):
+            natural[y][cell] = births[y].get(cell, 0) - deaths[y].get(cell, 0)
 
     population_series = density_series(world, grid, pop, pop_missing, POP_YEARS)
     dwelling_series = density_series(world, grid, dwellings, dwellings_missing, HOUSING_YEARS)
     ownership_series = ratio_series(world, grid, owner_homes, owner_missing, main_homes, main_missing, HOUSING_YEARS)
     second_series = ratio_series(world, grid, second_homes, second_missing, dwellings, dwellings_missing, HOUSING_YEARS)
     vacancy_series = ratio_series(world, grid, vacant, vacant_missing, dwellings, dwellings_missing, HOUSING_YEARS)
+    birth_series = density_series(world, grid, births, births_missing, VITAL_YEARS, 2)
+    death_series = density_series(world, grid, deaths, deaths_missing, VITAL_YEARS, 2)
+    natural_series = density_series(world, grid, natural, births_missing, VITAL_YEARS, 2)
 
     migration_rows = migration["communes"]
     mig_total, mig_total_missing = aggregate_nested_measure(migration_rows, weights, "total", MIGRATION_YEARS)
@@ -334,6 +344,15 @@ def build():
                       price_series, price_years, RAMP_QUALITY,
                       "Median sale price per m² of existing dwellings sold in each year from 2021 to 2025. " + price_method,
                       source="fr_housing_history", time_label="Sale year"),
+        temporal_lens("births_history", "society", "Births history", "👶", "births / km²", "float", "linear",
+                      birth_series, VITAL_YEARS, RAMP_PEOPLE,
+                      "Registered births per km² in each calendar year from 2016 to 2025. Counts are exact annual commune registrations distributed over current commune polygons; they are event densities rather than population rates because the commune extract does not publish annual population denominators. " + method),
+        temporal_lens("deaths_history", "society", "Deaths history", "🕊️", "deaths / km²", "float", "linear",
+                      death_series, VITAL_YEARS, RAMP_PEOPLE,
+                      "Registered deaths per km² in each calendar year from 2016 to 2025. Counts are exact annual commune registrations distributed over current commune polygons; they are event densities rather than population rates because the commune extract does not publish annual population denominators. " + method),
+        temporal_lens("natural_balance_history", "society", "Natural balance history", "⚖️", "net births / km²", "float", "linear",
+                      natural_series, VITAL_YEARS, RAMP_CLIMATE,
+                      "Registered births minus deaths per km² in each calendar year from 2016 to 2025. Negative values mean deaths exceeded births. Counts are exact annual commune registrations distributed over current commune polygons; they are event densities rather than population rates because the commune extract does not publish annual population denominators. " + method),
         temporal_lens("residential_mobility_history", "society", "Residential mobility history", "🧭", "share of residents aged 1+", "pct", "linear",
                       mobility_series, MIGRATION_YEARS, RAMP_PEOPLE,
                       "Residents aged one year or more who lived in another commune one year earlier, as a share of all residents aged one year or more, in the 2012, 2017 and 2023 censuses. " + migration_method,
@@ -376,6 +395,7 @@ def build():
             "housing_price_years": price_years,
             "migration_years": MIGRATION_YEARS,
             "climate_years": climate_years,
+            "vital_years": VITAL_YEARS,
         },
         "lenses": [compact_lens(lens) for lens in lenses],
     })
@@ -391,6 +411,7 @@ def check(web_dir):
         "lepen_history", "macron_history", "abstention_history", "housing_price_history",
         "residential_mobility_history", "interdepartmental_migration_history",
         "temperature_history", "rainfall_history", "water_deficit_history",
+        "births_history", "deaths_history", "natural_balance_history",
     }
     assert {l["id"] for l in doc["lenses"]} == expected
     for lens in doc["lenses"]:
@@ -414,7 +435,11 @@ def check(web_dir):
     election = next(l for l in doc["lenses"] if l["id"] == "lepen_history")
     assert election["time"]["years"] == [2017, 2022]
     assert all(sum(v is not None for v in vals) > 3500 for vals in election["time"]["series"].values())
+    natural = next(l for l in doc["lenses"] if l["id"] == "natural_balance_history")
+    assert natural["time"]["years"] == list(range(2016, 2026))
+    natflat = [v for vals in natural["time"]["series"].values() for v in vals if v is not None]
+    assert min(natflat) < 0 < max(natflat)
     deficit = next(l for l in doc["lenses"] if l["id"] == "water_deficit_history")
     flat = [v for vals in deficit["time"]["series"].values() for v in vals if v is not None]
     assert min(flat) < 0 < max(flat)
-    return [("PASS", "time.json: 14 temporal population, housing, election, price, migration and climate lenses")]
+    return [("PASS", "time.json: 17 temporal population, housing, election, price, migration and climate lenses")]
