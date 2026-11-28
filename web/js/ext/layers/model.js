@@ -23,6 +23,20 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
  * their kind (see sites.js drawWonder).
  */
 export const WONDER_MOTIF_BY_ID = {
+  // French UNESCO properties and museums: hand-picked so the pseudo-3D plinth says what the place is.
+  "unesco-600": "eiffel",
+  "unesco-81": "cathedral", "unesco-162": "cathedral", "unesco-601": "cathedral", "unesco-635": "cathedral",
+  "unesco-80": "abbey", "unesco-84": "abbey", "unesco-165": "abbey", "unesco-230": "abbey",
+  "unesco-83": "castle", "unesco-160": "castle", "unesco-228": "castle", "unesco-345": "castle", "unesco-873": "castle",
+  "unesco-1283": "castle", "unesco-1337": "castle", "unesco-1755": "castle", "unesco-933": "castle",
+  "unesco-164": "roman", "unesco-163": "roman", "unesco-1569": "roman",
+  "unesco-344": "aqueduct",
+  "unesco-1625": "lighthouse",
+  "unesco-85": "cave", "unesco-1426": "cave", "unesco-1725": "cave",
+  "unesco-932": "vineyard", "unesco-1465": "vineyard", "unesco-1425": "vineyard",
+  "museum-M5031": "rotunda", "museum-M5077": "castle", "museum-M5060": "roman", "museum-M5050": "brickhall",
+  "museum-M7003": "hall", "museum-M1104": "quarter", "museum-M1111": "rotunda", "museum-M5025": "memorial",
+  "museum-M5055": "carved", "museum-M5030": "hall", "museum-M5021": "rotunda", "museum-M7042": "roman",
   // national parks and park units
   "nps-GRCA": "canyon", "nps-ZION": "canyon",
   "nps-ROMO": "peak", "nps-GLAC": "peak", "nps-GRTE": "peak", "nps-YOSE": "peak",

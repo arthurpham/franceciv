@@ -479,11 +479,11 @@ export const WONDER_KINDS = {
 export const WONDER_MOTIFS = {
   natural: ["peak", "canyon", "forest", "desert", "geyser", "coast", "bridge", "dam", "arch", "obelisk"],
   university: ["hall", "redhall", "spire"],
-  landmark: ["statue", "mission", "gantry", "mound", "adobe", "ballpark", "brickhall", "rotunda", "carved", "quarter", "flight", "spike", "dam", "obelisk", "arch", "memorial"],
+  landmark: ["statue", "mission", "gantry", "mound", "adobe", "ballpark", "brickhall", "rotunda", "carved", "quarter", "flight", "spike", "dam", "obelisk", "arch", "memorial", "eiffel", "cathedral", "castle", "abbey", "roman", "aqueduct", "lighthouse", "cave", "vineyard"],
 };
 export const MOTIF_LABELS = {
   peak: "Snow peak", canyon: "Canyon", forest: "Forest", desert: "Desert", geyser: "Hot springs & geysers", coast: "Coast & lighthouse",
-  bridge: "Bridge", dam: "Dam", arch: "Steel arch", obelisk: "Obelisk", hall: "Domed hall", redhall: "Domed hall (red)",
+  bridge: "Bridge", dam: "Dam", arch: "Steel arch", obelisk: "Obelisk", eiffel: "Lattice tower", cathedral: "Cathedral", castle: "Castle", abbey: "Abbey", roman: "Roman monument", aqueduct: "Roman aqueduct", lighthouse: "Lighthouse", cave: "Decorated cave", vineyard: "Vineyard", hall: "Domed hall", redhall: "Domed hall (red)",
   spire: "Bell tower", statue: "Statue", mission: "Mission", gantry: "Launch tower", mound: "Earth mound", adobe: "Pueblo",
   ballpark: "Ballpark", brickhall: "Brick hall", rotunda: "Rotunda", carved: "Carved mountain", quarter: "Old quarter",
   flight: "First flight", spike: "Golden spike", memorial: "Memorial arch",
@@ -1251,6 +1251,100 @@ function paintSpike(g, upx) {
   g.fillRect(0.32, -0.96, 0.03, 0.9);
 }
 
+
+function paintEiffel(g, upx) {
+  g.strokeStyle = "#4a3424";
+  g.lineWidth = Math.max(1.5 / upx, 0.055);
+  g.lineCap = "round";
+  // flared lattice legs and tapering body
+  for (const side of [-1, 1]) {
+    g.beginPath(); g.moveTo(side * 0.72, 0.36); g.bezierCurveTo(side * 0.48, -0.1, side * 0.2, -0.42, side * 0.09, -1.08); g.stroke();
+    g.beginPath(); g.moveTo(side * 0.34, 0.36); g.bezierCurveTo(side * 0.28, -0.1, side * 0.1, -0.42, side * 0.04, -1.08); g.stroke();
+  }
+  for (const [y, w] of [[0.22, 0.58], [-0.12, 0.42], [-0.48, 0.24], [-0.76, 0.15]]) {
+    g.beginPath(); g.moveTo(-w, y); g.lineTo(w, y); g.stroke();
+    g.beginPath(); g.moveTo(-w, y); g.lineTo(w * 0.75, y - 0.2); g.moveTo(w, y); g.lineTo(-w * 0.75, y - 0.2); g.lineWidth = Math.max(0.8 / upx, 0.028); g.stroke();
+    g.lineWidth = Math.max(1.5 / upx, 0.055);
+  }
+  g.beginPath(); g.moveTo(0, -1.08); g.lineTo(0, -1.28); g.stroke();
+  g.fillStyle = "#f2d27a"; g.beginPath(); g.arc(0, -1.28, 0.045, 0, TAU); g.fill();
+}
+
+function paintCathedral(g, upx) {
+  const stone = "#e4d8bd", shade = "#bfae8e", roof = "#536d7d";
+  g.fillStyle = stone; g.fillRect(-0.75, -0.35, 1.5, 0.7); ink(g, upx, 0.9);
+  g.fillStyle = roof;
+  g.beginPath(); g.moveTo(-0.82, -0.34); g.lineTo(0, -0.68); g.lineTo(0.82, -0.34); g.closePath(); g.fill(); ink(g, upx, 1);
+  for (const x of [-0.58, 0.58]) {
+    g.fillStyle = stone; g.fillRect(x - 0.18, -0.88, 0.36, 1.22); ink(g, upx, 1);
+    g.fillStyle = roof; g.beginPath(); g.moveTo(x - 0.22, -0.86); g.lineTo(x, -1.18); g.lineTo(x + 0.22, -0.86); g.closePath(); g.fill(); ink(g, upx, 1);
+    g.fillStyle = "#2f3d48"; g.fillRect(x - 0.06, -0.58, 0.12, 0.26);
+  }
+  g.fillStyle = "#31485c"; g.beginPath(); g.arc(0, -0.22, 0.18, 0, TAU); g.fill(); ink(g, upx, 0.8);
+  g.fillStyle = shade; g.fillRect(-0.11, 0.02, 0.22, 0.33);
+}
+
+function paintCastle(g, upx) {
+  const stone = "#d7c8a8", dark = "#9e8e70", roof = "#435f7d";
+  g.fillStyle = stone; g.fillRect(-0.82, -0.18, 1.64, 0.54); ink(g, upx, 1);
+  for (const x of [-0.62, 0, 0.62]) {
+    g.fillStyle = stone; g.fillRect(x - 0.18, -0.62, 0.36, 0.98); ink(g, upx, 1);
+    g.fillStyle = roof; g.beginPath(); g.moveTo(x - 0.22, -0.6); g.lineTo(x, -1.02); g.lineTo(x + 0.22, -0.6); g.closePath(); g.fill(); ink(g, upx, 1);
+  }
+  g.fillStyle = dark;
+  for (let x = -0.75; x <= 0.75; x += 0.25) g.fillRect(x, -0.3, 0.12, 0.12);
+  g.fillStyle = "#45382a"; g.fillRect(-0.11, 0.05, 0.22, 0.31);
+}
+
+function paintAbbey(g, upx) {
+  const stone = "#e7dcc4", roof = "#7a4a34";
+  g.fillStyle = stone; g.fillRect(-0.78, -0.22, 1.25, 0.58); ink(g, upx, 1);
+  g.fillStyle = roof; g.beginPath(); g.moveTo(-0.82, -0.2); g.lineTo(-0.15, -0.5); g.lineTo(0.52, -0.2); g.closePath(); g.fill(); ink(g, upx, 1);
+  g.fillStyle = stone; g.fillRect(0.42, -0.72, 0.28, 1.08); ink(g, upx, 1);
+  g.fillStyle = roof; g.beginPath(); g.moveTo(0.38, -0.7); g.lineTo(0.56, -1.13); g.lineTo(0.74, -0.7); g.closePath(); g.fill(); ink(g, upx, 1);
+  g.fillStyle = "#3d4e5f"; for (const x of [-0.58, -0.32, -0.06, 0.2]) g.fillRect(x, -0.04, 0.09, 0.25);
+}
+
+function paintRoman(g, upx) {
+  const stone = "#eee4ce", shade = "#c9b996";
+  g.fillStyle = stone; g.fillRect(-0.75, -0.12, 1.5, 0.48); ink(g, upx, 1);
+  g.fillStyle = shade; for (let c = 0; c < 6; c++) g.fillRect(-0.63 + c * 0.25, -0.08, 0.09, 0.42);
+  g.fillStyle = stone; g.beginPath(); g.moveTo(-0.82, -0.1); g.lineTo(0, -0.52); g.lineTo(0.82, -0.1); g.closePath(); g.fill(); ink(g, upx, 1);
+  g.fillStyle = "#d8caae"; g.fillRect(-0.86, 0.34, 1.72, 0.08);
+}
+
+function paintAqueduct(g, upx) {
+  const stone = "#ddcfae";
+  g.fillStyle = stone;
+  g.beginPath();
+  g.rect(-0.86, -0.5, 1.72, 0.86);
+  for (const x of [-0.48, 0, 0.48]) {
+    g.moveTo(x - 0.13, 0.36); g.lineTo(x - 0.13, 0.02); g.bezierCurveTo(x - 0.13, -0.24, x + 0.13, -0.24, x + 0.13, 0.02); g.lineTo(x + 0.13, 0.36);
+  }
+  g.fill("evenodd"); ink(g, upx, 1);
+  g.fillStyle = "#c8b891"; g.fillRect(-0.9, -0.58, 1.8, 0.1);
+}
+
+function paintLighthouse(g, upx) {
+  g.fillStyle = "#f0e6d4"; g.beginPath(); g.moveTo(-0.22, 0.36); g.lineTo(-0.12, -0.86); g.lineTo(0.12, -0.86); g.lineTo(0.22, 0.36); g.closePath(); g.fill(); ink(g, upx, 1);
+  g.fillStyle = "#b84435"; g.fillRect(-0.16, -0.46, 0.32, 0.15); g.fillRect(-0.19, -0.1, 0.38, 0.15);
+  g.fillStyle = "#263646"; g.fillRect(-0.16, -0.98, 0.32, 0.14); ink(g, upx, 0.8);
+  g.fillStyle = "#f2d27a"; g.beginPath(); g.arc(0, -0.91, 0.07, 0, TAU); g.fill();
+}
+
+function paintCave(g, upx) {
+  g.fillStyle = "#8b7b65"; g.beginPath(); g.moveTo(-0.9, 0.36); g.bezierCurveTo(-0.65, -0.55, -0.1, -0.92, 0.45, -0.48); g.bezierCurveTo(0.78, -0.22, 0.88, 0.1, 0.9, 0.36); g.closePath(); g.fill(); ink(g, upx, 1);
+  g.fillStyle = "#2b2118"; g.beginPath(); g.ellipse(0.02, 0.2, 0.3, 0.24, 0, 0, TAU); g.fill();
+  g.strokeStyle = "#d8a24a"; g.lineWidth = Math.max(1 / upx, 0.025); g.beginPath(); g.moveTo(-0.45, -0.22); g.quadraticCurveTo(-0.3, -0.38, -0.12, -0.24); g.stroke();
+}
+
+function paintVineyard(g, upx) {
+  g.fillStyle = "#6b8d3e"; g.beginPath(); g.moveTo(-0.9, 0.36); g.quadraticCurveTo(-0.25, -0.45, 0.9, -0.05); g.lineTo(0.9, 0.36); g.closePath(); g.fill(); ink(g, upx, 0.8);
+  g.strokeStyle = "#365722"; g.lineWidth = Math.max(1 / upx, 0.035);
+  for (const y of [0.18, 0.02, -0.13]) { g.beginPath(); g.moveTo(-0.7, y + 0.1); g.quadraticCurveTo(0, y - 0.18, 0.72, y + 0.02); g.stroke(); }
+  for (const [x, y] of [[-0.38, 0.03], [0, -0.07], [0.38, 0.02]]) { g.fillStyle = "#6d2d55"; g.beginPath(); g.arc(x, y, 0.08, 0, TAU); g.fill(); }
+}
+
 const MOTIF_PAINT = {
   peak: paintPeak,
   canyon: paintCanyon, forest: paintForest, desert: paintDesert, geyser: paintGeyser, coast: paintCoast, bridge: paintBridge,
@@ -1264,6 +1358,8 @@ const MOTIF_PAINT = {
   statue: paintStatue, mission: paintMission, gantry: paintGantry, mound: paintMound, adobe: paintAdobe,
   ballpark: paintBallpark, brickhall: paintBrickHall, carved: paintCarved, quarter: paintQuarter, flight: paintFlight,
   spike: paintSpike,
+  eiffel: paintEiffel, cathedral: paintCathedral, castle: paintCastle, abbey: paintAbbey, roman: paintRoman,
+  aqueduct: paintAqueduct, lighthouse: paintLighthouse, cave: paintCave, vineyard: paintVineyard,
 };
 
 // --- plaques --------------------------------------------------------------------------------------------------------
