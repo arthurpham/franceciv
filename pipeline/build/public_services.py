@@ -40,6 +40,14 @@ def build():
         rates.setdefault(r["department"], {})[r["indicator"]] = r["rate"] / 10  # per mille -> per 100 residents
     burglary = {d: v.get("Cambriolages de logement") for d, v in rates.items() if "Cambriolages de logement" in v}
     violence = {d: v.get("Violences physiques hors cadre familial") for d, v in rates.items() if "Violences physiques hors cadre familial" in v}
+    extra_crime = {
+        "vehicle_theft": "Vols de véhicule",
+        "payment_fraud": "Escroqueries et fraudes aux moyens de paiement",
+        "drug_trafficking": "Trafic de stupéfiants",
+        "sexual_violence": "Violences sexuelles",
+        "property_damage": "Destructions et dégradations volontaires",
+    }
+    crime_extra = {key: {d: v.get(ind) for d, v in rates.items() if ind in v} for key, ind in extra_crime.items()}
 
     population = {}
     for c in boundaries["communes"]:
@@ -119,6 +127,11 @@ def build():
         "lenses": [
             lens("burglary", "Burglaries", "🏠", "per 100 residents / yr", dep_values(world, burglary), "fr_crime", f"Recorded home burglaries per 100 residents in {year}. Police/gendarmerie recording and reporting propensity vary by territory."),
             lens("violence", "Physical violence", "🛡️", "per 100 residents / yr", dep_values(world, violence), "fr_crime", f"Recorded non-domestic physical violence per 100 residents in {year}. This is recorded crime, not victimization prevalence."),
+            lens("vehicle_theft", "Vehicle theft", "🚗", "per 100 residents / yr", dep_values(world, crime_extra["vehicle_theft"]), "fr_crime", f"Recorded vehicle thefts per 100 residents in {year}. Recorded crime reflects reporting propensity and police recording practices as well as offending."),
+            lens("payment_fraud", "Payment fraud", "💳", "per 100 residents / yr", dep_values(world, crime_extra["payment_fraud"]), "fr_crime", f"Recorded fraud and fraudulent use of payment methods per 100 residents in {year}. Recorded crime reflects reporting propensity and police recording practices as well as offending."),
+            lens("drug_trafficking", "Drug trafficking", "🚔", "per 100 residents / yr", dep_values(world, crime_extra["drug_trafficking"]), "fr_crime", f"Recorded drug-trafficking offences per 100 residents in {year}. Enforcement intensity and recording practices strongly affect territorial comparisons."),
+            lens("sexual_violence", "Sexual violence", "⚠️", "per 100 residents / yr", dep_values(world, crime_extra["sexual_violence"]), "fr_crime", f"Recorded sexual violence per 100 residents in {year}. This is recorded crime, not victimization prevalence; reporting propensity varies substantially."),
+            lens("property_damage", "Property damage", "🧱", "per 100 residents / yr", dep_values(world, crime_extra["property_damage"]), "fr_crime", f"Recorded intentional destruction and property damage per 100 residents in {year}. Recorded crime reflects reporting propensity and police recording practices as well as offending."),
             lens("primary_schools", "Primary schools", "🏫", "schools per 10k residents", dep_values(world, primary), "fr_schools", "Open schools classified as Ecole in the current Ministry directory, per 10,000 department residents."),
             lens("secondary_schools", "Collèges & lycées", "🎓", "schools per 10k residents", dep_values(world, secondary), "fr_schools", "Open Collège and Lycée establishments in the current Ministry directory, per 10,000 department residents."),
             lens("essential_services", "Everyday services", "🏪", "of 6 service categories", essential, "fr_public_equipment", "Population-weighted number of six everyday service categories present in communes: food shops, pharmacy, general practitioner, primary school, post office/relais and library. INSEE BPE 2024."),
@@ -143,7 +156,7 @@ def build():
 def check(web_dir):
     import json
     doc = json.loads((web_dir / "public_services.json").read_text())
-    assert len(doc["lenses"]) == 19
+    assert len(doc["lenses"]) == 24
     vals = [v for v in doc["lenses"][0]["values"] if v is not None]
     assert len(vals) > 2500 and max(vals) > 0.1
-    return [("PASS", f"public_services.json: 19 safety/school/equipment lenses over {len(vals)} cells")]
+    return [("PASS", f"public_services.json: 24 safety/school/equipment lenses over {len(vals)} cells")]
