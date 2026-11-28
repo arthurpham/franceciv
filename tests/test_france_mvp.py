@@ -209,6 +209,17 @@ def test_society_contract():
     assert len(set(v for v in income if v is not None)) > 500
 
 
+def test_new_caledonia_contract():
+    data = web("new_caledonia.json")
+    assert data["sources"] == ["fr_new_caledonia"] and len(data["lenses"]) == 9 and data["matched_communes"] == 33
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert 5 <= len(vals) <= 100 and min(vals) >= 0 and max(vals) <= 1
+        assert len(set(vals)) > 5
+    assert any(s["id"] == "fr_new_caledonia" for s in web("sources.json"))
+
+
+
 def test_census_detail_contract():
     data = web("census_detail.json")
     assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 6
