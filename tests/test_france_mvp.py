@@ -235,6 +235,16 @@ def test_census_detail_contract():
     assert max(v for v in transit if v is not None) > 0.5
 
 
+def test_polynesia_contract():
+    data = web("polynesia.json")
+    assert data["sources"] == ["fr_polynesia"] and len(data["lenses"]) == 10 and data["matched_communes"] == 48
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert 5 <= len(vals) <= 150 and min(vals) >= 0 and max(vals) <= 1
+        assert len(set(vals)) > 5
+    assert any(s["id"] == "fr_polynesia" for s in web("sources.json"))
+
+
 def test_cycling_contract():
     data = web("cycling.json")
     assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2
