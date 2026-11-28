@@ -14,9 +14,12 @@ class FrenchCommuting(Source):
    for r in csv.DictReader(io.TextIOWrapper(raw,encoding='utf-8-sig'),delimiter=';'):
     try:v=float(r['NBFLUX_C22_ACTOCC15P'])
     except:continue
-    home,work=parent(r['CODGEO']),parent(r['DCLT']);x=out.setdefault(home,{'out':0.0,'internal':0.0,'in':0.0})
+    home,work=parent(r['CODGEO']),parent(r['DCLT']);x=out.setdefault(home,{'out':0.0,'internal':0.0,'in':0.0,'dests':{},'origins':{}})
     if home==work:x['internal']+=v
     else:
-     x['out']+=v;out.setdefault(work,{'out':0.0,'internal':0.0,'in':0.0})['in']+=v
+     x['out']+=v;x['dests'][work]=x['dests'].get(work,0)+v;y=out.setdefault(work,{'out':0.0,'internal':0.0,'in':0.0,'dests':{},'origins':{}});y['in']+=v;y['origins'][home]=y['origins'].get(home,0)+v
   if len(out)<30000:raise ValueError('unexpected commuting coverage')
+  for x in out.values():
+   x['dests']=sorted(x['dests'].items(),key=lambda z:z[1],reverse=True)[:3]
+   x['origins']=sorted(x['origins'].items(),key=lambda z:z[1],reverse=True)[:3]
   return {'_files':['flows.zip'],'rows':out}

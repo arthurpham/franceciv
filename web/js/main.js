@@ -754,11 +754,34 @@ async function main() {
 
   let communePanel, epciPanel, irisPanel, geographyPanel;
   const updateGeoPanelVisibility = () => { communeCardOpen = Boolean(communePanel?.isOpen || epciPanel?.isOpen || irisPanel?.isOpen || geographyPanel?.isOpen); };
-  const geoPanelOpts = { onVisibility: updateGeoPanelVisibility, inspector, cellAt: (x, y) => w.grid.cellAt(x, y) };
+  const geoPanelOpts = { onVisibility: updateGeoPanelVisibility, inspector, cellAt: (x, y) => w.grid.cellAt(x, y), loadCommuteFlows: () => Promise.all([loadData("commute_flows"), loadData("communes")]), showCommuteFlows: (flows) => { state.commuteFlows = flows || null; requestDraw(); } };
   communePanel = initCommunePanel(geoPanelOpts);
   epciPanel = initEpciPanel(geoPanelOpts);
   irisPanel = initIrisPanel(geoPanelOpts);
   geographyPanel = initGeographyPanel(geoPanelOpts);
+  app.registerOverlay({
+    id: "commute-flows", z: 80,
+    draw(ctx, cam) {
+      const f = state.commuteFlows;
+      if (!f) return;
+      const s = cam.scale;
+      ctx.lineCap = "round";
+      const drawSet = (arr, color, reverse) => {
+        const max = Math.max(1, ...arr.map((x) => x.workers));
+        for (const q of arr) {
+          const a = reverse ? [q.x, q.y] : [f.x, f.y], b = reverse ? [f.x, f.y] : [q.x, q.y];
+          const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - Math.hypot(b[0] - a[0], b[1] - a[1]) * 0.12;
+          ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(mx, my, b[0], b[1]);
+          ctx.strokeStyle = "rgba(8,10,16,.82)"; ctx.lineWidth = (3.2 + 4.8 * Math.sqrt(q.workers / max)) / s; ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = (1.5 + 3.4 * Math.sqrt(q.workers / max)) / s; ctx.stroke();
+          ctx.beginPath(); ctx.arc(b[0], b[1], (3.2 + 3.2 * Math.sqrt(q.workers / max)) / s, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+        }
+      };
+      drawSet(f.out || [], "rgba(255,185,82,.88)", false);
+      drawSet(f.in || [], "rgba(94,196,255,.82)", true);
+      ctx.beginPath(); ctx.arc(f.x, f.y, 7 / s, 0, Math.PI * 2); ctx.fillStyle = "#fff4c2"; ctx.fill();
+    },
+  });
   const closeGeoPanels = () => { communePanel.close(); epciPanel.close(); irisPanel.close(); geographyPanel.close(); };
   events.on("select", (sel) => { if (sel) closeGeoPanels(); });
   events.on("lens", () => ["commune-panel", "epci-panel", "iris-panel", "geography-panel"].forEach((id) => inspector.refresh(document.getElementById(id))));
