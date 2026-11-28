@@ -71,7 +71,7 @@ One object per mapped région, using the same economic shape as cities plus `abb
 
 ### lenses.json
 
-`{"version":1,"source":"...","groups":[...],"lenses":[...]}`. Each lens has `id`, `group`, `name`, `icon`, `unit`, `format`, `scale`, `higher_is`, `description`, and a per-cell `values` array of world-grid length. `pct` and `signed` values are 0..1 fractions. Values must be null off French land.
+`{"version":1,"source":"...","groups":[...],"lenses":[...]}`. Each lens has `id`, `group`, `name`, `icon`, `unit`, `format`, `scale`, `higher_is`, `description`, and per-cell `values`. `pct` and `signed` values are 0..1 fractions. Values must be null off French land. Large lenses may use `encoding: "land-index-v1"`, where the transported array contains only values for `world.owner[i] >= 0` in ascending hex-index order and the frontend/validators expand it to world-grid length. Small-coverage territory-specific lenses may instead use `encoding: "sparse-index-v1"`, an object keyed by hex index. Both encodings are transport representations only; logical lens semantics are unchanged.
 
 Current lenses cover French population/economy, housing, education, age, immigration, commuting, elections, hazard recognitions, climate, connectivity, healthcare, agriculture, tourism, electricity use, public services, protected nature, physical flood exposure, and CORINE land-cover shares. Department-level density and employment lenses are area-weighted across hexes using `_world.county_samples`; this preserves departmental totals rather than duplicating population in border hexes.
 

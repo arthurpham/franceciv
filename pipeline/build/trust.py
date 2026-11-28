@@ -124,6 +124,14 @@ def _layer_rows(world):
                 vals = [None] * len(owner)
                 for key, value in sparse.items():
                     vals[int(key)] = value
+            elif lens.get("encoding") == "land-index-v1" and isinstance(vals, list):
+                packed = vals
+                vals = [None] * len(owner)
+                k = 0
+                for i, owner_index in enumerate(owner):
+                    if owner_index >= 0:
+                        vals[i] = packed[k] if k < len(packed) else None
+                        k += 1
             if not isinstance(vals, list) or len(vals) != len(owner):
                 rows.append({"id": lid, "name": lens.get("name"), "file": path.name, "source": lens.get("source"), "shape": "invalid"})
                 continue
