@@ -152,6 +152,10 @@ Sparse index encoding keeps uncompressed `time.json` near 2.4 MB rather than abo
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.
 
+### new_caledonia.json
+
+INSEE/ISEE-NC commune tables from the 2019 New Caledonia census. The lenses cover age, education, unemployment, agricultural employment, homeownership, second homes, vacancy, running water and household internet. Commune counts are distributed over commune polygons and summed within hexes. They cover only New Caledonia; the rest of France is null because these are territory-specific tables rather than part of the metropolitan/DROM Melodi commune extract.
+
 ### quality_life.json
 
 DVF housing-price/market and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `housing_liquidity` is sales per 10,000 residents over roughly two years, not dwelling turnover; `apartment_sale_share` describes transacted stock rather than the full dwelling stock. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.
