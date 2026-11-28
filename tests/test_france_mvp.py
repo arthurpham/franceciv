@@ -207,6 +207,21 @@ def test_society_contract():
     assert min(migration) < 0 < max(migration)
 
 
+def test_census_detail_contract():
+    data = web("census_detail.json")
+    assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 6
+    assert {l["id"] for l in data["lenses"]} == {
+        "commune_unemployment", "commune_higher_education", "commune_seniors",
+        "commune_public_transit", "commune_car_commuting", "commune_immigration",
+    }
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert len(vals) > 2500 and min(vals) >= 0 and max(vals) <= 1
+        assert len(set(vals)) > 200
+    transit = next(l for l in data["lenses"] if l["id"] == "commune_public_transit")["values"]
+    assert max(v for v in transit if v is not None) > 0.5
+
+
 def test_cycling_contract():
     data = web("cycling.json")
     assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2

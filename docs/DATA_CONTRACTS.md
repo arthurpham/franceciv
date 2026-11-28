@@ -152,6 +152,10 @@ Sparse index encoding keeps uncompressed `time.json` near 2.4 MB rather than abo
 
 INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.
 
+### census_detail.json
+
+INSEE Melodi detailed commune census tables for unemployment, higher education, age, commuting and immigration. Commune counts are distributed over current commune polygons on a 1 km lattice and summed within hexes, so values are local commune mixtures rather than department-uniform copies. The detailed commune extract covers metropolitan France plus Guadeloupe, Martinique, Guyane and La Réunion; Mayotte and the additional overseas collectivities remain null because those rows are absent from the chosen INSEE extract.
+
 ### quality_life.json
 
 DVF housing-price/market and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `housing_liquidity` is sales per 10,000 residents over roughly two years, not dwelling turnover; `apartment_sale_share` describes transacted stock rather than the full dwelling stock. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.
