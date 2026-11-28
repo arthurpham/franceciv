@@ -790,3 +790,34 @@ def test_trust_report_contract():
     assert all(0 <= l["coverage"] <= 1 for l in layers.values())
     assert layers["forest"]["metropolitan_coverage"] > 0.9
     assert trust["reproducibility"]["source_fingerprint"]
+
+
+def test_i18n_contract():
+    translations = web("i18n_fr.json")
+    assert len(translations) > 1500
+    for key in ("Share", "Lenses", "Choose a lens", "Search lenses, sources or years…", "no data"):
+        assert translations.get(key) and translations[key] != key
+    assert translations.get("Terrain") == "Terrain"
+    assert translations["Lenses"] == "Couches"
+    assert translations["no data"] == "aucune donnée"
+    lens_count = 0
+    for path in (ROOT / "web" / "data").glob("*.json"):
+        if path.name.startswith("i18n_"):
+            continue
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        for lens in data.get("lenses", []):
+            lens_count += 1
+            assert lens["name"] in translations
+            if lens.get("description"):
+                assert lens["description"] in translations
+        for group in data.get("groups", []):
+            if isinstance(group, dict) and group.get("name"):
+                assert group["name"] in translations
+        if isinstance(data.get("group"), dict) and data["group"].get("name"):
+            assert data["group"]["name"] in translations
+    assert lens_count >= 249

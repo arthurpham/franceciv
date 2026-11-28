@@ -6,7 +6,7 @@ export const lang = param === "fr" || (!param && stored === "fr") ? "fr" : "en";
 if (param === "fr" || param === "en") localStorage.setItem("franceciv.lang", lang);
 
 let phrases = null;
-let ordered = [];
+let normalizedPhrases = null;
 let observer = null;
 let translating = false;
 
@@ -16,30 +16,30 @@ export async function initI18n() {
   try {
     const r = await fetch("data/i18n_fr.json");
     phrases = r.ok ? await r.json() : {};
+    normalizedPhrases = Object.fromEntries(Object.entries(phrases).map(([source, target]) => [normalizeText(source), target]));
   } catch {
     phrases = {};
   }
-  ordered = Object.keys(phrases).sort((a, b) => b.length - a.length);
   translateTree(document.body);
   observer = new MutationObserver((mutations) => {
     if (translating) return;
     for (const m of mutations) {
       for (const node of m.addedNodes) translateTree(node);
-      if (m.type === "characterData") translateText(m.target);
+      if (m.type === "attributes" && m.target) translateTree(m.target);
     }
   });
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["placeholder", "title", "aria-label"] });
+}
+
+function normalizeText(text) {
+  return String(text || "").replace(/\s+/g, " ").trim();
 }
 
 export function tr(text) {
   if (lang !== "fr" || !text || !phrases) return text;
   const exact = phrases[text];
   if (exact) return exact;
-  let out = text;
-  for (const en of ordered) {
-    if (out.includes(en)) out = out.split(en).join(phrases[en]);
-  }
-  return out;
+  return normalizedPhrases?.[normalizeText(text)] || text;
 }
 
 function translateText(node) {
@@ -53,7 +53,7 @@ function translateText(node) {
   }
 }
 
-const SKIP = new Set(["SCRIPT", "STYLE", "CODE", "KBD", "CANVAS"]);
+const SKIP = new Set(["SCRIPT", "STYLE", "CODE", "CANVAS"]);
 function translateTree(root) {
   if (lang !== "fr" || !phrases || !root) return;
   if (root.nodeType === Node.TEXT_NODE) return translateText(root);
