@@ -13,6 +13,17 @@ def web(name):
     return json.load(open(ROOT / "web" / "data" / name, encoding="utf-8"))
 
 
+def dense_lens_values(lens):
+    vals = lens["values"]
+    if isinstance(vals, list):
+        return vals
+    n = len(web("world.json")["owner"])
+    dense = [None] * n
+    for key, value in vals.items():
+        dense[int(key)] = value
+    return dense
+
+
 def test_projection_round_trip():
     a = Albers()
     lon, lat = 2.3522, 48.8566
@@ -213,8 +224,8 @@ def test_new_caledonia_contract():
     data = web("new_caledonia.json")
     assert data["sources"] == ["fr_new_caledonia"] and len(data["lenses"]) == 9 and data["matched_communes"] == 33
     for lens in data["lenses"]:
-        vals = [v for v in lens["values"] if v is not None]
-        assert 5 <= len(vals) <= 100 and min(vals) >= 0 and max(vals) <= 1
+        vals = [v for v in dense_lens_values(lens) if v is not None]
+        assert lens["encoding"] == "sparse-index-v1" and 5 <= len(vals) <= 100 and min(vals) >= 0 and max(vals) <= 1
         assert len(set(vals)) > 5
     assert any(s["id"] == "fr_new_caledonia" for s in web("sources.json"))
 
@@ -239,8 +250,8 @@ def test_polynesia_contract():
     data = web("polynesia.json")
     assert data["sources"] == ["fr_polynesia"] and len(data["lenses"]) == 10 and data["matched_communes"] == 48
     for lens in data["lenses"]:
-        vals = [v for v in lens["values"] if v is not None]
-        assert 5 <= len(vals) <= 150 and min(vals) >= 0 and max(vals) <= 1
+        vals = [v for v in dense_lens_values(lens) if v is not None]
+        assert lens["encoding"] == "sparse-index-v1" and 5 <= len(vals) <= 150 and min(vals) >= 0 and max(vals) <= 1
         assert len(set(vals)) > 5
     assert any(s["id"] == "fr_polynesia" for s in web("sources.json"))
 
@@ -249,8 +260,8 @@ def test_wallis_futuna_contract():
     data = web("wallis_futuna.json")
     assert data["sources"] == ["fr_wallis_futuna"] and len(data["lenses"]) == 7 and data["matched_communes"] == 3
     for lens in data["lenses"]:
-        vals = [v for v in lens["values"] if v is not None]
-        assert 2 <= len(vals) <= 30 and len(set(vals)) >= 2
+        vals = [v for v in dense_lens_values(lens) if v is not None]
+        assert lens["encoding"] == "sparse-index-v1" and 2 <= len(vals) <= 30 and len(set(vals)) >= 2
     assert any(s["id"] == "fr_wallis_futuna" for s in web("sources.json"))
 
 

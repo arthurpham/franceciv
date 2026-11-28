@@ -25,7 +25,7 @@ def percentile(vals, p):
 def lens(lens_id, name, emoji, unit, vals, desc):
     return {"id": lens_id, "group": "overseas", "name": name, "icon": lens_id, "emoji": emoji, "unit": unit,
             "format": "pct", "scale": "linear", "domain": [percentile(vals, 2), percentile(vals, 98)], "ramp": RAMP,
-            "higher_is": "neutral", "source": "fr_polynesia", "description": desc, "values": vals}
+            "higher_is": "neutral", "encoding": "sparse-index-v1", "source": "fr_polynesia", "description": desc, "values": {str(i): v for i, v in enumerate(vals) if v is not None}}
 
 
 def build():
@@ -98,7 +98,7 @@ def check(web_dir):
     doc = json.loads((web_dir / "polynesia.json").read_text())
     assert len(doc["lenses"]) == 10 and doc["matched_communes"] == 48
     for lens_doc in doc["lenses"]:
-        vals = [v for v in lens_doc["values"] if v is not None]
+        vals = [v for v in lens_doc["values"].values() if v is not None]
         assert 5 <= len(vals) <= 150 and min(vals) >= 0 and max(vals) <= 1
         assert len(set(vals)) > 5
     return [("PASS", "polynesia.json: ten French Polynesia commune-detail lenses")]
