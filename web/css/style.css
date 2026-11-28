@@ -630,3 +630,10 @@ body.minimap-auto-hidden #lens-area { left: calc(12px + var(--dock-left, 0px)); 
 @media (max-width: 700px) {
   #commune-panel, #epci-panel, #iris-panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 55vh; max-height: 55dvh; border-radius: 14px 14px 0 0; }
 }
+
+.lg-correlations { margin-top: 7px; border-top: 1px solid rgba(201,164,92,.22); padding-top: 6px; }
+.lg-correlations h5 { margin: 0 0 4px; color: var(--gold-bright); font-size: 11px; letter-spacing: .04em; }
+.lg-corr { display: flex; width: 100%; justify-content: space-between; gap: 8px; padding: 3px 2px; border: 0; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.lg-corr:hover { color: var(--gold-bright); }
+.lg-corr b.pos { color: #8fd28a; } .lg-corr b.neg { color: #ef8f7a; }
+.lg-correlations p { margin: 4px 0 0; color: var(--ink-dim); font-size: 10px; line-height: 1.35; }
