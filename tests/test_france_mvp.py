@@ -265,6 +265,16 @@ def test_wallis_futuna_contract():
     assert any(s["id"] == "fr_wallis_futuna" for s in web("sources.json"))
 
 
+def test_mayotte_contract():
+    data = web("mayotte.json")
+    assert data["sources"] == ["fr_mayotte"] and len(data["lenses"]) == 12 and data["matched_communes"] == 17
+    for lens in data["lenses"]:
+        vals = [v for v in dense_lens_values(lens) if v is not None]
+        assert lens["encoding"] == "sparse-index-v1" and 3 <= len(vals) <= 60
+        assert min(vals) >= 0 and max(vals) <= 1 and len(set(vals)) > 3
+    assert any(s["id"] == "fr_mayotte" for s in web("sources.json"))
+
+
 def test_cycling_contract():
     data = web("cycling.json")
     assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2
