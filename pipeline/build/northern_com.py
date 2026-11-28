@@ -81,6 +81,6 @@ def check(web_dir):
     doc = json.loads((web_dir / "northern_com.json").read_text())
     assert len(doc["lenses"]) == 8 and doc["matched_communes"] == 4
     for lens_doc in doc["lenses"]:
-        vals = [v for v in lens_doc["values"].values() if v is not None]
+        vals = [v for v in (lens_doc["values"].values() if isinstance(lens_doc["values"], dict) else lens_doc["values"]) if v is not None]
         assert 2 <= len(vals) <= 60 and min(vals) >= 0 and max(vals) <= 1
     return [("PASS", "northern_com.json: eight northern-collectivity census lenses")]
