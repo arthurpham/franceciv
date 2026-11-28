@@ -245,6 +245,15 @@ def test_polynesia_contract():
     assert any(s["id"] == "fr_polynesia" for s in web("sources.json"))
 
 
+def test_wallis_futuna_contract():
+    data = web("wallis_futuna.json")
+    assert data["sources"] == ["fr_wallis_futuna"] and len(data["lenses"]) == 7 and data["matched_communes"] == 3
+    for lens in data["lenses"]:
+        vals = [v for v in lens["values"] if v is not None]
+        assert 2 <= len(vals) <= 30 and len(set(vals)) >= 2
+    assert any(s["id"] == "fr_wallis_futuna" for s in web("sources.json"))
+
+
 def test_cycling_contract():
     data = web("cycling.json")
     assert data["sources"] == ["fr_cycling"] and len(data["lenses"]) == 2
