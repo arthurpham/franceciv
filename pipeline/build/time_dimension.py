@@ -18,7 +18,7 @@ from ..core.insets import PARAMS, REGION_TO_DEP, real_inverse_bounds
 from ..core.store import load_interim, load_interim_payload, write_web
 from .connectivity import nearest_land, shape_weights, SAMPLE_STEP_KM
 
-REQUIRES = ["_world", "fr_boundaries", "fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration"]
+REQUIRES = ["_world", "fr_boundaries", "fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration", "fr_private_employment"]
 PRODUCES = ["time.json"]
 
 RAMP_PEOPLE = ["#1b1035", "#4b2377", "#9a3b8a", "#e0645e", "#f9b24a", "#fff3a8"]
@@ -31,6 +31,7 @@ HOUSING_YEARS = [2012, 2017, 2023]
 ELECTION_YEARS = [2017, 2022]
 MIGRATION_YEARS = [2012, 2017, 2023]
 VITAL_YEARS = list(range(2016, 2026))
+URSSAF_YEARS = list(range(2006, 2026))
 
 
 def percentile(vals, p):
@@ -253,6 +254,7 @@ def build():
     housing_history = load_interim("fr_housing_history")
     climate = load_interim("fr_climate")
     migration = load_interim("fr_migration")
+    employment = load_interim("fr_private_employment")
     rows = stats["comparateur"]["COM"]
     grid = HexGrid(**world["grid"])
     proj = MapProjection(**world["projection"])
@@ -293,6 +295,13 @@ def build():
     temperature_series = climate_series(world, grid, proj, climate, "annual_temperature", climate_years, 2)
     rainfall_series = climate_series(world, grid, proj, climate, "annual_rainfall", climate_years, 1)
     deficit_series = climate_series(world, grid, proj, climate, "annual_water_deficit", climate_years, 1)
+    emp_rows = {code: row["years"] for code, row in employment["rows"].items()}
+    emp_jobs, emp_jobs_missing = aggregate_nested_measure(emp_rows, weights, "jobs", URSSAF_YEARS)
+    emp_est, emp_est_missing = aggregate_nested_measure(emp_rows, weights, "establishments", URSSAF_YEARS)
+    emp_ind, emp_ind_missing = aggregate_nested_measure(emp_rows, weights, "industry_jobs", URSSAF_YEARS)
+    employment_density_series = density_series(world, grid, emp_jobs, emp_jobs_missing, URSSAF_YEARS, 2)
+    establishment_density_series = density_series(world, grid, emp_est, emp_est_missing, URSSAF_YEARS, 2)
+    industrial_share_series = ratio_series(world, grid, emp_ind, emp_ind_missing, emp_jobs, emp_jobs_missing, URSSAF_YEARS)
     lepen_series = election_series(world, grid, elections, ELECTION_YEARS, "le_pen", "valid")
     macron_series = election_series(world, grid, elections, ELECTION_YEARS, "macron", "valid")
     abstention_series = election_series(world, grid, elections, ELECTION_YEARS, "abstentions", "registered")
@@ -353,6 +362,18 @@ def build():
         temporal_lens("natural_balance_history", "society", "Natural balance history", "⚖️", "net births / km²", "float", "linear",
                       natural_series, VITAL_YEARS, RAMP_CLIMATE,
                       "Registered births minus deaths per km² in each calendar year from 2016 to 2025. Negative values mean deaths exceeded births. Counts are exact annual commune registrations distributed over current commune polygons; they are event densities rather than population rates because the commune extract does not publish annual population denominators. " + method),
+        temporal_lens("private_job_density_history", "economy", "Private-job density history", "💼", "jobs / km²", "float", "linear",
+                      employment_density_series, URSSAF_YEARS, RAMP_QUALITY,
+                      "URSSAF private-sector salaried jobs per km² at 31 December in each year from 2006 to 2025. Jobs are counted at employer establishments rather than worker residence. Blank source cells are suppressed or unavailable and are not treated as zero; apprentices are included from the June 2023 methodological change, so recent years are not strictly homogeneous. " + method,
+                      source="fr_private_employment", time_label="Employment year"),
+        temporal_lens("private_establishment_density_history", "economy", "Private-employer density history", "🏢", "establishments / km²", "float", "linear",
+                      establishment_density_series, URSSAF_YEARS, RAMP_QUALITY,
+                      "URSSAF private-sector employer establishments per km² at 31 December in each year from 2006 to 2025. Blank source cells are suppressed or unavailable and are not treated as zero. " + method,
+                      source="fr_private_employment", time_label="Employment year"),
+        temporal_lens("industrial_private_share_history", "economy", "Industrial private-job history", "🏭", "share of private jobs", "pct", "linear",
+                      industrial_share_series, URSSAF_YEARS, RAMP_QUALITY,
+                      "Share of URSSAF private-sector salaried jobs in industry (GS1) at 31 December in each year from 2006 to 2025. This is workplace-industry composition, not all employment. Blank source cells are suppressed or unavailable and are not treated as zero. " + method,
+                      source="fr_private_employment", time_label="Employment year"),
         temporal_lens("residential_mobility_history", "society", "Residential mobility history", "🧭", "share of residents aged 1+", "pct", "linear",
                       mobility_series, MIGRATION_YEARS, RAMP_PEOPLE,
                       "Residents aged one year or more who lived in another commune one year earlier, as a share of all residents aged one year or more, in the 2012, 2017 and 2023 censuses. " + migration_method,
@@ -383,8 +404,9 @@ def build():
             str(load_interim_payload('fr_housing_history').get('vintage')),
             str(load_interim_payload('fr_climate').get('vintage')),
             str(load_interim_payload('fr_migration').get('vintage')),
+            str(load_interim_payload('fr_private_employment').get('vintage')),
         ]),
-        "sources": ["fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration"],
+        "sources": ["fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration", "fr_private_employment"],
         "methodology": {
             "spatial_distribution": "1 km lattice over current commune polygons; uniform within each commune",
             "sample_step_km": SAMPLE_STEP_KM,
@@ -412,6 +434,7 @@ def check(web_dir):
         "residential_mobility_history", "interdepartmental_migration_history",
         "temperature_history", "rainfall_history", "water_deficit_history",
         "births_history", "deaths_history", "natural_balance_history",
+        "private_job_density_history", "private_establishment_density_history", "industrial_private_share_history",
     }
     assert {l["id"] for l in doc["lenses"]} == expected
     for lens in doc["lenses"]:
@@ -442,4 +465,7 @@ def check(web_dir):
     deficit = next(l for l in doc["lenses"] if l["id"] == "water_deficit_history")
     flat = [v for vals in deficit["time"]["series"].values() for v in vals if v is not None]
     assert min(flat) < 0 < max(flat)
-    return [("PASS", "time.json: 17 temporal population, housing, election, price, migration and climate lenses")]
+    emp = next(l for l in doc["lenses"] if l["id"] == "private_job_density_history")
+    assert emp["time"]["years"] == list(range(2006, 2026))
+    assert all(sum(v is not None for v in vals) > 2000 for vals in emp["time"]["series"].values())
+    return [("PASS", "time.json: 20 temporal population, employment, housing, election, price, migration and climate lenses")]
