@@ -114,3 +114,7 @@ See `docs/DATA_CONTRACTS.md` for the browser/pipeline interface. French concepts
 ## License and attribution
 
 The upstream `usaciv` source is MIT-licensed and its license is preserved in `LICENSE`. France-specific modifications in this repository are also available under the MIT license. Public data remains subject to the terms of its respective publishers.
+
+### Automated data refresh
+
+A monthly GitHub Actions workflow refreshes high-cadence sources and opens a pull request with regenerated `web/data`. It restores the previous monthly `data/raw`/`data/interim` Actions cache, so routine runs update only fast-changing sources; a cache bootstrap or manual `full=true` dispatch runs the full pipeline. Validation (`pytest` and `pipeline check`) must pass before the workflow opens or updates the PR.
