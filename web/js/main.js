@@ -24,6 +24,7 @@ import { resourceFilterSig, layerActive, layerError, Z as LAYER_Z } from "./rend
 import { installExtensions } from "./ext/index.js";
 import { initShare } from "./app/share.js";
 import { initHelp } from "./app/help.js";
+import { initI18n, installLanguageSwitch } from "./i18n.js";
 
 const { drawStatic, drawOverlay, OCEAN_BG } = mapRender;
 
@@ -56,6 +57,8 @@ const isMobile = () => matchMedia("(max-width: 700px)").matches;
 let communeCardOpen = false;
 
 async function main() {
+  installLanguageSwitch();
+  const i18nReady = initI18n();
   const [world, cities, nation, lenses, sources, resources, statesData, climate, hydrography, connectivity, qualityLife, agriculture, tourism, electricity, publicServices, nature, flood, risk, heritage, energySystem, cycling, economy, transit, society, neighborhoods, mobility, timeData, waterCircular, riskDepth, environmentDepth, censusDetail, newCaledonia, polynesia, wallisFutuna, mayotte, northernCom, trust] = await Promise.all([
     loadJSON("world"), loadJSON("cities"), loadJSON("nation"),
     loadJSON("lenses", true), loadJSON("sources", true), loadJSON("resources", true), loadJSON("states", true), loadJSON("climate", true), loadJSON("hydrography", true), loadJSON("connectivity", true), loadJSON("quality_life", true), loadJSON("agriculture", true), loadJSON("tourism", true), loadJSON("electricity", true), loadJSON("public_services", true), loadJSON("nature", true), loadJSON("flood", true), loadJSON("risk", true), loadJSON("heritage", true), loadJSON("energy_system", true), loadJSON("cycling", true), loadJSON("economy", true), loadJSON("transit", true), loadJSON("society", true), loadJSON("neighborhoods", true), loadJSON("mobility", true), loadJSON("time", true), loadJSON("water_circular", true), loadJSON("risk_depth", true), loadJSON("environment_depth", true), loadJSON("brownfields", true), loadJSON("terroir", true), loadJSON("commuting", true), loadJSON("private_employment", true), loadJSON("census_detail", true), loadJSON("new_caledonia", true), loadJSON("polynesia", true), loadJSON("wallis_futuna", true), loadJSON("mayotte", true), loadJSON("northern_com", true), loadJSON("trust", true),
@@ -90,6 +93,7 @@ async function main() {
     lens.activeYear = lens.time.default || lens.time.years?.at(-1);
     lens.values = lens.time.series[String(lens.activeYear)] || lens.values;
   }
+  await i18nReady;
   const w = prepareWorld(world, cities, { resources });
   const state = {
     cities, lens: null, band: null, hoverCell: -1, selectedCity: null, selectedState: null, inspectCell: null, showResources: !!w.resources,
