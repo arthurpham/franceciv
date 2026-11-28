@@ -124,7 +124,7 @@ def _layer_rows(world):
                 vals = [None] * len(owner)
                 for key, value in sparse.items():
                     vals[int(key)] = value
-            elif lens.get("encoding") == "land-index-v1" and isinstance(vals, list):
+            elif (lens.get("encoding") == "land-index-v1" or lens.get("time", {}).get("encoding") == "land-index-v1") and isinstance(vals, list):
                 packed = vals
                 vals = [None] * len(owner)
                 k = 0

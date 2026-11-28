@@ -89,6 +89,8 @@ async function main() {
     if (!lens.time?.series) continue;
     if (lens.time.encoding === "sparse-index-v1") {
       for (const [year, vals] of Object.entries(lens.time.series)) lens.time.series[year] = denseSeriesValues(vals);
+    } else if (lens.time.encoding === "land-index-v1") {
+      for (const [year, vals] of Object.entries(lens.time.series)) lens.time.series[year] = denseLandValues(vals);
     }
     lens.activeYear = lens.time.default || lens.time.years?.at(-1);
     lens.values = lens.time.series[String(lens.activeYear)] || lens.values;
@@ -763,7 +765,7 @@ async function main() {
   epciPanel = initEpciPanel(geoPanelOpts);
   irisPanel = initIrisPanel(geoPanelOpts);
   geographyPanel = initGeographyPanel(geoPanelOpts);
-  app.registerOverlay({
+  overlays.push({
     id: "commute-flows", z: 80,
     draw(ctx, cam) {
       const f = state.commuteFlows;
