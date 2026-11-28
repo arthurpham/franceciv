@@ -16,7 +16,7 @@ class FrenchBrownfields(Source):
         publisher="Cerema / Datafoncier",
         homepage="https://www.data.gouv.fr/datasets/sites-references-dans-cartofriches",
         license="Licence Ouverte / Open Licence",
-        description="Standardized national Cartofriches export of identified brownfield sites. Rows are heterogeneous local inventories with different survey dates and completeness; absence of a site is not proof that no brownfield exists. Point coordinates are inventory locations, not legal parcel boundaries.",
+        description="Standardized national Cartofriches export of identified brownfield sites. Rows are heterogeneous local inventories with different survey dates and completeness; absence of a site is not proof that no brownfield exists. Point coordinates are inventory locations, not legal parcel boundaries. Surface values above 5 km² or non-numeric values are treated as unreliable inventory metadata and excluded from surface lenses while retaining the site itself.",
         used_for=["Brownfield-site density and land-area lenses"],
     )
 
@@ -36,13 +36,13 @@ class FrenchBrownfields(Source):
                 try:
                     surface = float(row.get("unite_fonciere_surface") or 0)
                 except ValueError:
-                    surface = 0
+                    surface = None
                 status = (row.get("site_statut") or "").strip().lower() or "unknown"
                 statuses[status] = statuses.get(status, 0) + 1
                 rows.append({
                     "id": row.get("site_id"), "name": row.get("site_nom") or "Unnamed site",
                     "commune": row.get("comm_insee"), "type": row.get("site_type") or None,
-                    "status": status, "surface_m2": surface,
+                    "status": status, "surface_m2": surface if surface is not None and surface <= 5_000_000 else None,
                     "lon": float(match.group(1)), "lat": float(match.group(2)),
                     "updated": row.get("site_actu_date") or row.get("site_identif_date") or None,
                 })
@@ -55,4 +55,5 @@ class FrenchBrownfields(Source):
             "rows": rows,
             "statuses": statuses,
             "ungeocoded_rows": skipped,
+            "oversized_or_unknown_surface_rows": sum(r["surface_m2"] is None for r in rows),
         }
