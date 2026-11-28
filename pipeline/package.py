@@ -1,9 +1,9 @@
-"""Build the deploy package: one file, usaciv.zip in the project root. It unzips to a usaciv/ folder holding the static
-site, ready to upload as /usaciv/. (dist/usaciv/ is the same folder unzipped, kept for local testing.)
+"""Build the deploy package: one file, franceciv.zip in the project root. It unzips to a franceciv/ folder holding the static
+site, ready to upload as /franceciv/. (dist/franceciv/ is the same folder unzipped, kept for local testing.)
 
-The site gets a copy of the source code as usaciv-source.zip, linked from the in-app help, so anyone can download,
-run and remix it. Both zips are deterministic (sorted entries, fixed timestamps), so rebuilding from unchanged files
-gives byte-identical archives.
+The archive contains only the public static site. Source code is linked directly from the in-app help to the GitHub
+repository instead of being duplicated inside the deploy artifact. The zip is deterministic (sorted entries, fixed
+timestamps), so rebuilding from unchanged files gives byte-identical archives.
 """
 
 from __future__ import annotations
@@ -14,14 +14,9 @@ from pathlib import Path
 
 from .core.paths import ROOT, WEB
 
-NAME = "usaciv"
+NAME = "franceciv"
 DIST = ROOT / "dist"
 SITE = DIST / NAME
-SOURCE_ZIP = f"{NAME}-source.zip"
-
-# What goes into the source zip (relative to ROOT). Downloads, caches and build output are left out: anyone can
-# recreate them with `uv run python -m pipeline all`.
-SOURCE_ITEMS = ["README.md", "LICENSE", "pyproject.toml", "uv.lock", ".gitignore", "docs", "pipeline", "tests", "web"]
 SKIP_NAMES = {"__pycache__", ".DS_Store"}
 SKIP_SUFFIXES = {".pyc", ".part"}
 # Dev-only pages (art gallery, trailer maker) ship in the source zip but not on the public site.
@@ -73,15 +68,10 @@ def cmd_package() -> None:
         shutil.copy2(f, dst)
         n_site += 1
 
-    # 2. The source code, served next to the site.
-    src_files = list(_files(ROOT, SOURCE_ITEMS))
-    src_size = _zip(SITE / SOURCE_ZIP, src_files, ROOT, NAME)
-
-    # 3. The whole site as one zip, for uploading.
+    # 2. The whole site as one zip, for uploading.
     bundle = ROOT / f"{NAME}.zip"
     site_size = _zip(bundle, _files(SITE, ["."]), SITE, NAME)
     (DIST / f"{NAME}-site.zip").unlink(missing_ok=True)  # older layout
 
     mb = lambda b: f"{b / 1e6:.1f} MB"
-    print(f"{bundle.name}  ({mb(site_size)})  ← upload this: it unzips to {NAME}/ ({n_site} site files + {SOURCE_ZIP})")
-    print(f"  {SOURCE_ZIP}: {len(src_files)} files, {mb(src_size)}")
+    print(f"{bundle.name}  ({mb(site_size)})  ← upload this: it unzips to {NAME}/ ({n_site} public site files)")

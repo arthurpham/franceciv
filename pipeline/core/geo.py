@@ -45,7 +45,7 @@ class AlbersEllipsoid:
     """Ellipsoidal Albers equal-area (Snyder 1987, eqs. 14-3..14-6), output in metres.
 
     Defaults are EPSG:5070 (NAD83 / Conus Albers): GRS80, lat0 23, lon0 -96,
-    standard parallels 29.5 and 45.5. Used to look up rasters such as NLCD.
+    standard parallels 29.5 and 45.5. Used to look up land-cover and elevation rasters.
     """
 
     def __init__(self, lat1=29.5, lat2=45.5, lat0=23.0, lon0=-96.0, a=6378137.0, inv_f=298.257222101):

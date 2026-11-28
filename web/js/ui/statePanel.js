@@ -29,7 +29,7 @@ export function openStatePanel(idx, ctx) {
             <span class="cr-pop">${popShort(c.population)}</span><span class="cr-go" aria-hidden="true">›</span></button>`;
         })
         .join("")}</div>`
-    : `<p class="muted">No metro or micro areas in this state's data.</p>`;
+    : `<p class="muted">No urban areas in this region's data.</p>`;
 
   const hasEcon = st.population != null || st.yields;
   const local = ctx.inspector?.section(ctx.inspectCell);

@@ -181,7 +181,7 @@ export async function mount(ctx) {
       if (!z) { zDetail.innerHTML = ""; return; }
       zDetail.innerHTML = `<div class="adv-card-detail"><h4 class="adv-h4">${esc(z.name)}</h4>
         <p class="adv-note">${int(z.counties)} departments on the map · cities: ${(z.cities || []).slice(0, 6).map((id) => esc(metros.byKey.get(id)?.name || id)).join(", ") || "none on the map"}${(z.cities || []).length > 6 ? "…" : ""}</p>
-        <h4 class="adv-h4">Top partners (any state)</h4><div class="adv-zp"></div></div>`;
+        <h4 class="adv-h4">Top partners (any region)</h4><div class="adv-zp"></div></div>`;
       barList(zDetail.querySelector(".adv-zp"), {
         compact: true, ariaLabel: "Top partner zones",
         rows: (z.partners || []).map(([id, v, m]) => ({ key: id, label: zoneById.get(id)?.name || `Zone ${id} (off the map)`, value: v, text: volumeText(v), sub: modeName.get(m) || m, color: MODE_COLOR[m] })),

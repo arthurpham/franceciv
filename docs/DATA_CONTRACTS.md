@@ -26,7 +26,7 @@ The file and object names `states`, `counties`, and `metros` are retained only a
 | `metro`, city id, `aav` | INSEE aire d'attraction des villes (AAV), three-digit code |
 | commune | French commune, five-character INSEE code |
 
-Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-compatible formatter alias and must format euros, never dollars. Population values are INSEE municipal/legal populations unless a file says otherwise. “Metropolitan France” means the 13 metropolitan régions including Corsica. The map also includes the five overseas department-region collectivities as insets; other overseas collectivities are outside the map.
+Money is euros. Use `eur` for new fields. `usd` may remain only as a backwards-compatible formatter alias and must format euros, never dollars. Population values are INSEE municipal/legal populations unless a file says otherwise. “Metropolitan France” means the 13 metropolitan régions including Corsica. The map also includes the five overseas department-region collectivities and the additional mapped overseas collectivities as cartographic insets.
 
 ## Pipeline conventions
 
