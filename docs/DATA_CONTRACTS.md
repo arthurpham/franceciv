@@ -150,7 +150,7 @@ Sparse index encoding keeps uncompressed `time.json` near 2.4 MB rather than abo
 
 ### society.json
 
-INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment.
+INSEE Comparateur de territoires commune aggregates. `natural_balance` is births minus deaths as a share of residents in 2023. `net_migration` is a residual estimate: population change 2017–2023 minus summed natural increase, divided by 2017 population; it omits statistical adjustments and is sensitive to municipal-boundary change. `business_density` counts establishments (local business units), not enterprises or employment. The `commune_*` lenses expose commune-level median income, poverty, homeownership, second homes and vacancy rather than the headline department-level aggregates; income/poverty are population-weighted within hexes and suppressed communes remain null rather than zero.
 
 ### quality_life.json
 
