@@ -732,6 +732,16 @@ def test_risk_depth_contract():
     assert all(len(lens["values"]) == grid_size for lens in data["lenses"])
 
 
+def test_brownfields_contract():
+    data = web("brownfields.json")
+    assert [l["id"] for l in data["lenses"]] == ["brownfield_sites", "brownfield_land", "brownfield_without_project"]
+    assert data["inventory_rows"] > 25000
+    for lens in data["lenses"]:
+        vals = lens["values"]
+        assert sum(v is not None for v in vals) > 1500
+        assert max(v or 0 for v in vals) > 0
+
+
 def test_environment_depth_contract():
     data = web("environment_depth.json")
     assert data["sources"] == ["fr_land_consumption", "fr_corine"]
