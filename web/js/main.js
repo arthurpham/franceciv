@@ -75,6 +75,7 @@ async function main() {
     return dense;
   };
   for (const lens of lensFile.lenses) {
+    if (lens.encoding === "sparse-index-v1") lens.values = denseSeriesValues(lens.values);
     if (!lens.time?.series) continue;
     if (lens.time.encoding === "sparse-index-v1") {
       for (const [year, vals] of Object.entries(lens.time.series)) lens.time.series[year] = denseSeriesValues(vals);

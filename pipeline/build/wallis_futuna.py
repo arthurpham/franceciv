@@ -25,7 +25,7 @@ def percentile(vals, p):
 def lens(lens_id, name, emoji, unit, vals, desc, fmt="pct"):
     return {"id": lens_id, "group": "overseas", "name": name, "icon": lens_id, "emoji": emoji, "unit": unit,
             "format": fmt, "scale": "linear", "domain": [percentile(vals, 2), percentile(vals, 98)], "ramp": RAMP,
-            "higher_is": "neutral", "source": "fr_wallis_futuna", "description": desc, "values": vals}
+            "higher_is": "neutral", "encoding": "sparse-index-v1", "source": "fr_wallis_futuna", "description": desc, "values": {str(i): v for i, v in enumerate(vals) if v is not None}}
 
 
 def build():

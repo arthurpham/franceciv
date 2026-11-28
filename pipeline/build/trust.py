@@ -119,7 +119,7 @@ def _layer_rows(world):
                 continue
             seen[lid] = path.name
             vals = _time_values(lens)
-            if isinstance(vals, dict) and lens.get("time", {}).get("encoding") == "sparse-index-v1":
+            if isinstance(vals, dict) and (lens.get("encoding") == "sparse-index-v1" or lens.get("time", {}).get("encoding") == "sparse-index-v1"):
                 sparse = vals
                 vals = [None] * len(owner)
                 for key, value in sparse.items():
