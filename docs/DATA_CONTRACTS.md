@@ -172,6 +172,10 @@ INSEE/STSEE indicators from the 2023 Wallis-et-Futuna census publication. The le
 
 INSEE detailed commune tables from the 2017 Mayotte census. The lenses cover age, unemployment, higher education, fragile housing, vacancy, homeownership, earth floors, cars, indoor toilets, electricity and internet. Commune counts are distributed over commune polygons and summed within hexes. They cover only Mayotte; the rest of France is null because these are territory-specific census tables. Higher education is measured among non-scolarized residents aged 15 or older.
 
+### northern_com.json
+
+INSEE detailed commune tables from the 2023 census for Saint-Pierre-et-Miquelon, Saint-Barthélemy and Saint-Martin. The lenses cover age, unemployment, higher education, second homes, vacancy, homeownership and social housing. Commune counts are distributed over commune polygons and summed within hexes. They cover only those northern overseas collectivities; the rest of France is null because these are territory-specific census tables. Higher education is measured among non-scolarized residents aged 15 or older.
+
 ### quality_life.json
 
 DVF housing-price/market and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `housing_liquidity` is sales per 10,000 residents over roughly two years, not dwelling turnover; `apartment_sale_share` describes transacted stock rather than the full dwelling stock. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.

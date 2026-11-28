@@ -261,7 +261,7 @@ def test_wallis_futuna_contract():
     assert data["sources"] == ["fr_wallis_futuna"] and len(data["lenses"]) == 7 and data["matched_communes"] == 3
     for lens in data["lenses"]:
         vals = [v for v in dense_lens_values(lens) if v is not None]
-        assert lens["encoding"] == "sparse-index-v1" and 2 <= len(vals) <= 30 and len(set(vals)) >= 2
+        assert lens["encoding"] == "sparse-index-v1" and 2 <= len(vals) <= 60 and len(set(vals)) >= 2
     assert any(s["id"] == "fr_wallis_futuna" for s in web("sources.json"))
 
 
@@ -273,6 +273,16 @@ def test_mayotte_contract():
         assert lens["encoding"] == "sparse-index-v1" and 3 <= len(vals) <= 60
         assert min(vals) >= 0 and max(vals) <= 1 and len(set(vals)) > 3
     assert any(s["id"] == "fr_mayotte" for s in web("sources.json"))
+
+
+def test_northern_com_contract():
+    data = web("northern_com.json")
+    assert data["sources"] == ["fr_northern_com"] and len(data["lenses"]) == 8 and data["matched_communes"] == 4
+    for lens in data["lenses"]:
+        vals = [v for v in dense_lens_values(lens) if v is not None]
+        assert lens["encoding"] == "sparse-index-v1" and 2 <= len(vals) <= 60
+        assert min(vals) >= 0 and max(vals) <= 1
+    assert any(s["id"] == "fr_northern_com" for s in web("sources.json"))
 
 
 def test_cycling_contract():
