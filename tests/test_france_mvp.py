@@ -198,13 +198,15 @@ def test_time_dimension_contract():
 
 def test_society_contract():
     data = web("society.json")
-    assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 3
-    assert {l["id"] for l in data["lenses"]} == {"natural_balance", "net_migration", "business_density"}
+    assert data["sources"] == ["fr_insee_stats"] and len(data["lenses"]) == 8
+    assert {l["id"] for l in data["lenses"]} == {"natural_balance", "net_migration", "business_density", "commune_income", "commune_poverty", "commune_homeownership", "commune_second_homes", "commune_vacancy"}
     for lens in data["lenses"]:
         vals = [v for v in lens["values"] if v is not None]
         assert len(vals) > 2500 and max(vals) > 0
     migration = [v for v in data["lenses"][1]["values"] if v is not None]
     assert min(migration) < 0 < max(migration)
+    income = next(l for l in data["lenses"] if l["id"] == "commune_income")["values"]
+    assert len(set(v for v in income if v is not None)) > 500
 
 
 def test_new_caledonia_contract():
