@@ -74,8 +74,15 @@ async function main() {
     for (const [i, v] of Object.entries(vals || {})) dense[Number(i)] = v;
     return dense;
   };
+  const denseLandValues = (vals) => {
+    const dense = Array(world.owner.length).fill(null);
+    let k = 0;
+    for (let i = 0; i < world.owner.length; i++) if (world.owner[i] >= 0) dense[i] = vals[k++] ?? null;
+    return dense;
+  };
   for (const lens of lensFile.lenses) {
     if (lens.encoding === "sparse-index-v1") lens.values = denseSeriesValues(lens.values);
+    if (lens.encoding === "land-index-v1") lens.values = denseLandValues(lens.values);
     if (!lens.time?.series) continue;
     if (lens.time.encoding === "sparse-index-v1") {
       for (const [year, vals] of Object.entries(lens.time.series)) lens.time.series[year] = denseSeriesValues(vals);

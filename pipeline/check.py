@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -108,6 +109,29 @@ def is_int(v) -> bool:
 
 def is_num(v) -> bool:
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+def dense_values(vals, n: int, encoding: str | None = None, owner=None):
+    """Expand transport-encoded lens values for validation; leave ordinary arrays unchanged."""
+    if encoding == "land-index-v1" and isinstance(vals, list) and isinstance(owner, list):
+        dense = [None] * n
+        k = 0
+        for i, owner_index in enumerate(owner[:n]):
+            if owner_index >= 0:
+                dense[i] = vals[k] if k < len(vals) else None
+                k += 1
+        return dense
+    if not isinstance(vals, dict):
+        return vals
+    dense = [None] * n
+    for key, value in vals.items():
+        try:
+            i = int(key)
+        except (TypeError, ValueError):
+            continue
+        if 0 <= i < n:
+            dense[i] = value
+    return dense
 
 
 def _sample(items, n=5) -> str:
@@ -515,6 +539,8 @@ def check_lenses(r: Report, doc, ctx: dict | None, source_ids: set | None) -> No
         elif "categories" in lens:
             r.fail(f"{what}: categories is only for format 'category'")
         vals = lens["values"]
+        if ctx is not None:
+            vals = dense_values(vals, ctx["n"], lens.get("encoding"), ctx.get("owner"))
         if ctx is None:
             continue
         if not isinstance(vals, list) or len(vals) != ctx["n"]:
@@ -896,6 +922,7 @@ def quality_lens_nulls(r: Report, ctx: dict, lenses: dict) -> None:
     land = [i for i, o in enumerate(ctx["owner"]) if o >= 0]
     for lens in lenses.get("lenses", []):
         vals = lens.get("values") if isinstance(lens, dict) else None
+        vals = dense_values(vals, ctx["n"], lens.get("encoding"), ctx.get("owner"))
         if not isinstance(vals, list) or len(vals) != ctx["n"] or not land:
             continue
         share = sum(1 for i in land if vals[i] is None) / len(land)
@@ -945,6 +972,36 @@ def run_builder_checks(r: Report, web_dir: Path, checks=None) -> None:
     if not checks:
         return
     r.section("builder checks")
+    # Builder checks predate sparse transport. Give them a dense materialized view while leaving the
+    # committed web files compact; direct values are expanded, temporal series remain in their own format.
+    tmp = tempfile.TemporaryDirectory(prefix="franceciv-check-")
+    check_dir = Path(tmp.name)
+    world_path = web_dir / "world.json"
+    grid_n = None
+    if world_path.exists():
+        try:
+            world_doc = json.loads(world_path.read_text())
+            grid_n = world_doc.get("grid", {}).get("cols", 0) * world_doc.get("grid", {}).get("rows", 0)
+        except (OSError, json.JSONDecodeError):
+            grid_n = None
+    for path in web_dir.glob("*.json"):
+        target = check_dir / path.name
+        try:
+            doc = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            target.symlink_to(path)
+            continue
+        changed = False
+        if grid_n and isinstance(doc, dict) and isinstance(doc.get("lenses"), list):
+            for lens in doc["lenses"]:
+                if isinstance(lens, dict) and (isinstance(lens.get("values"), dict) or lens.get("encoding") == "land-index-v1"):
+                    lens["values"] = dense_values(lens["values"], grid_n, lens.get("encoding"), world_doc.get("owner") if isinstance(world_doc, dict) else None)
+                    changed = True
+        if changed:
+            target.write_text(json.dumps(doc, separators=(",", ":")), encoding="utf-8")
+        else:
+            target.symlink_to(path)
+    web_dir = check_dir
     for name, fn in checks:
         try:
             lines = fn(web_dir) or []

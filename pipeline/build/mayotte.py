@@ -94,7 +94,7 @@ def check(web_dir):
     doc = json.loads((web_dir / "mayotte.json").read_text())
     assert len(doc["lenses"]) == 12 and doc["matched_communes"] == 17
     for lens_doc in doc["lenses"]:
-        vals = [v for v in lens_doc["values"].values() if v is not None]
+        vals = [v for v in (lens_doc["values"].values() if isinstance(lens_doc["values"], dict) else lens_doc["values"]) if v is not None]
         assert 3 <= len(vals) <= 60 and min(vals) >= 0 and max(vals) <= 1
         assert len(set(vals)) > 3
     return [("PASS", "mayotte.json: twelve Mayotte commune-detail lenses")]
