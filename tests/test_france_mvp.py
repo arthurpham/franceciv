@@ -169,13 +169,14 @@ def w_county_index(world, geoid):
 
 def test_time_dimension_contract():
     data = web("time.json")
-    assert data["sources"] == ["fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration"]
+    assert data["sources"] == ["fr_insee_stats", "fr_elections", "fr_housing_history", "fr_climate", "fr_migration", "fr_private_employment"]
     assert {l["id"] for l in data["lenses"]} == {
         "population_history", "housing_stock_history", "homeownership_history", "second_homes_history", "vacancy_history",
         "lepen_history", "macron_history", "abstention_history", "housing_price_history",
         "residential_mobility_history", "interdepartmental_migration_history",
         "temperature_history", "rainfall_history", "water_deficit_history",
         "births_history", "deaths_history", "natural_balance_history",
+        "private_job_density_history", "private_establishment_density_history", "industrial_private_share_history",
     }
     n = len(web("world.json")["owner"])
 
