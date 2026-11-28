@@ -367,6 +367,43 @@ export function initLensDock(opts) {
     }
   }
 
+  const corrCache = new Map();
+  function correlations(lens) {
+    const key = cacheKey(lens);
+    if (corrCache.has(key)) return corrCache.get(key);
+    const owner = w.raw.owner;
+    const out = [];
+    for (const other of lenses) {
+      if (!other?.id || other.id === lens.id || !Array.isArray(other.values) || other.format === "category") continue;
+      let n = 0, ax = 0, ay = 0;
+      for (let i = 0; i < lens.values.length && i < other.values.length; i++) {
+        const x = lens.values[i], y = other.values[i];
+        if (x == null || y == null || owner[i] < 0 || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+        n++; ax += x; ay += y;
+      }
+      if (n < 100) continue;
+      ax /= n; ay /= n;
+      let xy = 0, xx = 0, yy = 0;
+      for (let i = 0; i < lens.values.length && i < other.values.length; i++) {
+        const x = lens.values[i], y = other.values[i];
+        if (x == null || y == null || owner[i] < 0 || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+        const dx = x - ax, dy = y - ay;
+        xy += dx * dy; xx += dx * dx; yy += dy * dy;
+      }
+      const r = xx && yy ? xy / Math.sqrt(xx * yy) : 0;
+      if (Number.isFinite(r) && Math.abs(r) >= 0.45) out.push({ lens: other, r });
+    }
+    out.sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
+    const result = out.slice(0, 4);
+    corrCache.set(key, result);
+    return result;
+  }
+  function correlationHtml(lens) {
+    const rows = correlations(lens).map(({ lens: other, r }) =>
+      `<button type="button" class="lg-corr" data-corr="${esc(other.id)}" title="Switch to ${esc(other.name)}"><span>${esc(other.name)}</span><b class="${r >= 0 ? "pos" : "neg"}">${r >= 0 ? "+" : "−"}${Math.abs(r).toFixed(2)}</b></button>`).join("");
+    return rows ? `<div class="lg-correlations"><h5>Strongest lens correlations at this year</h5>${rows}<p>Pearson r over hexes measured in both lenses; spatial autocorrelation means this is exploratory, not causal.</p></div>` : "";
+  }
+
   let legendExpanded = false;
   function renderLegend() {
     if (!active) {
@@ -397,6 +434,7 @@ export function initLensDock(opts) {
       <div class="ticks">${ticks}</div>
       ${l.unit ? `<div class="lg-unit">${esc(l.unit)}</div>` : ""}
       <div class="lg-meta">${hib}<span class="src">${l.unit ? esc(l.unit) + " · " : ""}${sourceLine(l)}</span>${coverageLine(l)}</div>
+      ${correlationHtml(l)}
       <div class="lg-hint" aria-live="polite">Hover or drag the scale to show only that range</div>`;
     legend.querySelector(".lg-close").onclick = () => opts.onPick(null);
     legend.classList.toggle("expanded", legendExpanded);
@@ -405,6 +443,7 @@ export function initLensDock(opts) {
       legendExpanded = !legendExpanded;
       renderLegend();
     };
+    legend.querySelectorAll("[data-corr]").forEach((b) => b.onclick = () => pick(b.dataset.corr, true));
     wireTime();
     wireScale(legend.querySelector(".lg-scale"));
     drawHist();
