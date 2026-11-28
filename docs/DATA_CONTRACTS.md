@@ -156,6 +156,10 @@ INSEE Comparateur de territoires commune aggregates. `natural_balance` is births
 
 INSEE/ISEE-NC commune tables from the 2019 New Caledonia census. The lenses cover age, education, unemployment, agricultural employment, homeownership, second homes, vacancy, running water and household internet. Commune counts are distributed over commune polygons and summed within hexes. They cover only New Caledonia; the rest of France is null because these are territory-specific tables rather than part of the metropolitan/DROM Melodi commune extract.
 
+### census_detail.json
+
+INSEE Melodi detailed commune census tables for unemployment, higher education, age, commuting and immigration. Commune counts are distributed over current commune polygons on a 1 km lattice and summed within hexes, so values are local commune mixtures rather than department-uniform copies. The detailed commune extract covers metropolitan France plus Guadeloupe, Martinique, Guyane and La Réunion; Mayotte and the additional overseas collectivities remain null because those rows are absent from the chosen INSEE extract.
+
 ### quality_life.json
 
 DVF housing-price/market and DREES healthcare-access lenses are weighted commune aggregates with source-specific geographic exclusions documented in each lens. `housing_liquidity` is sales per 10,000 residents over roughly two years, not dwelling turnover; `apartment_sale_share` describes transacted stock rather than the full dwelling stock. `social_housing` is the population-weighted commune share of primary residences that are social housing in the 2023 RPLS; it excludes habitat spécifique and certain SEM stock and is not comparable with the legal SRU article-55 rate.

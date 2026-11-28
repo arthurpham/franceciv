@@ -130,7 +130,20 @@ def dim_key(row):
     return "|".join(parts) or "_T"
 
 
-def compact_melodi(path, levels=LEVELS, key_mode="dims"):
+COM_KEYS = {
+    "activity": {"EMPSTA_ENQ=1|AGE=Y15T64", "EMPSTA_ENQ=2|AGE=Y15T64"},
+    "education": {"AGE=Y_GE15", "AGE=Y_GE15|EDUC=500T702_RP"},
+    "population_age": {"_T", "AGE=Y_GE65"},
+    "commuting": {
+        "AGE=Y_GE15|EMPSTA_ENQ=1",
+        "TRANS=5|AGE=Y_GE15|EMPSTA_ENQ=1",
+        "TRANS=6|AGE=Y_GE15|EMPSTA_ENQ=1",
+    },
+    "immigration": {"_T", "IMMI=1"},
+}
+
+
+def compact_melodi(path, levels=LEVELS, key_mode="dims", com_keys=None):
     out = {lv: {} for lv in levels}
     for r in csv_rows(path):
         lv = r.get("GEO_OBJECT")
@@ -142,6 +155,8 @@ def compact_melodi(path, levels=LEVELS, key_mode="dims"):
             key = r.get("EMP_ACTIVITY")
         else:
             key = dim_key(r)
+        if lv == "COM" and com_keys is not None and key not in com_keys:
+            continue
         try:
             value = round(float(r["OBS_VALUE"]), 2)
         except ValueError:
@@ -201,7 +216,13 @@ class FrenchInseeStats(Source):
                 continue
             files.append(fn)
             mode = "employment" if key == "employment" else "dims"
-            datasets[key] = compact_melodi(self.raw_dir / fn, levels=LEVELS + (("COM",) if key == "employment" else ()), key_mode=mode)
+            include_com = key in {"employment", "activity", "education", "population_age", "commuting", "immigration"}
+            datasets[key] = compact_melodi(
+                self.raw_dir / fn,
+                levels=LEVELS + (("COM",) if include_com else ()),
+                key_mode=mode,
+                com_keys=None if key == "employment" else COM_KEYS.get(key),
+            )
             print(f"    {key}: " + ", ".join(f"{lv} {len(g)}" for lv, g in datasets[key].items()))
         geo_ref, comp = compact_comparator(self.raw_dir / COMPARATOR_FILE)
         files.append(COMPARATOR_FILE)

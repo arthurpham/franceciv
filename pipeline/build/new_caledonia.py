@@ -55,12 +55,15 @@ def build():
         matched += 1
         labour = (row.get("employed") or 0) + (row.get("unemployed") or 0)
         for cell, weight in wts.items():
+            seen_denominators = set()
             for num, den, key in specs:
                 den_value = labour if den == "labour" else row.get(den)
                 if row.get(num) is None or not den_value:
                     continue
                 acc[cell][num] += row[num] * weight
-                acc[cell][den] += den_value * weight
+                if den not in seen_denominators:
+                    acc[cell][den] += den_value * weight
+                    seen_denominators.add(den)
 
     series = {}
     for num, den, key in specs:
